@@ -1,0 +1,27 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Recent Page Title -->
+<div class="pagetitle">
+    <h1>Удаление клиента</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Главная</a></li>
+            <li class="breadcrumb-item active">Удаление клиента</li>
+        </ol>
+    </nav>
+
+    <form method="post">
+        {% csrf_token %}
+
+
+        <p> Вы точно хотите удалить объект "{{ object.dogovor_number }}"?</p>
+
+
+        <button type="submit" class="btn btn-primary" value="Да">Да</button>
+    </form>
+</div>
+
+{% endblock %}

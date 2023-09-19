@@ -1,0 +1,213 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Recent Page Title -->
+<div class="pagetitle">
+    <h1>Отчеты</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item active">Отчеты</li>
+        </ol>
+    </nav>
+</div>
+<!-- Отчет по Юрикам и физикам -->
+
+<form method="POST">
+    {% csrf_token %}
+    <label for="start_date">Дата от:</label>
+    <input type="date" name="start_date">
+    <label for="end_date">до:</label>
+    <input type="date" name="end_date">
+    <button type="submit">Применить</button>
+</form>
+
+<!--<div class="card">-->
+<!--    <div class="card-body">-->
+<!--        <table class="table table-sm">-->
+<!--            <thead>-->
+<!--            <tr>-->
+<!--                <th scope="col">Название компании</th>-->
+<!--                <th scope="col">Юрик</th>-->
+<!--                <th scope="col">Физик</th>-->
+<!--            </tr>-->
+<!--            </thead>-->
+<!--            <tbody>-->
+<!--            {% for company in companies %}-->
+<!--            <tr>-->
+<!--                <td>{{ company.polnoe_name }}</td>-->
+<!--                <td>{{ urik_companies.count }}</td>-->
+<!--                <td>{{ non_urik_companies_quantity.count }}</td>-->
+<!--            </tr>-->
+
+<!--            {% endfor %}-->
+
+<!--            </tbody>-->
+<!--        </table>-->
+<!--    </div>-->
+<!--</div>-->
+<!-- End Отчет по Юрикам и физикам -->
+
+
+
+{% for con in reports %}
+<div class="card">
+    <div class="card-body">
+<!--         Отчет КузетТехноСервис Подключенные-->
+        <h5 class="card-title">{% for kts in con.kts_podkl %}{% ifchanged kts.company_name %}{{ kts.company_name }}{% endifchanged %}
+            {% endfor %} отчет за период ( {{ start_of_month }} - {{ end_of_month }} )</h5>
+        <p><h5>Подключенные</h5>Общее кол-во = {{ con.kts_count_podkl.id__count }}. Физических лиц = {{ con.kts_fiz_podkl.id__count }}.</p>
+
+                <table class="table table-bordered fz-table-11">
+                    <thead>
+                    <tr>
+                        <th scope="col">№ дог</th>
+                        <th scope="col">Дата</th>
+                        <th scope="col">Клиент</th>
+                        <th scope="col">Наименование объекта</th>
+                        <th scope="col">Адрес</th>
+                        <th scope="col">ИИН/БИН</th>
+                        <th scope="col">Вид сигнализации</th>
+                        <th scope="col">Часы по договору</th>
+                        <th scope="col alseco">Алсеко</th>
+                        <th scope="col">сум.план</th>
+                        <th scope="col">№ объекта</th>
+                        <th scope="col">№ ЦМТ/GSM</th>
+                        <th scope="col">Стоимость РПО</th>
+                        <th scope="col">Дата подключения</th>
+                        <th scope="col">Группа реагирования</th>
+                        <th scope="col">Примечание</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for kts in con.kts_podkl %}
+                    <tr>
+                        <td>{{ kts.dogovor_number }}</td>
+                        <td>{{ kts.data_zakluchenia }}</td>
+                        <td>{{ kts.klient_name }}</td>
+                        <td>{{ kts.name_object }}</td>
+                        <td>{{ kts.adres }}</td>
+                        <td>{{ kts.iin_bin }}</td>
+                        <td>{{ kts.vid_sign }}</td>
+                        <td>{{ kts.chasi_po_dog }}</td>
+
+                        {% if kts.dop_uslugi %}
+                            <td class="alseco">{{ kts.dop_uslugi }}</td>
+                        {% else %}
+                            <td class="alseco"></td>
+                        {% endif %}
+
+                        <td>{{ kts.itog_oplata }}</td>
+                        <td>{{ kts.object_number }}</td>
+                        <td>{{ kts.peredatchik_number }}</td>
+                        <td>{{ kts.stoimost_rpo }}</td>
+                        <td>{{ kts.date_podkluchenia }}</td>
+                        <td>{{ kts.gruppa_reagirovania }}</td>
+                        <td>{{ kts.primechanie }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td>Итого</td>
+                        <td>{{ con.kts_abon_summa_podkl.itog_oplata__sum }}</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+
+
+                    </tbody>
+                </table>
+                <!-- End КузетТехноСервис Подключенные текущий месяц  -->
+
+
+                <!-- Отчет КузетТехноСервис Отключенные текущий месяц-->
+                <h5>Расторжение</h5>
+                <p>Общее кол-во = {{ con.kts_count.id__count }}. Физических лиц = {{ con.kts_fiz.id__count }}.</p>
+
+                        <table class="table table-bordered fz-table-11">
+                            <thead>
+                            <tr>
+                                <th scope="col">№ дог</th>
+                                <th scope="col">Дата</th>
+                                <th scope="col">Клиент</th>
+                                <th scope="col">Наименование объекта</th>
+                                <th scope="col">Адрес</th>
+                                <th scope="col">ИИН/БИН</th>
+                                <th scope="col">Вид сигнализации</th>
+                                <th scope="col">Часы по договору</th>
+                                <th scope="col alseco">Алсеко</th>
+                                <th scope="col">сум.план</th>
+                                <th scope="col">№ объекта</th>
+                                <th scope="col">№ ЦМТ/GSM</th>
+                                <th scope="col">Стоимость РПО</th>
+                                <th scope="col">Дата отключения</th>
+                                <th scope="col">Группа реагирования</th>
+                                <th scope="col">Примечание</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for kts in con.kts_otkl %}
+                            <tr>
+                                <td>{{ kts.dogovor_number }}</td>
+                                <td>{{ kts.data_zakluchenia }}</td>
+                                <td>{{ kts.klient_name }}</td>
+                                <td>{{ kts.name_object }}</td>
+                                <td>{{ kts.adres }}</td>
+                                <td>{{ kts.iin_bin }}</td>
+                                <td>{{ kts.vid_sign }}</td>
+                                <td>{{ kts.chasi_po_dog }}</td>
+
+                                {% if kts.dop_uslugi %}
+                                    <td class="alseco">{{ kts.dop_uslugi }}</td>
+                                {% else %}
+                                    <td class="alseco"></td>
+                                {% endif %}
+
+                                <td>{{ kts.abon_plata }}</td>
+                                <td>{{ kts.object_number }}</td>
+                                <td>{{ kts.peredatchik_number }}</td>
+                                <td>{{ kts.stoimost_rpo }}</td>
+                                <td>{{ kts.date_otklulchenia }}</td>
+                                <td>{{ kts.gruppa_reagirovania }}</td>
+                                <td>{{ kts.primechanie }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td>Итого</td>
+                                <td>{{ con.kts_abon_summa.abon_plata__sum }}</td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+
+
+                            </tbody>
+                        </table>
+                        <!-- End по Юрикам и физикам КузетТехноСервис Отключенные текущий месяц-->
+ </div>
+                    </div>
+{% endfor %}
+
+{% endblock %}

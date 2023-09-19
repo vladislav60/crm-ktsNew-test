@@ -1,0 +1,79 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Recent Page Title -->
+<div class="pagetitle">
+    <h1>Реквизиты компаний</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Главная</a></li>
+            <li class="breadcrumb-item active">Реквизиты компаний</li>
+        </ol>
+    </nav>
+</div>
+<!-- End Page Title -->
+
+<!-- Recent Таблица клиентов -->
+<div class="col-12">
+    <div class="card recent-sales overflow-auto">
+
+        <div class="card-body">
+
+            <table class="table table-striped datatable" id="table">
+                <thead>
+                <tr>
+                    <th scope="col">Организация</th>
+                    <th scope="col">Адрес</th>
+                    <th scope="col">БИН</th>
+                    <th scope="col">IBAN</th>
+                    <th scope="col">BIC</th>
+                    <th scope="col">Банк</th>
+                    <th scope="col">Телефон офиса</th>
+                    <th scope="col">Телефон бухгалтерии</th>
+                    <th scope="col">Устав</th>
+                    <th scope="col">Полное имя</th>
+                    <th scope="col">Сокращенное имя</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for r in rekvizity %}
+
+                <tr>
+                    <td>{{r.polnoe_name}}</td>
+                    <td>{{r.adres_company}}</td>
+                    <td>{{r.bin}}</td>
+                    <td>{{r.iban}}</td>
+                    <td>{{r.bic}}</td>
+                    <td>{{r.bank}}</td>
+                    <td>{{r.telephone_ofiice}}</td>
+                    <td>{{r.telephone_buh}}</td>
+                    <td>{{r.ucheriditel}}</td>
+                    <td>{{r.ucheriditel_name_polnoe}}</td>
+                    <td>{{r.ucheriditel_name_sokr}}</td>
+<!--                    <td><a href="{{ r.get_absolute_url }}">-->
+<!--                        <button type="button" class="btn btn-secondary">-->
+<!--                            <i class="bi bi-folder-symlink-fill"></i>-->
+<!--                        </button>-->
+<!--                    </a></td>-->
+<!--                    <td><a href="{% url 'update_client' r.pk %}">-->
+<!--                        <button type="button" class="btn btn-secondary">-->
+<!--                            <i class="bi bi-pencil-fill"></i>-->
+<!--                        </button>-->
+<!--                    </a></td>-->
+<!--                    <td><a href="{% url 'delete_client' r.pk %}">-->
+<!--                        <button type="button" class="btn btn-secondary">-->
+<!--                            <i class="bi bi-trash-fill"></i>-->
+<!--                        </button>-->
+<!--                    </a></td>-->
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+
+    </div>
+</div><!-- End Recent Sales -->
+{% endblock %}

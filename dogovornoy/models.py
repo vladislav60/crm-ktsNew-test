@@ -41,6 +41,9 @@ class kts(models.Model):
     photo = models.ImageField(upload_to="photos/%Y/%m/%d/", verbose_name="Фото УДВ", blank=True, null=True)
     prochee = models.TextField(blank=True, null=True, verbose_name="Прочее")
 
+    # def __str__(self):
+    #     return self.dogovor_number
+
     def get_absolute_url(self):
         return reverse('kartochka_klienta', kwargs={'klient_id': self.pk})
 
@@ -90,12 +93,11 @@ class AdditionalService(models.Model):
     kts = models.ForeignKey(kts, on_delete=models.CASCADE, related_name='additional_services')
 
     # Fields for additional service information
-    service_name = models.CharField(max_length=255)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    date_added = models.DateField()
+    service_name = models.CharField(max_length=255, verbose_name="Название доп.услуги")
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена")
+    date_added = models.DateField(verbose_name="Дата подключения")
 
     class Meta:
-        unique_together = ('kts', 'service_name')
         verbose_name = "Доп.Услуги"
         verbose_name_plural = "Доп.Услуги"
         ordering = ['-pk']

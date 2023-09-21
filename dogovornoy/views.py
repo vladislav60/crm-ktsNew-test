@@ -158,7 +158,14 @@ class AddClient(FormView):
     success_url = '/baza_dogovorov/'
 
     def form_valid(self, form):
-        form.save()
+        client = form.save()
+
+        # Create an additional service associated with the client
+        additional_service_form = AddKlientDogForm(self.request.POST)
+        if additional_service_form.is_valid():
+            additional_service = additional_service_form.save(commit=False)
+            additional_service.client = client
+            additional_service.save()
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -309,6 +316,22 @@ class KartochkaKlienta(DetailView):
     pk_url_kwarg = 'klient_id'
     context_object_name = 'kartochka'
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = AdditionalServiceForm()  # Include the AdditionalServiceForm in the context
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = AdditionalServiceForm(request.POST)
+        if form.is_valid():
+            kts_instance = self.get_object()  # Get the Kts instance associated with the view
+            form.instance.kts = kts_instance  # Associate the additional service with the Kts instance
+            form.save()  # Save the additional service
+            return redirect('kartochka_klienta', klient_id=kts_instance.pk)
+        else:
+            context = self.get_context_data()
+            context['form'] = form
+            return self.render_to_response(context)
 
 # Страница 404
 def pageNotFound(request, exception):

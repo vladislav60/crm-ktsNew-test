@@ -333,12 +333,43 @@
                             <tr>
                                 <td colspan="3">No additional services</td>.
                             </tr>
-                        {% endfor %}
+                   {% endfor %}
                 </tbody>
               </table>
               <!-- End Dark Table -->
                 </div>
                     </form>
+
+                <h3>Добавление доп.услуги</h3>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" id="ktsField" name="kts" value="{{ klient_id }}">
+                    <div class="col-md-12">
+                            <label for="{{ form.service_name.id_for_label }}" class="form-label">
+                                {{ form.service_name.label }}
+                            </label>
+                            {{ form.service_name }}
+                            <div class="form-error">{{service_name.errors}}</div>
+                        </div>
+                    <div class="col-md-12">
+                            <label for="{{ form.price.id_for_label }}" class="form-label">
+                                {{ form.price.label }}
+                            </label>
+                            {{ form.price }}
+                            <div class="form-error">{{price.errors}}</div>
+                        </div>
+                    <div class="col-md-12">
+                            <label for="{{ form.date_added.id_for_label }}" class="form-label">
+                                {{ form.date_added.label }}
+                            </label>
+                            {{ form.date_added }}
+                            <div class="form-error">{{date_added.errors}}</div>
+                        </div>
+                    <div class="col-md-12">
+                        <p></p>
+                    </div>
+                    <button type="submit" class="btn btn-success rounded-pill">Сохранить</button>
+                </form>
 
                 </div>
             </div>

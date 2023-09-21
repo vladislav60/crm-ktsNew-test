@@ -77,46 +77,36 @@ class AddKlientDogForm(forms.ModelForm):
             'vid_rpo': forms.Textarea(attrs={'class': 'form-control'}),
             'primechanie': forms.Textarea(attrs={'class': 'form-control'}),
             'agentskie': forms.TextInput(attrs={'class': 'form-control'}),
+            'service_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'price': forms.TextInput(attrs={'class': 'form-control'}),
+            'date_of_registration': forms.DateInput(
+                format=('%Y-%m-%d'),
+                attrs={'class': 'form-control',
+                       'placeholder': 'Select a date',
+                       'type': 'date'
+                       }),
         }
-    # company_name = forms.CharField(max_length=100, label='Наименование компании*')
-    # dogovor_number = forms.CharField(max_length=40, label='Номер договора*')
-    # data_zakluchenia = forms.DateField(label="Дата заключения*")
-    # nalichiye_dogovora = forms.CharField(label="Наличие Договора", required='False')
-    # mat_otv = forms.IntegerField(label="Мат.отв*")
-    # act_ty = forms.CharField(max_length=200, label="Акты ТУ", required='False')
-    # time_reag = forms.IntegerField(label="Время реагирования*")
-    # yslovie_dogovora = forms.CharField(max_length=100, label="Условия договора", required='False')
-    # klient_name = forms.CharField(max_length=255, label="Наименование Клиента*")
-    # name_object = forms.CharField(max_length=255, label="Наименование объекта*")
-    # adres = forms.CharField(max_length=255, label="Адрес объекта*")
-    # iin_bin = forms.IntegerField(label="ИИН/БИН*")
-    # telephone = forms.CharField(max_length=255, label="Телефон*")
-    # vid_sign = forms.CharField(max_length=40, label="Вид сигнализации*")
-    # urik = forms.BooleanField(label="ЮЛ*", initial='False')
-    # chasi_po_dog = forms.IntegerField(label="Часы по договору*")
-    # dop_uslugi = forms.IntegerField(label="Доп.услуги", required='False')
-    # abon_plata = forms.IntegerField(label="Абон.плата*")
-    # itog_oplata = forms.IntegerField(label="Итого", required='False')
-    # tehnik_obsluga = forms.IntegerField(label="Тех.обсуживание", required='False')
-    # object_number = forms.IntegerField(label="№ объекта", required='False')
-    # peredatchik_number = forms.CharField(label="№ передатчика/GSM", required='False')
-    # stoimost_rpo = forms.IntegerField(label="Стоимость РПО*")
-    # date_podkluchenia = forms.DateField(label="Дата подключения", required='False')
-    # date_otklulchenia = forms.DateField(label="Дата отключения", required='False')
-    # gruppa_reagirovania = forms.CharField(max_length=50, label="Группа реагирования", required='False')
-    # email = forms.CharField(max_length=100, label="Электронный адрес", required='False')
-    # primechanie = forms.CharField(label="Примечание", widget=forms.Textarea(attrs={'cols': 60, 'rows': 10}), required='False')
-    # agentskie = forms.CharField(max_length=255, label="Агентские", required='False')
-
-    # def clean_title(self):
-    #     klient_name = self.cleaned_data['klient_name']
-    #     if len(klient_name) > 200:
-    #         raise ValidationError('Длина превышает 200 символов')
-    #
-    #     return klient_name
 
 
 class ExcelImportForm(forms.Form):
     excel_file = forms.FileField(label='Загрузите Excel файл')
+
+
+class AdditionalServiceForm(forms.ModelForm):
+    class Meta:
+        model = AdditionalService
+        fields = ['service_name', 'price', 'date_added']
+        exclude = ['kts']
+        widgets = {
+            'service_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'price': forms.NumberInput(
+                attrs={'min': '0', 'class': 'form-control', 'max': '10000000'}),
+            'date_added': forms.DateInput(
+                format=('%Y-%m-%d'),
+                attrs={'class': 'form-control',
+                       'placeholder': 'Select a date',
+                       'type': 'date'
+                       }),
+        }
 
 

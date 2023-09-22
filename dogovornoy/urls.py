@@ -37,5 +37,6 @@ urlpatterns = [
     # Ссылка на страницу Карточка клиента
     path('kartochka_klienta/<int:klient_id>/', views.KartochkaKlienta.as_view(), name='kartochka_klienta'),
     # path('search/', search_kts, name='search_kts'),
+    path('additional_service/<int:service_id>', views.delete_additional_service, name='delete_additional_service'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

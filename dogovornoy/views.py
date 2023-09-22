@@ -333,6 +333,18 @@ class KartochkaKlienta(DetailView):
             context['form'] = form
             return self.render_to_response(context)
 
+
+@login_required
+def delete_additional_service(request, service_id):
+    additional_service = get_object_or_404(AdditionalService, pk=service_id)
+
+    if request.method == 'POST':
+        additional_service.delete()
+        return redirect('baza_dogovorov')  # Redirect to client list or a specific page after deletion
+
+    return render(request, 'dogovornoy/delete_additional_service.html', {'additional_service': additional_service})
+
+
 # Страница 404
 def pageNotFound(request, exception):
     return HttpResponseNotFound('<h1>Сраница не найдена</h1>')

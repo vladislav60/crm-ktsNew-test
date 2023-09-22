@@ -1,0 +1,28 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Recent Page Title -->
+<div class="pagetitle">
+    <h1>Удаление дополнительной услуги</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Главная</a></li>
+            <li class="breadcrumb-item active">Удаление доп.услуги</li>
+        </ol>
+    </nav>
+
+    <form method="post">
+        {% csrf_token %}
+
+
+        <p> Вы точно хотите удалить услугу - "{{ additional_service.service_name }}"?</p>
+
+
+        <button type="submit" class="btn btn-primary" value="Да">Да</button>
+        <a href="{% url 'baza_dogovorov' %}">Нет</a>
+    </form>
+</div>
+
+{% endblock %}

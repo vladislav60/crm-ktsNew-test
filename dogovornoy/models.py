@@ -25,7 +25,7 @@ class kts(models.Model):
     vid_sign = models.ForeignKey('vid_sign', verbose_name="Вид сигнализации", on_delete=models.PROTECT)
     urik = models.BooleanField(default=False, null=True, verbose_name="Юридическое лицо")
     chasi_po_dog = models.IntegerField(null=True, verbose_name="Часы по договору")
-    dop_uslugi = models.CharField(max_length=255, blank=True, null=True, verbose_name="Доп.услуги")
+    dop_uslugi = models.CharField(max_length=255, blank=True, null=True, verbose_name="Алсеко")
     abon_plata = models.IntegerField(null=True, verbose_name="Абон.плата")
     itog_oplata = models.IntegerField(blank=True, null=True, verbose_name="Итого")
     object_number = models.CharField(max_length=255, blank=True, null=True, verbose_name="№ объекта")
@@ -95,7 +95,8 @@ class AdditionalService(models.Model):
     # Fields for additional service information
     service_name = models.CharField(max_length=255, verbose_name="Название доп.услуги")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена")
-    date_added = models.DateField(verbose_name="Дата подключения")
+    date_added = models.DateField(null=True, verbose_name="Дата подключения")
+    date_unsubscribe = models.DateField(null=True, verbose_name="Дата отключения")
 
     class Meta:
         verbose_name = "Доп.Услуги"

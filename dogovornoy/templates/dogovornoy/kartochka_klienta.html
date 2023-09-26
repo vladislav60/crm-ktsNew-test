@@ -1,389 +1,434 @@
 {% extends 'dogovornoy/base.html' %}
 
 {% block content %}
-<section class="section">
-    <div class="row">
-        <div class="col-lg-12">
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
 
-            <div class="card">
-                <div class="card-body">
+                <div class="card">
+                    <div class="card-body">
 
-                    <h5 class="card-title">Карточка клиента</h5>
+                        <h5 class="card-title">Карточка клиента</h5>
 
-                    <div id="carouselExampleSlidesOnly" class="carousel slide" data-bs-ride="carousel">
-                        <div class="carousel-inner">
+                        <div id="carouselExampleSlidesOnly" class="carousel slide" data-bs-ride="carousel">
+                            <div class="carousel-inner">
 
-                            <div class="carousel-item active">
-                                {% if kartochka.photo %}
-                                <img src="{{kartochka.photo.url}}" class="d-block w-100" alt="...">
+                                <div class="carousel-item active">
+                                    {% if kartochka.photo %}
+                                        <img src="{{ kartochka.photo.url }}" class="d-block w-100" alt="...">
+                                    {% endif %}
+                                </div>
+
+
+                            </div>
+                        </div><!-- End Slides only carousel-->
+
+                        <form class="row g-3">
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">Номер УДВ</label>
+
+                                {% if kartochka.udv_number %}
+                                    <input type="text" class="form-control" value="{{ kartochka.udv_number }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">Дата и Кем выдано</label>
+
+                                {% if kartochka.date_udv %}
+                                    <input type="text" class="form-control" value="{{ kartochka.date_udv }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">Компания</label>
+
+                                {% if kartochka.company_name %}
+                                    <input type="text" class="form-control" value="{{ kartochka.company_name }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">№ дог</label>
+
+                                {% if kartochka.dogovor_number %}
+                                    <input type="text" class="form-control" value="{{ kartochka.dogovor_number }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Дата заключения</label>
+
+                                {% if kartochka.data_zakluchenia %}
+                                    <input type="text" class="form-control" value="{{ kartochka.data_zakluchenia }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Мат.отв</label>
+
+                                {% if kartochka.mat_otv %}
+                                    <input type="text" class="form-control" value="{{ kartochka.mat_otv }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Время реагирования</label>
+
+                                {% if kartochka.time_reag %}
+                                    <input type="text" class="form-control" value="{{ kartochka.time_reag }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Время реагирования не более</label>
+
+                                {% if kartochka.time_reag_nebol %}
+                                    <input type="text" class="form-control" value="{{ kartochka.time_reag_nebol }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label for="inputNanme4" class="form-label">Наименование Клиента</label>
+
+                                {% if kartochka.klient_name %}
+                                    <input type="text" class="form-control" value="{{ kartochka.klient_name }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label for="inputNanme4" class="form-label">Наименование объекта</label>
+
+                                {% if kartochka.name_object %}
+                                    <input type="text" class="form-control" value="{{ kartochka.name_object }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label for="inputNanme4" class="form-label">Адрес объекта</label>
+
+                                {% if kartochka.adres %}
+                                    <input type="text" class="form-control" value="{{ kartochka.adres }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label for="inputNanme4" class="form-label">Телефон</label>
+
+                                {% if kartochka.telephone %}
+                                    <input type="text" class="form-control" value="{{ kartochka.telephone }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">ИИН/БИН</label>
+
+                                {% if kartochka.iin_bin %}
+                                    <input type="text" class="form-control" value="{{ kartochka.iin_bin }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Вид сигнализации</label>
+
+                                {% if kartochka.vid_sign %}
+                                    <input type="text" class="form-control" value="{{ kartochka.vid_sign }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Юридическое лицо</label>
+
+                                {% if kartochka.urik == True %}
+                                    <input type="text" class="form-control" value="Да" disabled>
+                                {% elif kartochka.urik == False %}
+                                    <input type="text" class="form-control" value="Нет" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Часы по договору</label>
+
+                                {% if kartochka.chasi_po_dog %}
+                                    <input type="text" class="form-control" value="{{ kartochka.chasi_po_dog }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Абон.плата</label>
+
+                                {% if kartochka.abon_plata %}
+                                    <input type="text" class="form-control" value="{{ kartochka.abon_plata }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Стоимость РПО</label>
+
+                                {% if kartochka.stoimost_rpo %}
+                                    <input type="text" class="form-control" value="{{ kartochka.stoimost_rpo }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">Наличие Договора</label>
+
+                                {% if kartochka.nalichiye_dogovora %}
+                                    <input type="text" class="form-control" value="{{ kartochka.nalichiye_dogovora }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">Акты ТУ</label>
+                                {% if kartochka.act_ty %}
+                                    <input type="text" class="form-control" value="{{ kartochka.act_ty }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Условия договора</label>
+                                {% if kartochka.act_ty %}
+                                    <input type="text" class="form-control" value="{{ kartochka.yslovie_dogovora }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
                             </div>
 
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Алсеко</label>
+                                {% if kartochka.dop_uslugi %}
+                                    <input type="text" class="form-control" value="{{ kartochka.dop_uslugi }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Итого</label>
+                                {% if kartochka.itog_oplata %}
+                                    <input type="text" class="form-control" value="{{ kartochka.itog_oplata }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">№ объекта</label>
+                                {% if kartochka.object_number %}
+                                    <input type="text" class="form-control" value="{{ kartochka.object_number }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">№ передатчика/GSM</label>
+                                {% if kartochka.peredatchik_number %}
+                                    <input type="text" class="form-control" value="{{ kartochka.peredatchik_number }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">Дата подключения</label>
+                                {% if kartochka.date_podkluchenia %}
+                                    <input type="text" class="form-control" value="{{ kartochka.date_podkluchenia }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">Дата отключения</label>
+                                {% if kartochka.date_otklulchenia %}
+                                    <input type="text" class="form-control" value="{{ kartochka.date_otklulchenia }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Группа реагирования</label>
+                                {% if kartochka.gruppa_reagirovania %}
+                                    <input type="text" class="form-control" value="{{ kartochka.gruppa_reagirovania }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Агентские</label>
+                                {% if kartochka.agentskie %}
+                                    <input type="text" class="form-control" value="{{ kartochka.agentskie }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Электронный адрес</label>
+                                {% if kartochka.email %}
+                                    <input type="text" class="form-control" value="{{ kartochka.email }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12">
+                                <label for="inputNanme4" class="form-label">Примечание</label>
+                                {% if kartochka.vid_rpo %}
+                                    <input type="text" class="form-control" value="{{ kartochka.vid_rpo }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12">
+                                <label for="inputNanme4" class="form-label">Примечание</label>
+                                {% if kartochka.primechanie %}
+                                    <input type="text" class="form-control" value="{{ kartochka.primechanie }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+                            <div class="col-10">
+                                <table class="table table-sm dop_uslugi_t">
+                                    <thead>
+                                    <tr>
+                                        <th scope="col">Наименование услуги</th>
+                                        <th scope="col">Стоимость</th>
+                                        <th scope="col">Дата подключения</th>
+                                        <th scope="col">Дата отключения</th>
+                                        <th scope="col"></th>
+                                        <th scope="col"></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for service in kartochka.additional_services.all %}
+                                        <tr>
+                                            <td>{{ service.service_name }}</td>
+                                            <td>{{ service.price }}</td>
+                                            <td>{{ service.date_added }}</td>
+                                            <td>{{ service.date_unsubscribe }}</td>
+
+                                            <td>
+                                                <a href="{% url 'edit_additional_service' service.id %}">
+                                                    <button type="button" class="btn btn-secondary">
+                                                        <i class="bi bi-pencil-fill"></i>
+                                                    </button>
+                                                </a>
+                                            </td>
+
+                                            <td>
+                                                <a href="{% url 'delete_additional_service' service.id %}">
+                                                    <button type="button" class="btn btn-secondary">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </button>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="3">Дополнительных услуг не подключено</td>
+                                            .
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                                <!-- End Dark Table -->
+                            </div>
+                        </form>
+
+                        <h3>Добавление доп.услуги</h3>
+                        <form method="POST">
+                            {% csrf_token %}
+                            <input type="hidden" id="ktsField" name="kts" value="{{ klient_id }}">
 
 
-                        </div>
-                    </div><!-- End Slides only carousel-->
+                            <div class="col-md-12">
+                                <label for="{{ form.service_name.id_for_label }}" class="form-label">
+                                    {{ form.service_name.label }}
+                                </label>
+                                {{ form.service_name }}
+                                <div class="form-error">{{ service_name.errors }}</div>
+                            </div>
 
-                    <form class="row g-3">
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">Номер УДВ</label>
 
-                            {% if kartochka.udv_number %}
-                            <input type="text" class="form-control" value="{{kartochka.udv_number}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">Дата и Кем выдано</label>
+                            <div class="col-md-12">
+                                <label for="{{ form.price.id_for_label }}" class="form-label">
+                                    {{ form.price.label }}
+                                </label>
+                                {{ form.price }}
+                                <div class="form-error">{{ price.errors }}</div>
+                            </div>
 
-                            {% if kartochka.date_udv %}
-                            <input type="text" class="form-control" value="{{kartochka.date_udv}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">Компания</label>
 
-                            {% if kartochka.company_name %}
-                            <input type="text" class="form-control" value="{{kartochka.company_name}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">№ дог</label>
+                            <div class="col-md-12">
+                                <label for="{{ form.date_added.id_for_label }}" class="form-label">
+                                    {{ form.date_added.label }}
+                                </label>
+                                {{ form.date_added }}
+                                <div class="form-error">{{ date_added.errors }}</div>
+                            </div>
 
-                            {% if kartochka.dogovor_number %}
-                            <input type="text" class="form-control" value="{{kartochka.dogovor_number}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-3">
-                            <label for="inputNanme4" class="form-label">Дата заключения</label>
+                            <div class="col-md-12">
+                                <label for="{{ form.date_unsubscribe.id_for_label }}" class="form-label">
+                                    {{ form.date_unsubscribe.label }}
+                                </label>
+                                {{ form.date_unsubscribe }}
+                                <div class="form-error">{{ date_unsubscribe.errors }}</div>
+                            </div>
 
-                            {% if kartochka.data_zakluchenia %}
-                            <input type="text" class="form-control" value="{{kartochka.data_zakluchenia}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-3">
-                            <label for="inputNanme4" class="form-label">Мат.отв</label>
 
-                            {% if kartochka.mat_otv %}
-                            <input type="text" class="form-control" value="{{kartochka.mat_otv}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-3">
-                            <label for="inputNanme4" class="form-label">Время реагирования</label>
+                            <div class="col-md-12">
+                                <p></p>
+                            </div>
+                            <button type="submit" class="btn btn-success rounded-pill">Сохранить</button>
+                        </form>
 
-                            {% if kartochka.time_reag %}
-                            <input type="text" class="form-control" value="{{kartochka.time_reag}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-3">
-                            <label for="inputNanme4" class="form-label">Время реагирования не более</label>
-
-                            {% if kartochka.time_reag_nebol %}
-                            <input type="text" class="form-control" value="{{kartochka.time_reag_nebol}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-12">
-                            <label for="inputNanme4" class="form-label">Наименование Клиента</label>
-
-                            {% if kartochka.klient_name %}
-                            <input type="text" class="form-control" value="{{kartochka.klient_name}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-12">
-                            <label for="inputNanme4" class="form-label">Наименование объекта</label>
-
-                            {% if kartochka.name_object %}
-                            <input type="text" class="form-control" value="{{kartochka.name_object}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-12">
-                            <label for="inputNanme4" class="form-label">Адрес объекта</label>
-
-                            {% if kartochka.adres %}
-                            <input type="text" class="form-control" value="{{kartochka.adres}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-12">
-                            <label for="inputNanme4" class="form-label">Телефон</label>
-
-                            {% if kartochka.telephone %}
-                            <input type="text" class="form-control" value="{{kartochka.telephone}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">ИИН/БИН</label>
-
-                            {% if kartochka.iin_bin %}
-                            <input type="text" class="form-control" value="{{kartochka.iin_bin}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Вид сигнализации</label>
-
-                            {% if kartochka.vid_sign %}
-                            <input type="text" class="form-control" value="{{kartochka.vid_sign}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Юридическое лицо</label>
-
-                            {% if kartochka.urik == True %}
-                            <input type="text" class="form-control" value="Да" disabled>
-                            {% elif kartochka.urik == False %}
-                            <input type="text" class="form-control" value="Нет" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Часы по договору</label>
-
-                            {% if kartochka.chasi_po_dog %}
-                            <input type="text" class="form-control" value="{{kartochka.chasi_po_dog}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Абон.плата</label>
-
-                            {% if kartochka.abon_plata %}
-                            <input type="text" class="form-control" value="{{kartochka.abon_plata}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Стоимость РПО</label>
-
-                            {% if kartochka.stoimost_rpo %}
-                            <input type="text" class="form-control" value="{{kartochka.stoimost_rpo}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">Наличие Договора</label>
-
-                            {% if kartochka.nalichiye_dogovora %}
-                            <input type="text" class="form-control" value="{{kartochka.nalichiye_dogovora}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">Акты ТУ</label>
-                            {% if kartochka.act_ty %}
-                            <input type="text" class="form-control" value="{{kartochka.act_ty}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Условия договора</label>
-                            {% if kartochka.act_ty %}
-                            <input type="text" class="form-control" value="{{kartochka.yslovie_dogovora}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Доп.услуги</label>
-                            {% if kartochka.dop_uslugi %}
-                            <input type="text" class="form-control" value="{{kartochka.dop_uslugi}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Итого</label>
-                            {% if kartochka.itog_oplata %}
-                            <input type="text" class="form-control" value="{{kartochka.itog_oplata}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">№ объекта</label>
-                            {% if kartochka.object_number %}
-                            <input type="text" class="form-control" value="{{kartochka.object_number}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">№ передатчика/GSM</label>
-                            {% if kartochka.peredatchik_number %}
-                            <input type="text" class="form-control" value="{{kartochka.peredatchik_number}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">Дата подключения</label>
-                            {% if kartochka.date_podkluchenia %}
-                            <input type="text" class="form-control" value="{{kartochka.date_podkluchenia}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-6">
-                            <label for="inputNanme4" class="form-label">Дата отключения</label>
-                            {% if kartochka.date_otklulchenia %}
-                            <input type="text" class="form-control" value="{{kartochka.date_otklulchenia}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Группа реагирования</label>
-                            {% if kartochka.gruppa_reagirovania %}
-                            <input type="text" class="form-control" value="{{kartochka.gruppa_reagirovania}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Агентские</label>
-                            {% if kartochka.agentskie %}
-                            <input type="text" class="form-control" value="{{kartochka.agentskie}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-4">
-                            <label for="inputNanme4" class="form-label">Электронный адрес</label>
-                            {% if kartochka.email %}
-                            <input type="text" class="form-control" value="{{kartochka.email}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-12">
-                            <label for="inputNanme4" class="form-label">Примечание</label>
-                            {% if kartochka.vid_rpo %}
-                            <input type="text" class="form-control" value="{{kartochka.vid_rpo}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-12">
-                            <label for="inputNanme4" class="form-label">Примечание</label>
-                            {% if kartochka.primechanie %}
-                            <input type="text" class="form-control" value="{{kartochka.primechanie}}" disabled>
-                            {% else %}
-                            <input type="text" class="form-control" value=" " disabled>
-                            {% endif %}
-                        </div>
-                <div class="col-10">
-              <table class="table table-sm dop_uslugi_t">
-                <thead>
-                  <tr>
-                    <th scope="col">Наименование услуги</th>
-                    <th scope="col">Стоимость</th>
-                    <th scope="col">Дата подключения</th>
-                      <th scope="col"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                   {% for service in kartochka.additional_services.all %}
-                            <tr>
-                                <td>{{ service.service_name }}</td>
-                                <td>{{ service.price }}</td>
-                                <td>{{ service.date_added }}</td>
-                                <td>
-                                    <a href="{% url 'delete_additional_service' service.id %}">
-                                    <button type="button" class="btn btn-secondary">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                    </a>
-                                </td>
-                            </tr>
-                        {% empty %}
-                            <tr>
-                                <td colspan="3">Дополнительных услуг не подключено</td>.
-                            </tr>
-                   {% endfor %}
-                </tbody>
-              </table>
-              <!-- End Dark Table -->
-                </div>
-                    </form>
-
-                <h3>Добавление доп.услуги</h3>
-                <form method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" id="ktsField" name="kts" value="{{ klient_id }}">
-                    <div class="col-md-12">
-                            <label for="{{ form.service_name.id_for_label }}" class="form-label">
-                                {{ form.service_name.label }}
-                            </label>
-                            {{ form.service_name }}
-                            <div class="form-error">{{service_name.errors}}</div>
-                        </div>
-                    <div class="col-md-12">
-                            <label for="{{ form.price.id_for_label }}" class="form-label">
-                                {{ form.price.label }}
-                            </label>
-                            {{ form.price }}
-                            <div class="form-error">{{price.errors}}</div>
-                        </div>
-                    <div class="col-md-12">
-                            <label for="{{ form.date_added.id_for_label }}" class="form-label">
-                                {{ form.date_added.label }}
-                            </label>
-                            {{ form.date_added }}
-                            <div class="form-error">{{date_added.errors}}</div>
-                        </div>
-                    <div class="col-md-12">
-                        <p></p>
                     </div>
-                    <button type="submit" class="btn btn-success rounded-pill">Сохранить</button>
-                </form>
-
                 </div>
-            </div>
 
+            </div>
         </div>
-    </div>
-</section>
+    </section>
 
 {% endblock %}

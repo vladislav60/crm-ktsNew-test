@@ -345,6 +345,20 @@ def delete_additional_service(request, service_id):
     return render(request, 'dogovornoy/delete_additional_service.html', {'additional_service': additional_service})
 
 
+@login_required
+def edit_additional_service(request, service_id):
+    additional_service = get_object_or_404(AdditionalService, pk=service_id)
+
+    if request.method == 'POST':
+        form = AdditionalServiceForm(request.POST, instance=additional_service)
+        if form.is_valid():
+            form.save()
+            return redirect('baza_dogovorov')  # Redirect to client list or a specific page after editing
+    else:
+        form = AdditionalServiceForm(instance=additional_service)
+
+    return render(request, 'dogovornoy/edit_additional_service.html', {'form': form, 'additional_service': additional_service})
+
 # Страница 404
 def pageNotFound(request, exception):
     return HttpResponseNotFound('<h1>Сраница не найдена</h1>')
@@ -382,6 +396,13 @@ def reports(request):
     reports = []
 
     for company in companies:
+
+        for kts_instance in kts_podkl:
+            # Calculate the total cost of additional services for each kts_instance
+            additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
+            if additional_services_cost:
+                kts_abon_summa_podkl += additional_services_cost
+
         # 1 otlk
         kts_otkl = kts.objects.filter(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
                                       date_otklulchenia__lt=end_of_month)

@@ -95,13 +95,19 @@ class ExcelImportForm(forms.Form):
 class AdditionalServiceForm(forms.ModelForm):
     class Meta:
         model = AdditionalService
-        fields = ['service_name', 'price', 'date_added']
+        fields = ['service_name', 'price', 'date_added', 'date_unsubscribe']
         exclude = ['kts']
         widgets = {
             'service_name': forms.TextInput(attrs={'class': 'form-control'}),
             'price': forms.NumberInput(
                 attrs={'min': '0', 'class': 'form-control', 'max': '10000000'}),
             'date_added': forms.DateInput(
+                format=('%Y-%m-%d'),
+                attrs={'class': 'form-control',
+                       'placeholder': 'Select a date',
+                       'type': 'date'
+                       }),
+            'date_unsubscribe': forms.DateInput(
                 format=('%Y-%m-%d'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',

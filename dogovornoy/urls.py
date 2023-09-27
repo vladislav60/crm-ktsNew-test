@@ -22,7 +22,6 @@ urlpatterns = [
     # Ссылка на страницу импорта объектов
     path('importexel/', importexcel, name='importexel'),
     # Ссылка на страницу Новый клиент
-    # path('add_client/', add_client, name='add_client'),
     path('add_client/', views.AddClient.as_view(), name='add_client'),
     # Ссылка на страницу Отчеты договорной
     path('reports_dog/', reports, name='reports_dog'),

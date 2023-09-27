@@ -158,14 +158,7 @@ class AddClient(FormView):
     success_url = '/baza_dogovorov/'
 
     def form_valid(self, form):
-        client = form.save()
-
-        # Create an additional service associated with the client
-        additional_service_form = AddKlientDogForm(self.request.POST)
-        if additional_service_form.is_valid():
-            additional_service = additional_service_form.save(commit=False)
-            additional_service.client = client
-            additional_service.save()
+        form.save()
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -359,6 +352,7 @@ def edit_additional_service(request, service_id):
 
     return render(request, 'dogovornoy/edit_additional_service.html', {'form': form, 'additional_service': additional_service})
 
+
 # Страница 404
 def pageNotFound(request, exception):
     return HttpResponseNotFound('<h1>Сраница не найдена</h1>')
@@ -397,12 +391,6 @@ def reports(request):
 
     for company in companies:
 
-        for kts_instance in kts_podkl:
-            # Calculate the total cost of additional services for each kts_instance
-            additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
-            if additional_services_cost:
-                kts_abon_summa_podkl += additional_services_cost
-
         # 1 otlk
         kts_otkl = kts.objects.filter(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
                                       date_otklulchenia__lt=end_of_month)
@@ -415,6 +403,7 @@ def reports(request):
         # 2 podlk
         kts_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
                                        date_podkluchenia__lt=end_of_month)
+
         kts_abon_summa_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
                                                   date_podkluchenia__lt=end_of_month).aggregate(Sum('itog_oplata'))
         kts_count_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
@@ -422,6 +411,17 @@ def reports(request):
         kts_fiz_podkl = kts.objects.filter(company_name_id=company.id, urik=False,
                                            date_podkluchenia__gte=start_of_month,
                                            date_podkluchenia__lt=end_of_month).aggregate(Count('id'))
+
+        for kts_instance in kts_podkl:
+            # Calculate the total cost of additional services for each kts_instance
+            additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
+            print(additional_services_cost)
+            print(kts_abon_summa_podkl)
+            if additional_services_cost:
+                # kts_instance['kts_abon_summa_podkl'] = additional_services_cost
+                kts_abon_summa_podkl['itog_oplata__sum'] = kts_abon_summa_podkl['itog_oplata__sum'] + additional_services_cost
+                print(kts_abon_summa_podkl)
+
         reports.append({
             'companies': companies, 'urik_companies': urik_companies,
             'non_urik_companies_quantity': non_urik_companies_quantity,
@@ -430,6 +430,7 @@ def reports(request):
             'kts_podkl': kts_podkl, 'kts_abon_summa_podkl': kts_abon_summa_podkl, 'kts_count_podkl': kts_count_podkl,
             'kts_fiz_podkl': kts_fiz_podkl,
             'start_of_month': start_of_month,
+            'end_of_month': end_of_month,
             'end_of_month': end_of_month,
         })
         context = {'reports': reports, 'start_of_month': start_of_month, 'end_of_month': end_of_month}

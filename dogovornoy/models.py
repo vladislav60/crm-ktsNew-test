@@ -95,8 +95,8 @@ class AdditionalService(models.Model):
     # Fields for additional service information
     service_name = models.CharField(max_length=255, verbose_name="Название доп.услуги")
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена")
-    date_added = models.DateField(null=True, verbose_name="Дата подключения")
-    date_unsubscribe = models.DateField(null=True, verbose_name="Дата отключения")
+    date_added = models.DateField(blank=True, null=True, verbose_name="Дата подключения")
+    date_unsubscribe = models.DateField(blank=True, null=True, verbose_name="Дата отключения")
 
     class Meta:
         verbose_name = "Доп.Услуги"

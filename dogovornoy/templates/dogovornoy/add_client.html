@@ -2,316 +2,297 @@
 {% load static %}
 {% block content %}
 
-<div class="pagetitle">
-    <h1>Новый клиент</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'baza_dogovorov' %}">База договоров</a></li>
-            <li class="breadcrumb-item active">Новый клиент</li>
-        </ol>
-    </nav>
-</div><!-- End Page Title -->
+    <div class="pagetitle">
+        <h1>Новый клиент</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'baza_dogovorov' %}">База договоров</a></li>
+                <li class="breadcrumb-item active">Новый клиент</li>
+            </ol>
+        </nav>
+    </div><!-- End Page Title -->
 
 
-<section class="section">
-    <div class="row">
+    <section class="section">
+        <div class="row">
 
 
-        <!--                Форма номер 1 Начало-->
-        <div class="col-lg-12">
-            <div class="card">
-                <div class="card-body">
-                    <!-- Обязательно для заполнения -->
-                    <form class="row g-3" action="{% url 'add_client' %}" method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <!--                        <div class="alert alert-danger alert-dismissible fade show" role="alert">-->
-                        <!--                            A simple danger alert—check it out!-->
-                        <!--                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>-->
-                        <!--                        </div>-->
+            <!--                Форма номер 1 Начало-->
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Обязательно для заполнения -->
+                        <form class="row g-3" action="{% url 'add_client' %}" method="post"
+                              enctype="multipart/form-data">
+                            {% csrf_token %}
 
-                        <div class="col-md-6">
-                            <label for="{{ form.company_name.id_for_label }}" class="form-label">
-                                {{ form.company_name.label }}<i class="colred"> <i class="colred"> *</i></i>
-                            </label>
-                                  {{ form.company_name }}
-                            <div class="form-error">{{company_name.errors}}</div>
-                        </div>
-                        <div class="col-md-6">
-                            <label for="{{ form.dogovor_number.id_for_label }}" class="form-label">
-                                {{ form.dogovor_number.label }}  <i class="colred"> *</i>
-                            </label>
-                            {{ form.dogovor_number }}
-                            <div class="form-error">{{dogovor_number.errors}}</div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="{{ form.data_zakluchenia.id_for_label }}" class="form-label">
-                                {{ form.data_zakluchenia.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.data_zakluchenia }}
-                            <div class="form-error">{{data_zakluchenia.errors}}</div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="{{ form.mat_otv.id_for_label }}" class="form-label">
-                                {{ form.mat_otv.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.mat_otv }}
-                            <div class="form-error">{{mat_otv.errors}}</div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="{{ form.time_reag.id_for_label }}" class="form-label">
-                                {{ form.time_reag.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.time_reag }}
-                            <div class="form-error">{{time_reag.errors}}</div>
-                        </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.company_name.id_for_label }}" class="form-label">
+                                    {{ form.company_name.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.company_name }}
+                                <div class="form-error">{{ company_name.errors }}</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.dogovor_number.id_for_label }}" class="form-label">
+                                    {{ form.dogovor_number.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.dogovor_number }}
+                                <div class="form-error">{{ dogovor_number.errors }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.data_zakluchenia.id_for_label }}" class="form-label">
+                                    {{ form.data_zakluchenia.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.data_zakluchenia }}
+                                <div class="form-error">{{ data_zakluchenia.errors }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.mat_otv.id_for_label }}" class="form-label">
+                                    {{ form.mat_otv.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.mat_otv }}
+                                <div class="form-error">{{ mat_otv.errors }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.time_reag.id_for_label }}" class="form-label">
+                                    {{ form.time_reag.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.time_reag }}
+                                <div class="form-error">{{ time_reag.errors }}</div>
+                            </div>
 
-                        <div class="col-md-3">
-                            <label for="{{ form.time_reag_nebol.id_for_label }}" class="form-label">
-                                {{ form.time_reag_nebol.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.time_reag_nebol }}
-                            <div class="form-error">{{time_reag_nebol.errors}}</div>
-                        </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.time_reag_nebol.id_for_label }}" class="form-label">
+                                    {{ form.time_reag_nebol.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.time_reag_nebol }}
+                                <div class="form-error">{{ time_reag_nebol.errors }}</div>
+                            </div>
 
-                        <div class="col-md-12">
-                            <label for="{{ form.klient_name.id_for_label }}" class="form-label">
-                                {{ form.klient_name.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.klient_name }}
-                            <div class="form-error">{{klient_name.errors}}</div>
-                        </div>
-                        <div class="col-md-12">
-                            <label for="{{ form.name_object.id_for_label }}" class="form-label">
-                                {{ form.name_object.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.name_object }}
-                            <div class="form-error">{{name_object.errors}}</div>
-                        </div>
-                        <div class="col-md-12">
-                            <label for="{{ form.adres.id_for_label }}" class="form-label">
-                                {{ form.adres.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.adres }}
-                            <div class="form-error">{{adres.errors}}</div>
-                        </div>
-                        <div class="col-md-12">
-                            <label for="{{ form.telephone.id_for_label }}" class="form-label">
-                                {{ form.telephone.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.telephone }}
-                            <div class="form-error">{{telephone.errors}}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="{{ form.iin_bin.id_for_label }}" class="form-label">
-                                {{ form.iin_bin.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.iin_bin }}
-                            <div class="form-error">{{iin_bin.errors}}</div>
-                        </div>
-                        <div class="col-md-4">
-                            <label for="{{ form.vid_sign.id_for_label }}" class="form-label">
-                                {{ form.vid_sign.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.vid_sign }}
-                            <div class="form-error">{{vid_sign.errors}}</div>
-                        </div>
-<!--                        <div class="col-md-4">-->
-<!--                            <div class="form-check">-->
-<!--                                <legend class="col-form-label col-sm-3">{{ form.urik.label }} <i class="colred"> *</i></legend>-->
-<!--                                <div class="col-sm-10">-->
+                            <div class="col-md-12">
+                                <label for="{{ form.klient_name.id_for_label }}" class="form-label">
+                                    {{ form.klient_name.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.klient_name }}
+                                <div class="form-error">{{ klient_name.errors }}</div>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="{{ form.name_object.id_for_label }}" class="form-label">
+                                    {{ form.name_object.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.name_object }}
+                                <div class="form-error">{{ name_object.errors }}</div>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="{{ form.adres.id_for_label }}" class="form-label">
+                                    {{ form.adres.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.adres }}
+                                <div class="form-error">{{ adres.errors }}</div>
+                            </div>
+                            <div class="col-md-12">
+                                <label for="{{ form.telephone.id_for_label }}" class="form-label">
+                                    {{ form.telephone.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.telephone }}
+                                <div class="form-error">{{ telephone.errors }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.iin_bin.id_for_label }}" class="form-label">
+                                    {{ form.iin_bin.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.iin_bin }}
+                                <div class="form-error">{{ iin_bin.errors }}</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="{{ form.vid_sign.id_for_label }}" class="form-label">
+                                    {{ form.vid_sign.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.vid_sign }}
+                                <div class="form-error">{{ vid_sign.errors }}</div>
+                            </div>
 
-<!--                                    <div class="form-check">-->
-<!--                                {{ form.urik }}-->
-<!--                                <div class="form-error">{{urik.errors}}</div>-->
-<!--                                    </div>-->
-<!--                                </div>-->
-<!--                            </div>-->
-<!--                        </div>-->
 
-                        <div class="col-md-4 ">
-                  <legend class="col-form-label col-sm-4 pt-1">{{ form.urik.label }}</legend>
-                  <div class="col-sm-8 form-switch">
+                            <div class="col-md-4 ">
+                                <legend class="col-form-label col-sm-4 pt-1">{{ form.urik.label }}</legend>
+                                <div class="col-sm-8 form-switch">
+                                    {{ form.urik }}
+                                </div>
+                            </div>
 
-                    {{ form.urik }}
+                            <div class="col-md-3">
+                                <label for="{{ form.chasi_po_dog.id_for_label }}" class="form-label">
+                                    {{ form.chasi_po_dog.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.chasi_po_dog }}
+                                <div class="form-error">{{ chasi_po_dog.errors }}</div>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.abon_plata.id_for_label }}" class="form-label">
+                                    {{ form.abon_plata.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.abon_plata }}
+                                <div class="form-error">{{ abon_plata.errors }}</div>
+                            </div>
 
-                  </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.itog_oplata.id_for_label }}" class="form-label">
+                                    {{ form.itog_oplata.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.itog_oplata }}
+                                <div class="form-error">{{ itog_oplata.errors }}</div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label for="{{ form.stoimost_rpo.id_for_label }}" class="form-label">
+                                    {{ form.stoimost_rpo.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.stoimost_rpo }}
+                                <div class="form-error">{{ stoimost_rpo.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.udv_number.id_for_label }}" class="form-label">
+                                    {{ form.udv_number.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.udv_number }}
+                                <div class="form-error">{{ udv_number.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.date_udv.id_for_label }}" class="form-label">
+                                    {{ form.date_udv.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.date_udv }}
+                                <div class="form-error">{{ date_udv.errors }}</div>
+                            </div>
+
+                            <!-- Необязательные -->
+
+                            <div class="col-md-6">
+                                <label for="{{ form.nalichiye_dogovora.id_for_label }}" class="form-label">
+                                    {{ form.nalichiye_dogovora.label }}
+                                </label>
+                                {{ form.nalichiye_dogovora }}
+                                <div class="form-error">{{ nalichiye_dogovora.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.act_ty.id_for_label }}" class="form-label">
+                                    {{ form.act_ty.label }}
+                                </label>
+                                {{ form.act_ty }}
+                                <div class="form-error">{{ act_ty.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.yslovie_dogovora.id_for_label }}" class="form-label">
+                                    {{ form.yslovie_dogovora.label }}
+                                </label>
+                                {{ form.yslovie_dogovora }}
+                                <div class="form-error">{{ yslovie_dogovora.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.dop_uslugi.id_for_label }}" class="form-label">
+                                    {{ form.dop_uslugi.label }}
+                                </label>
+                                {{ form.dop_uslugi }}
+                                <div class="form-error">{{ dop_uslugi.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.object_number.id_for_label }}" class="form-label">
+                                    {{ form.object_number.label }}
+                                </label>
+                                {{ form.object_number }}
+                                <div class="form-error">{{ object_number.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.peredatchik_number.id_for_label }}" class="form-label">
+                                    {{ form.peredatchik_number.label }}
+                                </label>
+                                {{ form.peredatchik_number }}
+                                <div class="form-error">{{ peredatchik_number.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.date_podkluchenia.id_for_label }}" class="form-label">
+                                    {{ form.date_podkluchenia.label }}
+                                </label>
+                                {{ form.date_podkluchenia }}
+                                <div class="form-error">{{ date_podkluchenia.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.date_otklulchenia.id_for_label }}" class="form-label">
+                                    {{ form.date_otklulchenia.label }}
+                                </label>
+                                {{ form.date_otklulchenia }}
+                                <div class="form-error">{{ date_otklulchenia.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.gruppa_reagirovania.id_for_label }}" class="form-label">
+                                    {{ form.gruppa_reagirovania.label }}
+                                </label>
+                                {{ form.gruppa_reagirovania }}
+                                <div class="form-error">{{ gruppa_reagirovania.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.agentskie.id_for_label }}" class="form-label">
+                                    {{ form.agentskie.label }}
+                                </label>
+                                {{ form.agentskie }}
+                                <div class="form-error">{{ agentskie.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">
+                                    {{ form.email.label }}
+                                </label>
+                                {{ form.email }}
+                                <div class="form-error">{{ email.errors }}</div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="{{ form.vid_rpo.id_for_label }}" class="form-label">
+                                    {{ form.vid_rpo.label }}
+                                </label>
+                                {{ form.vid_rpo }}
+                                <div class="form-error">{{ vid_rpo.errors }}</div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="{{ form.primechanie.id_for_label }}" class="form-label">
+                                    {{ form.primechanie.label }}
+                                </label>
+                                {{ form.primechanie }}
+                                <div class="form-error">{{ primechanie.errors }}</div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="{{ form.photo.id_for_label }}" class="form-label">
+                                    {{ form.photo.label }}
+                                </label>
+                                {{ form.photo }}
+                                <div class="form-error">{{ photo.errors }}</div>
+                            </div>
+
+
+                            <div class="d-grid gap-2 mt-3">
+                                <button type="submit" class="btn btn-success rounded-pill">Добавить клиента</button>
+                            </div>
+                        </form>
+
+                    </div>
                 </div>
+                <!--                Форма номер 2 Конец-->
 
-                        <div class="col-md-3">
-                            <label for="{{ form.chasi_po_dog.id_for_label }}" class="form-label">
-                                {{ form.chasi_po_dog.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.chasi_po_dog }}
-                            <div class="form-error">{{chasi_po_dog.errors}}</div>
-                        </div>
-                        <div class="col-md-3">
-                            <label for="{{ form.abon_plata.id_for_label }}" class="form-label">
-                                {{ form.abon_plata.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.abon_plata }}
-                            <div class="form-error">{{abon_plata.errors}}</div>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label for="{{ form.itog_oplata.id_for_label }}" class="form-label">
-                                {{ form.itog_oplata.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.itog_oplata }}
-                            <div class="form-error">{{itog_oplata.errors}}</div>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label for="{{ form.stoimost_rpo.id_for_label }}" class="form-label">
-                                {{ form.stoimost_rpo.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.stoimost_rpo }}
-                            <div class="form-error">{{stoimost_rpo.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.udv_number.id_for_label }}" class="form-label">
-                                {{ form.udv_number.label }}<i class="colred"> <i class="colred"> *</i></i>
-                            </label>
-                            {{ form.udv_number }}
-                            <div class="form-error">{{udv_number.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.date_udv.id_for_label }}" class="form-label">
-                                {{ form.date_udv.label }}<i class="colred"> <i class="colred"> *</i></i>
-                            </label>
-                            {{ form.date_udv }}
-                            <div class="form-error">{{date_udv.errors}}</div>
-                        </div>
-
-                        <!-- Необязательные -->
-
-                        <div class="col-md-6">
-                            <label for="{{ form.nalichiye_dogovora.id_for_label }}" class="form-label">
-                                {{ form.nalichiye_dogovora.label }}
-                            </label>
-                            {{ form.nalichiye_dogovora }}
-                            <div class="form-error">{{nalichiye_dogovora.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.act_ty.id_for_label }}" class="form-label">
-                                {{ form.act_ty.label }}
-                            </label>
-                            {{ form.act_ty }}
-                            <div class="form-error">{{act_ty.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.yslovie_dogovora.id_for_label }}" class="form-label">
-                                {{ form.yslovie_dogovora.label }}
-                            </label>
-                            {{ form.yslovie_dogovora }}
-                            <div class="form-error">{{yslovie_dogovora.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.dop_uslugi.id_for_label }}" class="form-label">
-                                {{ form.dop_uslugi.label }}
-                            </label>
-                            {{ form.dop_uslugi }}
-                            <div class="form-error">{{dop_uslugi.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.object_number.id_for_label }}" class="form-label">
-                                {{ form.object_number.label }}
-                            </label>
-                            {{ form.object_number }}
-                            <div class="form-error">{{object_number.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.peredatchik_number.id_for_label }}" class="form-label">
-                                {{ form.peredatchik_number.label }}
-                            </label>
-                            {{ form.peredatchik_number }}
-                            <div class="form-error">{{peredatchik_number.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.date_podkluchenia.id_for_label }}" class="form-label">
-                                {{ form.date_podkluchenia.label }}
-                            </label>
-                            {{ form.date_podkluchenia }}
-                            <div class="form-error">{{date_podkluchenia.errors}}</div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="{{ form.date_otklulchenia.id_for_label }}" class="form-label">
-                                {{ form.date_otklulchenia.label }}
-                            </label>
-                            {{ form.date_otklulchenia }}
-                            <div class="form-error">{{date_otklulchenia.errors}}</div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="{{ form.gruppa_reagirovania.id_for_label }}" class="form-label">
-                                {{ form.gruppa_reagirovania.label }}
-                            </label>
-                            {{ form.gruppa_reagirovania }}
-                            <div class="form-error">{{gruppa_reagirovania.errors}}</div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="{{ form.agentskie.id_for_label }}" class="form-label">
-                                {{ form.agentskie.label }}
-                            </label>
-                            {{ form.agentskie }}
-                            <div class="form-error">{{agentskie.errors}}</div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label for="{{ form.email.id_for_label }}" class="form-label">
-                                {{ form.email.label }}
-                            </label>
-                            {{ form.email }}
-                            <div class="form-error">{{email.errors}}</div>
-                        </div>
-
-                        <div class="col-md-12">
-                            <label for="{{ form.vid_rpo.id_for_label }}" class="form-label">
-                                {{ form.vid_rpo.label }}
-                            </label>
-                            {{ form.vid_rpo }}
-                            <div class="form-error">{{vid_rpo.errors}}</div>
-                        </div>
-
-                        <div class="col-md-12">
-                            <label for="{{ form.primechanie.id_for_label }}" class="form-label">
-                                {{ form.primechanie.label }}
-                            </label>
-                            {{ form.primechanie }}
-                            <div class="form-error">{{primechanie.errors}}</div>
-                        </div>
-
-                        <div class="col-md-12">
-                            <label for="{{ form.photo.id_for_label }}" class="form-label">
-                                {{ form.photo.label }}
-                            </label>
-                            {{ form.photo }}
-                            <div class="form-error">{{photo.errors}}</div>
-                        </div>
-
-
-                        <div class="d-grid gap-2 mt-3">
-                            <button type="submit" class="btn btn-success rounded-pill" >Добавить клиента</button>
-                        </div>
-                    </form>
-
-                </div>
             </div>
         </div>
-        <!--                Форма номер 2 Конец-->
-
-    </div>
-    </div>
-</section>
-</form>
-
+    </section>
 {% endblock %}

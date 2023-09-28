@@ -41,8 +41,8 @@ class kts(models.Model):
     photo = models.ImageField(upload_to="photos/%Y/%m/%d/", verbose_name="Фото УДВ", blank=True, null=True)
     prochee = models.TextField(blank=True, null=True, verbose_name="Прочее")
 
-    # def __str__(self):
-    #     return self.dogovor_number
+    def __str__(self):
+        return self.your_date_field.strftime("%d-%m-%Y")
 
     def get_absolute_url(self):
         return reverse('kartochka_klienta', kwargs={'klient_id': self.pk})
@@ -97,6 +97,9 @@ class AdditionalService(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Цена")
     date_added = models.DateField(blank=True, null=True, verbose_name="Дата подключения")
     date_unsubscribe = models.DateField(blank=True, null=True, verbose_name="Дата отключения")
+
+    def __str__(self):
+        return self.your_date_field.strftime("%d-%m-%Y")
 
     class Meta:
         verbose_name = "Доп.Услуги"

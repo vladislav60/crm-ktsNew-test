@@ -61,13 +61,13 @@ class AddKlientDogForm(forms.ModelForm):
             'stoimost_rpo': forms.NumberInput(
                 attrs={'required': 'True', 'min': '0', 'class': 'form-control', 'max': '10000000'}),
             'date_podkluchenia': forms.DateInput(
-                format=('%d-%m-%Y'),
+                format=('%Y-%m-%d'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'
                        }),
             'date_otklulchenia': forms.DateInput(
-                format=('%d-%m-%Y'),
+                format=('%Y-%m-%d'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'
@@ -79,12 +79,6 @@ class AddKlientDogForm(forms.ModelForm):
             'agentskie': forms.TextInput(attrs={'class': 'form-control'}),
             'service_name': forms.TextInput(attrs={'class': 'form-control'}),
             'price': forms.TextInput(attrs={'class': 'form-control'}),
-            'date_of_registration': forms.DateInput(
-                format=('%d-%m-%Y'),
-                attrs={'class': 'form-control',
-                       'placeholder': 'Select a date',
-                       'type': 'date'
-                       }),
         }
 
 
@@ -102,13 +96,13 @@ class AdditionalServiceForm(forms.ModelForm):
             'price': forms.NumberInput(
                 attrs={'min': '0', 'class': 'form-control', 'max': '10000000'}),
             'date_added': forms.DateInput(
-                format=('%d-%m-%Y'),
+                format=('%Y-%m-%d'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'
                        }),
             'date_unsubscribe': forms.DateInput(
-                format=('%d-%m-%Y'),
+                format=('%Y-%m-%d'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'

@@ -165,7 +165,6 @@ class AddClient(FormView):
         return self.render_to_response(self.get_context_data(form=form, menu=menu, title='Новый клиент'))
 
 
-
 @login_required
 def update_client(request, klient_id):
     kartochka = get_object_or_404(kts, pk=klient_id)
@@ -231,8 +230,9 @@ class DogBaza(ListView):
             del params['page']
         pagination_url = request.path + '?' + urlencode(params)
 
-        return render(request, self.template_name, {'klienty': page_obj, 'company_names': company_names, 'pagination_url': pagination_url, 'total_entries': queryset.count()})
-
+        return render(request, self.template_name,
+                      {'klienty': page_obj, 'company_names': company_names, 'pagination_url': pagination_url,
+                       'total_entries': queryset.count()})
 
 
 @method_decorator(login_required, name='dispatch')
@@ -350,7 +350,8 @@ def edit_additional_service(request, service_id):
     else:
         form = AdditionalServiceForm(instance=additional_service)
 
-    return render(request, 'dogovornoy/edit_additional_service.html', {'form': form, 'additional_service': additional_service})
+    return render(request, 'dogovornoy/edit_additional_service.html',
+                  {'form': form, 'additional_service': additional_service})
 
 
 # Страница 404
@@ -373,7 +374,7 @@ def login_view(request):
 @login_required
 def reports(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc)
+    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc)
     end_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
 
     if request.method == 'POST':
@@ -400,30 +401,48 @@ def reports(request):
                                        date_otklulchenia__lt=end_of_month).aggregate(Count('id'))
         kts_fiz = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia__gte=start_of_month,
                                      date_otklulchenia__lt=end_of_month).aggregate(Count('id'))
+
+        kts_abon_summa_otkl = kts.objects.filter(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
+                                                 date_otklulchenia__lt=end_of_month).aggregate(Sum('abon_plata'))
         # 2 podlk
-        kts_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
-                                       date_podkluchenia__lt=end_of_month)
+        kts_podkl = kts.objects.filter(
+            Q(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
+              date_podkluchenia__lt=end_of_month) |
+            Q(additional_services__date_added__gte=start_of_month,
+              additional_services__date_added__lt=end_of_month)
+        ).distinct()
 
         kts_abon_summa_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
                                                   date_podkluchenia__lt=end_of_month).aggregate(Sum('itog_oplata'))
+
         kts_count_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
                                              date_podkluchenia__lt=end_of_month).aggregate(Count('id'))
         kts_fiz_podkl = kts.objects.filter(company_name_id=company.id, urik=False,
                                            date_podkluchenia__gte=start_of_month,
                                            date_podkluchenia__lt=end_of_month).aggregate(Count('id'))
-
+        # 2 podlk
         for kts_instance in kts_podkl:
             # Calculate the total cost of additional services for each kts_instance
             additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
             additional_services_prim = kts_instance.additional_services.all()
             for service in additional_services_prim:
-                kts_instance.primechanie = f"{kts_instance.primechanie} + Подключили '{service.service_name}' c '{service.date_added}' а/п была = {kts_instance.itog_oplata or 0}"
-
+                kts_instance.primechanie = f"{kts_instance.primechanie} + | '{service.service_name}' c '{service.date_added}' а/п была = {kts_instance.itog_oplata or 0} "
 
             if additional_services_cost:
                 kts_abon_summa_podkl['itog_oplata__sum'] = kts_abon_summa_podkl['itog_oplata__sum'] + additional_services_cost
                 kts_instance.itog_oplata = kts_instance.itog_oplata + additional_services_cost
 
+        # 1 otlk
+        for kts_instance in kts_otkl:
+            # Calculate the total cost of additional services for each kts_instance
+            additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
+            additional_services_prim = kts_instance.additional_services.all()
+            for service in additional_services_prim:
+                kts_instance.primechanie = f"{kts_instance.primechanie} - | '{service.service_name}' c '{service.date_unsubscribe}' а/п была = {kts_instance.abon_plata or 0} "
+
+            if additional_services_cost:
+                kts_abon_summa_otkl['abon_plata__sum'] = kts_abon_summa_otkl['abon_plata__sum'] + additional_services_cost
+                kts_instance.abon_plata = kts_instance.abon_plata + additional_services_cost
 
         reports.append({
             'companies': companies,
@@ -433,6 +452,7 @@ def reports(request):
             'kts_abon_summa': kts_abon_summa,
             'kts_count': kts_count, 'kts_fiz': kts_fiz,
             'kts_podkl': kts_podkl, 'kts_abon_summa_podkl': kts_abon_summa_podkl,
+            'kts_abon_summa_otkl': kts_abon_summa_otkl,
             'kts_count_podkl': kts_count_podkl,
             'kts_fiz_podkl': kts_fiz_podkl,
             'start_of_month': start_of_month,
@@ -447,7 +467,7 @@ def reports(request):
 @login_required
 def reports_agentskie(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc)
+    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc)
     end_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
 
     if request.method == 'POST':

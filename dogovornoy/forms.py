@@ -26,7 +26,7 @@ class AddKlientDogForm(forms.ModelForm):
             'urik': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'dogovor_number': forms.TextInput(attrs={'required': 'True', 'class': 'form-control'}),
             'data_zakluchenia': forms.DateInput(
-                format=('%Y-%m-%d'),
+                format=('%d-%m-%Y'),
                 attrs={'required': 'True', 'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'
@@ -61,13 +61,13 @@ class AddKlientDogForm(forms.ModelForm):
             'stoimost_rpo': forms.NumberInput(
                 attrs={'required': 'True', 'min': '0', 'class': 'form-control', 'max': '10000000'}),
             'date_podkluchenia': forms.DateInput(
-                format=('%Y-%m-%d'),
+                format=('%d-%m-%Y'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'
                        }),
             'date_otklulchenia': forms.DateInput(
-                format=('%Y-%m-%d'),
+                format=('%d-%m-%Y'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'
@@ -80,7 +80,7 @@ class AddKlientDogForm(forms.ModelForm):
             'service_name': forms.TextInput(attrs={'class': 'form-control'}),
             'price': forms.TextInput(attrs={'class': 'form-control'}),
             'date_of_registration': forms.DateInput(
-                format=('%Y-%m-%d'),
+                format=('%d-%m-%Y'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'
@@ -102,13 +102,13 @@ class AdditionalServiceForm(forms.ModelForm):
             'price': forms.NumberInput(
                 attrs={'min': '0', 'class': 'form-control', 'max': '10000000'}),
             'date_added': forms.DateInput(
-                format=('%Y-%m-%d'),
+                format=('%d-%m-%Y'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'
                        }),
             'date_unsubscribe': forms.DateInput(
-                format=('%Y-%m-%d'),
+                format=('%d-%m-%Y'),
                 attrs={'class': 'form-control',
                        'placeholder': 'Select a date',
                        'type': 'date'

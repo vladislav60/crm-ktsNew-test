@@ -135,14 +135,6 @@
                         </div>
 
                         <div class="col-md-3">
-                            <label for="{{ form.itog_oplata.id_for_label }}" class="form-label">
-                                {{ form.itog_oplata.label }} <i class="colred"> *</i>
-                            </label>
-                            {{ form.itog_oplata }}
-                            <div class="form-error">{{itog_oplata.errors}}</div>
-                        </div>
-
-                        <div class="col-md-3">
                             <label for="{{ form.stoimost_rpo.id_for_label }}" class="form-label">
                                 {{ form.stoimost_rpo.label }} <i class="colred"> *</i>
                             </label>
@@ -273,11 +265,28 @@
                         </div>
 
                         <div class="col-md-12">
+                            <label for="{{ form.prochee.id_for_label }}" class="form-label">
+                                {{ form.prochee.label }}
+                            </label>
+                            {{ form.prochee }}
+                            <div class="form-error">{{prochee.errors}}</div>
+                        </div>
+
+                        <div class="col-md-12">
                             <label for="{{ form.photo.id_for_label }}" class="form-label">
                                 {{ form.photo.label }}
                             </label>
                             {{ form.photo }}
                             <div class="form-error">{{photo.errors}}</div>
+                        </div>
+
+                        <div class="col-md-4">
+                          <legend class="col-form-label col-sm-4 pt-1">{{ form.exclude_from_report.label }}</legend>
+                          <div class="col-md-1 form-switch">
+
+                            {{ form.exclude_from_report }}
+
+                          </div>
                         </div>
 
                         <div class="d-grid gap-2 mt-3">

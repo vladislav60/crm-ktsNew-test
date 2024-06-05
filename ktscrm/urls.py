@@ -21,16 +21,12 @@ from django.urls import path, include
 
 from dogovornoy.views import pageNotFound
 from ktscrm import settings
-import debug_toolbar
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('profiles/', include('profiles.urls')),
     # №3 регистрируем ссылку на главную страницу
     path('', include('dogovornoy.urls')),
-    path('', include('avatar.urls')),
-    path('__debug__/', include(debug_toolbar.urls)),
 ]
 
 #11 Эмуляция рабочего сервера для фото

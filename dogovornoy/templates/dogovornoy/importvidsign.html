@@ -4,11 +4,11 @@
 
 {% block content %}
 <div class="pagetitle">
-    <h1>Импорт объектов из Exel в базу данных</h1>
+    <h1>Импорт видов сигнализации компании из Exel в базу данных</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="index.html">Главная</a></li>
-            <li class="breadcrumb-item active">Импорт объектов</li>
+            <li class="breadcrumb-item active">Импорт видов сигнализации</li>
         </ol>
     </nav>
 </div>
@@ -21,7 +21,7 @@
                 {% csrf_token %}
                 {{ form.as_p }}
                 <div class="d-grid gap-2 mt-3">
-                <button type="submit" class="btn btn-success rounded-pill">Нажмите что бы загрузить</button>
+                    <button type="submit" class="btn btn-success rounded-pill">Нажмите что бы загрузить</button>
                 </div>
             </form>
         </div>

@@ -50,16 +50,124 @@
 <!--</div>-->
 <!-- End Отчет по Юрикам и физикам -->
 
+    <p></p>
 
 
 {% for con in reports %}
-<div class="card">
-    <div class="card-body">
-<!--         Отчет КузетТехноСервис Подключенные-->
+
+    <div class="card">
+        <div class="card-body">
+
+            <!--         Отчет КузетТехноСервис Подключенные-->
         <h5 class="card-title">{% for kts in con.kts_podkl %}{% ifchanged kts.company_name %}{{ kts.company_name }}{% endifchanged %}
             {% endfor %} отчет за период ( {{ start_of_month }} - {{ end_of_month }} )</h5>
         <p><h5>Подключенные</h5>Общее кол-во = {{ con.kts_count_podkl.id__count }}. Физических лиц = {{ con.kts_fiz_podkl.id__count }}.</p>
 
+
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <td></td>
+                        <td>Юридические</td>
+                        <td>Физические</td>
+                        <td>Общее кол-во</td>
+                        <td>Квартир</td>
+                        <td>Домов</td>
+                    </tr>
+                    <tr>
+                        <td>Всего на {{ start_of_month }}</td>
+                        <td> {{ con.kts_ur_podkl_startdate.id__count }} </td>
+                        <td> {{ con.kts_fiz_podkl_startdate.id__count }} </td>
+                        <td> {{ con.kts_count_podkl_alldate.id__count }} </td>
+                        <td> {{ con.kts_count_podkl_kv_stmth.id__count }} </td>
+                        <td> {{ con.kts_count_podkl_dom_stmth.id__count }} </td>
+                    </tr>
+
+                    <tr>
+                        <td>принято ( в т.ч.после вр.снятия )</td>
+                        <td> {{ con.kolvo_podkl_obj_urik.id__count }} </td>
+                        <td> {{ con.kolvo_podkl_obj_fiz.id__count }}</td>
+                        <td>+{{ con.kolvo_podkl_obj_all.id__count }}</td>
+                        <td>+{{ con.kolvo_podkl_obj_kv.id__count }}</td>
+                        <td>+{{ con.kolvo_podkl_obj_dom.id__count }}</td>
+                    </tr>
+
+
+                    <tr>
+                        <td>Всего на 31.10.2023</td>
+                        <td>{{ con.kts_count_podkl_end.id__count }}</td>
+                        <td>{{ con.kts_fiz_podkl_end.id__count }}</td>
+                        <td>{{ con.kts_podkl_all.id__count }}</td>
+                        <td>{{ con.kts_podkl_kv_end_all.id__count }}</td>
+                        <td>{{ con.kts_podkl_dom_end_all.id__count }}</td>
+                    </tr>
+                    <tr>
+                        <td>В том числе GSM</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>SIM карты</td>
+                        <td colspan="2"></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card-body">
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <td></td>
+                        <td>SMS</td>
+                        <td>Браво-21</td>
+                        <td>Жардем</td>
+                        <td>911</td>
+                        <td>Капшагай </td>
+                        <td>Кугуар</td>
+                        <td>Әскер</td>
+                    </tr>
+                    <tr>
+                        <td>Физические</td>
+                        <td>{{ con.gruppa_reagirovania_sms_fiz.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_bravo21_fiz.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_zardem_fiz.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_911_fiz.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_kapchagai_fiz.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_kuguar_fiz.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_asker_fiz.id__count }}</td>
+                    </tr>
+                    <tr>
+                        <td>Юридические</td>
+                        <td>{{ con.gruppa_reagirovania_sms_ur.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_bravo21_ur.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_zardem_ur.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_911_ur.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_kapchagai_ur.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_kuguar_ur.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_asker_ur.id__count }}</td>
+                    </tr>
+                    <tr>
+                        <td>Итого для Кузет-Сeнім</td>
+                        <td>{{ con.gruppa_reagirovania_sms_all.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_bravo21_all.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_zardem_all.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_911_all.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_kapchagai_all.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_kuguar_all.id__count }}</td>
+                        <td>{{ con.gruppa_reagirovania_asker_all.id__count }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    <div class="card-body">
                 <table class="table table-bordered fz-table-11">
                     <thead>
                     <tr>
@@ -99,7 +207,7 @@
                             <td class="alseco"></td>
                         {% endif %}
 
-                        <td>{{ kts.itog_oplata }}</td>
+                        <td>{{ kts.abon_plata }}</td>
                         <td>{{ kts.object_number }}</td>
                         <td>{{ kts.peredatchik_number }}</td>
                         <td>{{ kts.stoimost_rpo }}</td>
@@ -118,7 +226,7 @@
                         <td></td>
                         <td></td>
                         <td>Итого</td>
-                        <td>{{ con.kts_abon_summa_podkl.itog_oplata__sum }}</td>
+                        <td>{{ con.kts_abon_summa_podkl.abon_plata__sum }}</td>
                         <td></td>
                         <td></td>
                         <td></td>

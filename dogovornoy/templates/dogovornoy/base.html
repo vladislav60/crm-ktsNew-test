@@ -229,7 +229,7 @@
                     </li>
 
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="{% url 'edit_profile' %}">
+                        <a class="dropdown-item d-flex align-items-center" href="#">
                             <i class="bi bi-person"></i>
                             <span>Профиль</span>
                         </a>
@@ -239,7 +239,7 @@
                     </li>
 
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="{% url 'edit_profile' %}">
+                        <a class="dropdown-item d-flex align-items-center" href="#">
                             <i class="bi bi-gear"></i>
                             <span>Настройки аккаунта</span>
                         </a>
@@ -266,6 +266,8 @@
                     </li>
 
                 </ul><!-- End Profile Dropdown Items -->
+
+
             </li><!-- End Profile Nav -->
 
         </ul>
@@ -292,14 +294,29 @@
             <ul id="components-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
                 <li>
                     <a href="{% url 'baza_dogovorov' %}">
-                        <i class="bi bi-circle"></i><span>База клиентов</span>
+                        <i class="bi bi-circle"></i><span>База наших клиентов</span>
                     </a>
                 </li>
+
+                <li>
+                    <a href="{% url 'baza_partnerov' %}">
+                        <i class="bi bi-circle"></i><span>База клиентов партнеров</span>
+                    </a>
+                </li>
+
+
                 <li>
                     <a href="{% url 'add_client' %}">
                         <i class="bi bi-circle"></i><span>Новый клиент</span>
                     </a>
                 </li>
+
+                <li>
+                    <a href="{% url 'add_client_partner' %}">
+                        <i class="bi bi-circle"></i><span>Новый клиент партнеров</span>
+                    </a>
+                </li>
+
                 <li>
                     <a href="{% url 'reports_dog' %}">
                         <i class="bi bi-circle"></i><span>Отчет</span>
@@ -311,23 +328,115 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'rekvizity' %}">
-                        <i class="bi bi-circle"></i><span>Реквизиты</span>
+                    <a href="{% url 'reports_kolvo' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов</span>
                     </a>
                 </li>
+
+                <li>
+                    <a href="{% url 'reports_partners' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов ТОО "СГС-Плюс"</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'reports_partners_akm' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов ТОО "АКМ"</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'reports_partners_rmg' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов ТОО "RMG"</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'reports_partners_kazkuzet' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов ТОО "Kaz-Kuzet"</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'reports_partners_sgs' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов ТОО "SGS"</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'reports_partners_ipkim' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов ИП "Ким"</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'reports_partners_kuzets' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов ТОО "Кузет-С"</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'reports_partners_samohvalov' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов ИП "Самохвалов"</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'reports_partners_sobsecutity' %}">
+                        <i class="bi bi-circle"></i><span>Отчет кол-во объектов TOO "SOB Security"</span>
+                    </a>
+                </li>
+{#                <li>#}
+{#                    <a href="{% url 'rekvizity' %}">#}
+{#                        <i class="bi bi-circle"></i><span>Реквизиты</span>#}
+{#                    </a>#}
+{#                </li>#}
+            </ul>
+        </li><!-- End Договорной Nav -->
+
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
+                <i class="bi bi-arrow-down-circle"></i><span>Импорт в базу</span>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="forms-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
                 <li>
                     <a href="{% url 'importexel' %}">
                         <i class="bi bi-circle"></i><span>Импорт объектов</span>
                     </a>
                 </li>
+
+                <li>
+                    <a href="{% url 'partnerts_importexel' %}">
+                        <i class="bi bi-circle"></i><span>Импорт партнеров</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'importvidsign' %}">
+                        <i class="bi bi-circle"></i><span>Импорт вид.сигн</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'importrekvizity' %}">
+                        <i class="bi bi-circle"></i><span>Импорт реквизитов</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'importekipazh' %}">
+                        <i class="bi bi-circle"></i><span>Импорт экипаж</span>
+                    </a>
+                </li>
             </ul>
-        </li><!-- End Договорной Nav -->
+        </li><!-- End Главная Nav -->
 
 
         <li class="nav-heading">Сервисные</li>
 
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{% url 'edit_profile' %}">
+            <a class="nav-link collapsed" href="#">
                 <i class="bi bi-person"></i>
                 <span>Профиль</span>
             </a>

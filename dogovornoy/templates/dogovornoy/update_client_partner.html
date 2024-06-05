@@ -1,0 +1,204 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+{% block content %}
+
+    <div class="pagetitle">
+        <h1>Новый клиент партнеров</h1>
+        <nav>
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'baza_partnerov' %}">База договоров партнеров</a></li>
+                <li class="breadcrumb-item active">Изменение клиента партнеров</li>
+            </ol>
+        </nav>
+    </div><!-- End Page Title -->
+
+
+    <section class="section">
+        <div class="row">
+
+
+            <!--                Форма номер 1 Начало-->
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <!-- Обязательно для заполнения -->
+                        <form class="row g-3" method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            <div class="col-md-12">
+                                <label for="{{ form.company_name.id_for_label }}" class="form-label">
+                                    {{ form.company_name.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.company_name }}
+                                <div class="form-error">{{ company_name.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.object_number.id_for_label }}" class="form-label">
+                                    {{ form.object_number.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.object_number }}
+                                <div class="form-error">{{ object_number.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.gsm_number.id_for_label }}" class="form-label">
+                                    {{ form.gsm_number.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.gsm_number }}
+                                <div class="form-error">{{ gsm_number.errors }}</div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="{{ form.name_object.id_for_label }}" class="form-label">
+                                    {{ form.name_object.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.name_object }}
+                                <div class="form-error">{{ name_object.errors }}</div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="{{ form.adres.id_for_label }}" class="form-label">
+                                    {{ form.adres.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.adres }}
+                                <div class="form-error">{{ adres.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.type_object.id_for_label }}" class="form-label">
+                                    {{ form.type_object.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.type_object }}
+                                <div class="form-error">{{ type_object.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4 ">
+                                <legend class="col-form-label col-sm-12 pt-1">{{ form.urik.label }}</legend>
+                                <div class="col-sm-8 form-switch">
+                                    {{ form.urik }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.vid_sign.id_for_label }}" class="form-label">
+                                    {{ form.vid_sign.label }} <i class="colred"> *</i>
+                                </label>
+                                {{ form.vid_sign }}
+                                <div class="form-error">{{ vid_sign.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.hours_mounth.id_for_label }}" class="form-label">
+                                    {{ form.hours_mounth.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.hours_mounth }}
+                                <div class="form-error">{{ hours_mounth.errors }}</div>
+                            </div>
+
+
+                            <div class="col-md-4">
+                                <label for="{{ form.date_podkluchenia.id_for_label }}" class="form-label">
+                                    {{ form.date_podkluchenia.label }}
+                                </label>
+                                {{ form.date_podkluchenia }}
+                                <div class="form-error">{{ date_podkluchenia.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.date_otkluchenia.id_for_label }}" class="form-label">
+                                    {{ form.date_otkluchenia.label }}
+                                </label>
+                                {{ form.date_otkluchenia }}
+                                <div class="form-error">{{ date_otkluchenia.errors }}</div>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="{{ form.primechanie.id_for_label }}" class="form-label">
+                                    {{ form.primechanie.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.primechanie }}
+                                <div class="form-error">{{ primechanie.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.tariff_per_mounth.id_for_label }}" class="form-label">
+                                    {{ form.tariff_per_mounth.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.tariff_per_mounth }}
+                                <div class="form-error">{{ tariff_per_mounth.errors }}</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.ekipazh.id_for_label }}" class="form-label">
+                                    {{ form.ekipazh.label }}
+                                </label>
+                                {{ form.ekipazh }}
+                                <div class="form-error">{{ ekipazh.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4 ">
+                                <legend class="col-form-label col-sm-12 pt-1">{{ form.tehnical_services.label }}</legend>
+                                <div class="col-sm-8 form-switch">
+                                    {{ form.tehnical_services }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 ">
+                                <legend class="col-form-label col-sm-12 pt-1">{{ form.rent_gsm.label }}</legend>
+                                <div class="col-sm-8 form-switch">
+                                    {{ form.rent_gsm }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 ">
+                                <legend class="col-form-label col-sm-12 pt-1">{{ form.fire_alarm.label }}</legend>
+                                <div class="col-sm-8 form-switch">
+                                    {{ form.fire_alarm }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 ">
+                                <legend class="col-form-label col-sm-4 pt-1">{{ form.telemetria.label }}</legend>
+                                <div class="col-sm-8 form-switch">
+                                    {{ form.telemetria }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-4 ">
+                                <legend class="col-form-label col-sm-4 pt-1">{{ form.nabludenie.label }}</legend>
+                                <div class="col-sm-8 form-switch">
+                                    {{ form.nabludenie }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-2 ">
+                                <legend class="col-form-label col-sm-12 pt-1">{{ form.sms_uvedomlenie.label }}</legend>
+                                <div class="col-sm-12 form-switch">
+                                    {{ form.sms_uvedomlenie }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label for="{{ form.sms_number.id_for_label }}" class="form-label">
+                                    {{ form.sms_number.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.sms_number }}
+                                <div class="form-error">{{ sms_number.errors }}</div>
+                            </div>
+
+                            <p></p>
+
+                            <div class="d-grid gap-2 mt-3">
+                                <button type="submit" class="btn btn-success rounded-pill">Сохранить изменения</button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+                <!--                Форма номер 2 Конец-->
+
+            </div>
+        </div>
+    </section>
+{% endblock %}

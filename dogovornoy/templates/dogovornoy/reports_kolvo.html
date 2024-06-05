@@ -1,0 +1,121 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Recent Page Title -->
+<div class="pagetitle">
+    <h1>Отчет о количестве объектов, находящихся под наблюдением</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item active">Отчеты о кол-ве объектов</li>
+        </ol>
+    </nav>
+</div>
+<!-- Отчет по Юрикам и физикам -->
+
+<form method="POST">
+    {% csrf_token %}
+    <label for="start_date">Дата от:</label>
+    <input type="date" name="start_date">
+    <label for="end_date">до:</label>
+    <input type="date" name="end_date">
+    <button type="submit">Применить</button>
+</form>
+
+    <p></p>
+
+{% for con in reports %}
+<div class="card">
+    <div class="card-body">
+
+        <h5 class="card-title">{% for kts in con.kts_podkl %}{% ifchanged kts.company_name %}{{ kts.company_name }}{% endifchanged %}
+            {% endfor %} отчет за период ( {{ start_of_month }} - {{ end_of_month }} )</h5>
+
+                <table class="table table-bordered fz-table-1 width801">
+                    <thead>
+                    <tr>
+                                <th scope="col" class="maxwidt300px"></th>
+                                <th scope="col" class="maxwidt100px">Юрики</th>
+                                <th scope="col" class="maxwidt100px">Физики</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Всего на {{ start_of_month }}</td>
+                                    <td>{{ con.kts_count_podkl.id__count }}</td>
+                                    <td>{{ con.kts_fiz_podkl.id__count }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>принято ( в т.ч.после вр.снятия )</td>
+                                    <td>{{ con.kolvo_podkl_obj.id__count }}</td>
+                                    <td>{{ con.kolvo_podkl_fiz.id__count }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>расторжено ( в т.ч.временно снято )</td>
+                                    <td>{{ con.kolvo_otkl_obj.id__count }}</td>
+                                    <td>{{ con.kolvo_otkl_fiz.id__count }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>Всего на {{ end_of_month }}</td>
+                                    <td>{{ con.kts_count_podkl_end.id__count }}</td>
+                                    <td>{{ con.kts_fiz_podkl_end.id__count }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>в точ числе GSM</td>
+                                    <td></td>
+                                    <td></td>
+                                </tr>
+
+                                <tr>
+                                    <td>SIM карты</td>
+                                    <td colspan="2"></td>
+                                </tr>
+
+                                <tr>
+                                    <td>911</td>
+                                    <td>{{ con.gruppa_reagirovania_911_ur.id__count }}</td>
+                                    <td>{{ con.gruppa_reagirovania_911_fiz.id__count }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>СМС</td>
+                                    <td>{{ con.gruppa_reagirovania_sms_ur.id__count }}</td>
+                                    <td>{{ con.gruppa_reagirovania_sms_fiz.id__count }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>Аскер</td>
+                                    <td>{{ con.gruppa_reagirovania_asker_ur.id__count }}</td>
+                                    <td>{{ con.gruppa_reagirovania_asker_fiz.id__count }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>Жардем</td>
+                                    <td>{{ con.gruppa_reagirovania_zardem_ur.id__count }}</td>
+                                    <td>{{ con.gruppa_reagirovania_zardem_fiz.id__count }}</td>
+                                </tr>
+
+                                <tr>
+                                    <td>Браво-21</td>
+                                    <td>{{ con.gruppa_reagirovania_bravo21_ur.id__count }}</td>
+                                    <td>{{ con.gruppa_reagirovania_bravo21_fiz.id__count }}</td>
+                                </tr>
+                            <tr>
+                                <td>Всего</td>
+                                <td>{{ con.kts_count_podkl_end.id__count }}</td>
+                                <td>{{ con.kts_fiz_podkl_end.id__count }}</td>
+                            </tr>
+
+
+                            </tbody>
+                        </table>
+ </div>
+                    </div>
+{% endfor %}
+{% endblock %}

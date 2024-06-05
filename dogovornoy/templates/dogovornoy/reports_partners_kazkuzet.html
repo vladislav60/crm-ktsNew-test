@@ -1,0 +1,164 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+<!-- Recent Page Title -->
+<div class="pagetitle">
+    <h1>Отчет ТОО "КазКузет"</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item active">Отчет ТОО "КазКузет"</li>
+        </ol>
+    </nav>
+</div>
+
+<form method="POST" class="mb-4">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-5">
+            <label for="start_date" class="form-label">Дата от:</label>
+            <input type="date" name="start_date" class="form-control" id="start_date">
+        </div>
+        <div class="col-md-5">
+            <label for="end_date" class="form-label">до:</label>
+            <input type="date" name="end_date" class="form-control" id="end_date">
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">Применить</button>
+        </div>
+    </div>
+</form>
+{#<div class="col-lg-4">#}
+{#    <form method="POST" action="{% url 'reports_partners_download_urik' %}">#}
+{#    {% csrf_token %}#}
+{#    <button type="submit"  class="btn btn-primary w-100">Выгрузить отчет Юрики</button>#}
+{#    </form></div>#}
+
+<div class="col-lg-12">
+    <p>Всего записей: 0</p>
+
+    <div class="col-lg-4">
+    <form method="POST" action="{% url 'kazkuzet_download_fiz' %}">
+    {% csrf_token %}
+    <button type="submit"  class="btn btn-primary w-100">Выгрузить отчет Физики</button>
+    </form>
+    </div>
+    <p></p>
+
+    <div class="col-lg-4">
+    <form method="POST" action="{% url 'kazkuzet_download_ur' %}">
+    {% csrf_token %}
+    <button type="submit"  class="btn btn-primary w-100">Выгрузить отчет Юрики</button>
+    </form>
+    </div>
+
+    <p></p>
+    <p></p>
+
+    <div class="card recent-sales overflow-auto">
+    <div class="card-body">
+        <h3>Отчет ТОО "КазКузет"</h3>
+        <h5>Отчет за период ({{ start_of_month }} - {{ end_of_month }})  {{ kolvo_day }}</h5>
+
+        <table class="table table-bordered fz-table-11">
+            <thead>
+                <tr>
+                    <th scope="col">№ объекта</th>
+                    <th scope="col">№ передатчика</th>
+                    <th scope="col">Наименование</th>
+                    <th scope="col">Адрес</th>
+                    <th scope="col">Охраняемое помещение</th>
+                    <th scope="col">Вид сигн</th>
+                    <th scope="col">Часы в месяц</th>
+                    <th scope="col">Дата подключения</th>
+                    <th scope="col">Тариф за реагирование</th>
+                    <th scope="col">Кол-во дней</th>
+                    <th scope="col">Аренда РПО</th>
+                    <th scope="col">Телеметрия</th>
+                    <th scope="col">Наблюдение</th>
+                    <th scope="col">Реагирование</th>
+                    <th scope="col">Тех.обслуживание</th>
+                    <th scope="col">СМС оповещение</th>
+                    <th scope="col">Пожарная сигнализация</th>
+                    <th scope="col">Сумма в месяц</th>
+                    <th scope="col">Примечание</th>
+                    <th scope="col">Дата откл</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                    <tr>
+                        <td>{{ report.kts_instance.object_number }}</td>
+                        <td>{{ report.kts_instance.gsm_number }}</td>
+                        <td>{{ report.kts_instance.name_object }}</td>
+                        <td>{{ report.kts_instance.adres }}</td>
+                        <td>{{ report.kts_instance.type_object }}</td>
+                        <td>{{ report.kts_instance.vid_sign }}</td>
+                        <td>{{ report.kts_instance.hours_mounth }}</td>
+                        <td>{{ report.kts_instance.date_podkluchenia }}</td>
+
+                        {% if report.kts_instance.tariff_per_mounth %}
+                            <td>{{ report.kts_instance.tariff_per_mounth }}</td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+
+                        <td>{{ report.num_days }}</td>
+                        <td>{{ report.itog_rent_gsm }}</td>
+                        <td>{{ report.itog_telemetria }}</td>
+
+                        <td>{{ report.itog_nabludenie }}</td>
+                        <td>{{ report.reagirovanie }}</td>
+
+                        <td>{{ report.itog_tehnical_services }}</td>
+
+                        {% if report.itog_sms_uvedomlenie %}
+                        <td>{{ report.itog_sms_uvedomlenie }}</td>
+                        {% else %}
+                            <td>0</td>
+                        {% endif %}
+
+                        <td>{{ report.itog_fire_alarm }}</td>
+                        <td>{{ report.summ_mounth }}</td>
+
+                        {% if report.kts_instance.primechanie %}
+                            <td>{{ report.kts_instance.primechanie }}</td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+
+                        {% if report.kts_instance.date_otkluchenia %}
+                            <td>{{ report.kts_instance.date_otkluchenia }}</td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+
+                <td></td>
+                <td></td>
+                <td>Итого:</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>{{ summ_rent_gsm }}</td>
+                <td>{{ summ_telemetria }}</td>
+                <td>{{ summ_nabludenie }}</td>
+                <td>{{ summ_reagirovanie }}</td>
+                <td>{{ summ_tehnical_services }}</td>
+                <td>{{ summ_sms_uvedomlenie }}</td>
+                <td>{{ summ_fire_alarm }}</td>
+                <td>{{ itog_summ_mounth }}</td>
+                <td></td>
+                <td></td>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

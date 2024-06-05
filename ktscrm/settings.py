@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     # №1 Регистрация приложения
     'dogovornoy.apps.DogovornoyConfig',
     # 'avatar',
-    'profiles',
+    # 'profiles',
     # 'debug_toolbar',
 ]
 
@@ -125,8 +125,8 @@ USE_L10N = True
 
 USE_TZ = True
 
-DATE_FORMAT = 'd-m-Y'
-DATETIME_FORMAT = 'd-m-Y H:i:s'
+DATE_INPUT_FORMATS = ('%d-%m-%Y','%Y-%m-%d')
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
@@ -142,8 +142,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
 LOGIN_URL = '/login/'
-AUTH_PROFILE_MODULE = 'profiles.Profile'
+# AUTH_PROFILE_MODULE = 'profiles.Profile'
 
 INTERNAL_IPS = [
-    '127.0.0.1',
+    '*',
 ]

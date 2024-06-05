@@ -5,11 +5,11 @@
 
 <!-- Recent Page Title -->
 <div class="pagetitle">
-    <h1>База клиентов</h1>
+    <h1>База клиентов партнеров</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="index.html">Главная</a></li>
-            <li class="breadcrumb-item active">База клиентов</li>
+            <li class="breadcrumb-item active">База клиентов партнеров</li>
         </ol>
     </nav>
 </div>
@@ -29,24 +29,20 @@
                     </div>
 
                     <div class="row mb-3">
+                        <input type="text" class="form-control" name="gsm_number" placeholder="Номер GSM">
+                    </div>
+
+                    <div class="row mb-3">
                       <select class="form-select" name="company_name" placeholder="company name">
                           {% if not company_name %}
                             <option selected disabled>Выберите компанию...</option>
                           {% else %}
                             <option disabled>Выберите компанию...</option>
                           {% endif %}
-                          {% for company in company_names %}
+                          {% for company in company_partners %}
                             <option value="{{ company.0 }}" {% if company.0 == company_name %}selected{% endif %}>{{ company.1 }}</option>
                           {% endfor %}
                         </select>
-                    </div>
-
-                    <div class="row mb-3">
-                        <input type="text" class="form-control" name="dogovor_number" placeholder="Номер договора">
-                    </div>
-
-                    <div class="row mb-3">
-                        <input type="text" class="form-control" name="gruppa_reagirovania" placeholder="Группа реагирования">
                     </div>
 
                     <button type="submit" class="btn btn-primary">Поиск по базе</button>
@@ -70,59 +66,51 @@
             <table class="table">
                 <thead>
                 <tr>
-                    <th scope="col">id</th>
-                    <th scope="col">№ дог.</th>
-                    <th scope="col">№ объекта</th>
-                    <th scope="col">Наименование</th>
-                    <th scope="col">Тип объекта</th>
-                    <th scope="col">Адрес</th>
-                    <th scope="col">Телефон</th>
-                    <th scope="col">Итого</th>
-                    <th scope="col">ИИН/БИН</th>
+                    <th scope="col-2">Компания</th>
+                    <th scope="col-2">№ объекта</th>
+                    <th scope="col-2">№ GSM</th>
+                    <th scope="col-4">Наименование</th>
+                    <th scope="col-4">Адрес</th>
+                    <th scope="col-2">Тип объекта</th>
+                    <th scope="col-2">Дата подлкючения</th>
+                    <th scope="col-1">Часы в месяц</th>
+                    <th scope="col"></th>
                     <th scope="col"></th>
                     <th scope="col"></th>
                 </tr>
                 </thead>
                 <tbody>
-                {% for k in klienty %}
-
-                {% if k.date_otklulchenia %}
-                <tr class="otklycheniy">
-                    {% else %}
-                <tr>
-                    {% endif %}
-
-                    <td>{{k.id}}</td>
-                    <td>{{k.dogovor_number}}</td>
+                {% for k in klienty_partners %}
+                    <td>{{k.company_name}}</td>
                     <td>{{k.object_number}}</td>
-                    <td>{{k.klient_name}}</td>
+                    <td>{{k.gsm_number}}</td>
                     <td>{{k.name_object}}</td>
                     <td>{{k.adres}}</td>
-                    <td>{{k.telephone}}</td>
-                    <td>{{k.abon_plata}}</td>
-                    <td>{{k.iin_bin}}</td>
+                    <td>{{k.type_object}}</td>
+                    <td>{{k.date_podkluchenia}}</td>
+                    <td>{{k.hours_mounth}}</td>
                     <td><a href="{{ k.get_absolute_url }}">
                         <button type="button" class="btn btn-secondary">
                             <i class="bi bi-folder-symlink-fill"></i>
                         </button>
                     </a></td>
-                    <td><a href="{% url 'update_client' k.pk %}">
+                    <td><a href="{% url 'update_client_partner' k.pk %}">
                         <button type="button" class="btn btn-secondary">
                             <i class="bi bi-pencil-fill"></i>
                         </button>
                     </a></td>
-                    <td><a href="{% url 'delete_client' k.pk %}">
+                    <td><a href="{% url 'delete_client_partners' k.pk %}">
                         <button type="button" class="btn btn-secondary">
                             <i class="bi bi-trash-fill"></i>
                         </button>
                     </a></td>
-                    <td>
-                        <a href="{% url 'create_dogovor' k.pk %}">
-                            <button type="button" class="btn btn-secondary">
-                                <i class="bi bi-newspaper"></i>
-                            </button>
-                        </a>
-                    </td>
+{#                    <td>#}
+{#                        <a href="{% url 'create_dogovor' k.pk %}">#}
+{#                            <button type="button" class="btn btn-secondary">#}
+{#                                <i class="bi bi-newspaper"></i>#}
+{#                            </button>#}
+{#                        </a>#}
+{#                    </td>#}
                 </tr>
                 {% endfor %}
 
@@ -134,24 +122,24 @@
 
         <!-- Pagination with icons -->
                 <ul class="pagination ml">
-                    {% if klienty.has_previous %}
+                    {% if klienty_partners.has_previous %}
                       <li class="page-item">
-                        <a class="page-link" href="{{ pagination_url }}&page={{ klienty.previous_page_number }}" aria-label="Previous">
+                        <a class="page-link" href="{{ pagination_url }}&page={{ klienty_partners.previous_page_number }}" aria-label="Previous">
                           <span aria-hidden="true">&laquo;</span>
                         </a>
 
                       </li>
                     {% endif %}
 
-                    {% if klienty.paginator.num_pages > 1 %}
-                        {% if klienty.number > 3 %}
+                    {% if klienty_partners.paginator.num_pages > 1 %}
+                        {% if klienty_partners.number > 3 %}
                             <li class="page-item active"><a class="page-link" href="?page=1">1</a></li>
                             <li class="page-item"><a class="page-link" href="#">...</a></li>
                         {% endif %}
 
-                        {% for page_num in klienty.paginator.page_range %}
-                            {% if page_num > klienty.number|add:'-9' and page_num < klienty.number|add:'9' %}
-                                {% if page_num == klienty.number %}
+                        {% for page_num in klienty_partners.paginator.page_range %}
+                            {% if page_num > klienty_partners.number|add:'-9' and page_num < klienty_partners.number|add:'9' %}
+                                {% if page_num == klienty_partners.number %}
                                     <li class="page-item active"><a class="page-link" >{{ page_num }}</a></li>
                                 {% else %}
                                     <li class="page-item"><a class="page-link" href="{{ pagination_url }}&page={{ page_num }}">{{ page_num }}</a></li>
@@ -159,15 +147,15 @@
                             {% endif %}
                         {% endfor %}
 
-                        {% if klienty.number < klienty.paginator.num_pages|add:'-9' %}
+                        {% if klienty_partners.number < klienty_partners.paginator.num_pages|add:'-9' %}
                             <li class="page-item"><a class="page-link" href="#">...</a></li>
-                            <li class="page-item active"><a class="page-link" href="{{ pagination_url }}&page={{ klienty.paginator.num_pages }}">{{ klienty.paginator.num_pages }}</a></li>
+                            <li class="page-item active"><a class="page-link" href="{{ pagination_url }}&page={{ klienty_partners.paginator.num_pages }}">{{ klienty_partners.paginator.num_pages }}</a></li>
                         {% endif %}
                     {% endif %}
 
-                    {% if klienty.has_next %}
+                    {% if klienty_partners.has_next %}
                       <li class="page-item">
-                        <a class="page-link" href="{{ pagination_url }}&page={{ klienty.next_page_number }}" aria-label="Next">
+                        <a class="page-link" href="{{ pagination_url }}&page={{ klienty_partners.next_page_number }}" aria-label="Next">
                           <span aria-hidden="true">&raquo;</span>
                         </a>
                       </li>

@@ -1,0 +1,448 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <title>Карточка клиента</title>
+    <style>
+        .card {
+            max-width: 70%;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            font-size: 18px;
+        }
+        .card h2 {
+            text-align: center;
+        }
+        .card .field {
+            display: flex;
+            justify-content: flex-start;
+            padding: 7px 0;
+        }
+        .card .field span {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .table {
+            font-size: 14px;
+            text-align: center;
+            margin: 15px 0 40px 0;
+        }
+        .opisanie {
+            font-size: 14px;
+        }
+        .text-right-ekc {
+            text-align: right;
+        }
+        .card-body { padding: 20px 10px;}
+        h7 {font-size: 14px; display: block; width: 100%;}
+        .first-item-padding { padding: 0 0 0 12px;}
+        .second-item-padding { padding: 0;}
+    </style>
+</head>
+<body>
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+	<div class="row">
+		<div class="col-md-12">
+			<div class="row mb-1">
+				<div class="col-md-4">
+					<h3 class="text-success">{{ guarded_object.literal }}-{{ guarded_object.number }}</h3>
+				</div>
+				<div class="col-md-4">
+					<h3 class="text-center text-success"> {{ guarded_object.crew }}</h3>
+				</div>
+				<div class="col-md-4">
+					<h3 class="text-right-ekc text-success">{{ guarded_object.type }}</h3>
+				</div>
+			</div>
+
+
+			<div class="row">
+				<div class="col-md-6">
+					<h5 class="text-left">{{ guarded_object.name }}</h5>
+				</div>
+				<div class="col-md-6">
+					<h5 class="text-right-ekc text-primary">{{ guarded_object.address }}</h5>
+				</div>
+			</div>
+            
+            
+			<div class="row">
+				<div class="col-md-6 card-body">
+					<h5 class="text-center text-danger">
+						Описание объекта
+					</h5>
+					<textarea class="form-control" style="height: 300px;" disabled>{{ guarded_object.description }}</textarea>
+				</div>
+				<div class="col-md-6 card-body">
+					<h5 class="text-center text-danger">Маршрут следования</h5>
+                    <textarea class="form-control" style="height: 300px;" disabled>{{ guarded_object.drivingdirections }}</textarea>
+				</div>
+			</div>
+            
+			<div class="row mb-3">
+				<div class="col">
+					<div class="row">
+						<div class="col first-item-padding">
+							<h7 class="text-right ">
+								Юр.лицо:
+							</h7>
+						</div>
+						<div class="col">
+							<h7 class="text-primary text-left second-item-padding">{{ guarded_object.legalentity|yesno:"Да,Нет" }}
+							</h7>
+						</div>
+					</div>
+				</div>
+				<div class="col">
+					<div class="row">
+						<div class="col">
+							<h7 style="text-align: right;">
+								Этаж:
+							</h7>
+						</div>
+						<div class="col">
+							<h7 class="text-primary text-left">{{ guarded_object.floor }} из {{ guarded_object.floortotal }}</h7>
+						</div>
+					</div>
+				</div>
+
+                <div class="col-md-6">
+					<div class="row">
+						<div class="col-md-6">
+							<h7 style="text-align: right;">
+								Техник:
+							</h7>
+						</div>
+						<div class="col-md-6">
+							<h7 class="text-left text-primary">{{ guarded_object.technician }}</h7>
+						</div>
+					</div>
+				</div>
+
+
+			</div>
+			<div class="row">
+                <div class="col">
+					<div class="row">
+						<div class="col first-item-padding">
+							<h7 class="text-right">
+								Время прибытия:
+							</h7>
+						</div>
+						<div class="col second-item-padding">
+							<h7 class="text-primary text-left">{{ guarded_object.arrivingtime }}</h7>
+						</div>
+					</div>
+				</div>
+
+				<div class="col">
+					<div class="row">
+						<div class="col-md-6">
+							<h7 class="text-right" style="text-align: right;">Долгота:</h7>
+						</div>
+						<div class="col-md-6">
+							<h7 class="text-primary text-left">
+								{{ guarded_object.latitude }}, {{ guarded_object.longitude }}
+							</h7>
+						</div>
+					</div>
+				</div>
+			</div>
+
+            <p></p>
+            <p></p>
+            <p></p>
+
+            <div class="row">
+				<div class="col">
+					<div class="row">
+						<div class="col-md-6">
+							<h7 class="text-right">
+								Код домофона:
+							</h7>
+						</div>
+						<div class="col">
+							<h7 class="text-primary">{{ guarded_object.intercomcode }}</h7>
+						</div>
+					</div>
+				</div>
+			</div>
+
+        <p></p>
+        <h5>Зона</h5>
+
+            <table class="table table-bordered">
+                    <tr>
+                        <th>Зона</th>
+                        <th>Описание зоны</th>
+                        <th>Средства ОПТС</th>
+                    </tr>
+                    {% for zone in guarded_zone %}
+                    <tr>
+                        <td>{{ zone.number }}</td>
+                        <td>{{ zone.name }}</td>
+                            {% if zone.resources %}
+                                <td>{{ zone.resources }}</td>
+                            {% endif %}
+                    </tr>
+                    {% endfor %}
+                </table>
+
+        <h5>Кол-во охранных часов</h5>
+            {% if alarm_schedules %}
+                <table class="table table-bordered">
+                    <tr>
+                        <th></th>
+                        <th>Понедельник</th>
+                        <th>Вторник</th>
+                        <th>Среда</th>
+                        <th>Четверг</th>
+                        <th>Пятница</th>
+                        <th>Суббота</th>
+                        <th>Воскресенье</th>
+                        <th>Итог</th>
+                    </tr>
+                    {% for schedule in alarm_schedules %}
+                        {% if schedule.enabled %}
+                            <tr>
+                                {% if schedule.dtype == 'SECURITY' %}
+                                    <td>Охранная сигнализация</td>
+                                {% elif schedule.dtype == 'FIRE'%}
+                                    <td>Пожарная сигнализация</td>
+                                {% elif schedule.dtype == 'ALARM'%}
+                                    <td>Тревожная сигнализация</td>
+                                {% endif %}
+                                {% if schedule.mondaystart and schedule.mondayend %}
+                                    <td>{{ schedule.mondaystart }}-{{ schedule.mondayend }}</td>
+                                {% else %}
+                                    <td>00:00-00:00</td>
+                                {% endif %}
+                                {% if schedule.tuesdaystart and schedule.tuesdayend %}
+                                    <td>{{ schedule.tuesdaystart }}-{{ schedule.tuesdayend }}</td>
+                                {% else %}
+                                    <td>00:00-00:00</td>
+                                {% endif %}
+                                {% if schedule.wednesdaystart and schedule.wednesdayend %}
+                                    <td>{{ schedule.wednesdaystart }}-{{ schedule.wednesdayend }}</td>
+                                {% else %}
+                                    <td>00:00-00:00</td>
+                                {% endif %}
+                                {% if schedule.thursdaystart and schedule.thursdayend %}
+                                    <td>{{ schedule.thursdaystart }}-{{ schedule.thursdayend }}</td>
+                                {% else %}
+                                    <td>00:00-00:00</td>
+                                {% endif %}
+                                {% if schedule.fridaystart and schedule.fridayend %}
+                                    <td>{{ schedule.fridaystart }}-{{ schedule.fridayend }}</td>
+                                {% else %}
+                                    <td>00:00-00:00</td>
+                                {% endif %}
+                                {% if schedule.saturdaystart and schedule.saturdayend %}
+                                    <td>{{ schedule.saturdaystart }}-{{ schedule.saturdayend }}</td>
+                                {% else %}
+                                    <td>00:00-00:00</td>
+                                {% endif %}
+                                {% if schedule.sundaystart and schedule.sundayend %}
+                                    <td>{{ schedule.sundaystart }}-{{ schedule.sundayend }}</td>
+                                {% else %}
+                                    <td>00:00-00:00</td>
+                                {% endif %}
+                                <td>{{ schedule.duration }}</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                </table>
+            {% endif %}
+
+
+            <div class="row mb-1">
+				<div class="col-md-4">
+					<h7 class="">Схему составил: {{ guarded_object.schemaauthor }}</h7>
+				</div>
+				<div class="col-md-4">
+					<h7 class="">Дата загрузки: {{ guarded_object.created }}</h7>
+				</div>
+				<div class="col-md-4">
+					<h7 class="">Дата подключения: {{ guarded_object.connectionfrom }}</h7>
+				</div>
+			</div>
+
+
+		</div>
+	</div>
+</div>
+                </div>
+            <p></p>
+
+
+{#        <div class="field">#}
+{#            <span>Скачать файл карточки:</span> <a href="{{ guarded_object.cardfileid }}">{{ guarded_object.cardfileid }}</a>#}
+{#        </div>#}
+{#        <div class="field">#}
+{#            <span>Компания:</span> {{ guarded_object.companyid.username }}#}
+{#        </div>#}
+
+
+    <p></p>
+
+    <div class="col-lg-12">
+        <div class="card" style="max-width: 100%;">
+            <div class="card-body" style="overflow-x: scroll;">
+                <h2>Заявки техника</h2>
+                <table class="table table-bordered">
+                    <tr>
+                        <th>Участок техника</th>
+                        <th>Статус заявки</th>
+                        <th>Время отправки оператором</th>
+                        <th>Время принятия техником</th>
+                        <th>Время прибытия</th>
+                        <th>Время завершения</th>
+                        <th>Зоны</th>
+                        <th>Причина</th>
+                        <th>Примечание</th>
+                        <th>Результат техника</th>
+                        <th>Результат</th>
+                    </tr>
+                    {% for alarm in request %}
+                            <tr>
+                                <td>{{ alarm.crewid.username }}</td>
+                                <td>{{ alarm.status }}</td>
+                                {% if alarm.createddate %}
+                                    <td>{{ alarm.createddate }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.accepteddate %}
+                                    <td>{{ alarm.accepteddate }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.arrivaldate %}
+                                    <td>{{ alarm.arrivaldate }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.closeddate %}
+                                    <td>{{ alarm.closeddate }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                <td>{{ alarm.zones }}</td>
+
+                                {% if alarm.cause %}
+                                    <td>{{ alarm.cause }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.customcause %}
+                                    <td>{{ alarm.customcause }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.technicianreport %}
+                                    <td>{{ alarm.technicianreport }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.report %}
+                                    <td>{{ alarm.report }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+                            </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <p></p>
+
+            {% if alarms %}
+    <div class="col-lg-12">
+        <div class="card" style="max-width: 100%;">
+            <div class="card-body" style="overflow-x: scroll;">
+                <h2>Тревоги отправленые на планшет</h2>
+                <table class="table table-bordered">
+                    <tr>
+                        <th>Номер объекта</th>
+                        <th>Адрес</th>
+                        <th>Экипаж</th>
+                        <th>Дата отправки дежурным</th>
+                        <th>Дата принятия экипажем</th>
+                        <th>Время прибытия</th>
+                        <th>Доклад</th>
+                        <th>Причина</th>
+                        <th>Примечание</th>
+                    </tr>
+                    {% for alarm in alarms %}
+                            <tr>
+                                <td>{{ alarm.objectid.literal }}-{{ alarm.objectid.number }}</td>
+                                <td>{{ alarm.objectid.address }}</td>
+                                <td>{{ alarm.crewid.username }}</td>
+
+                                {% if alarm.createddate %}
+                                    <td>{{ alarm.createddate }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.arrivaldate %}
+                                    <td>{{ alarm.arrivaldate }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.accepteddate %}
+                                    <td>{{ alarm.accepteddate }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+
+                                {% if alarm.closeddate %}
+                                    <td>{{ alarm.closeddate }}-{{ alarm.accepteddate }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.cause %}
+                                    <td>{{ alarm.cause }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+
+                                {% if alarm.report %}
+                                    <td>{{ alarm.report }}</td>
+                                  {% else %}
+                                    <td></td>
+                                {% endif %}
+                            </tr>
+                    {% endfor %}
+                </table>
+            </div>
+        </div>
+    </div>
+             {% endif %}
+
+                </div>
+            </div>
+    </section>
+</body>
+{% endblock %}

@@ -1,0 +1,170 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Recent Page Title -->
+<div class="pagetitle">
+    <h1>База клиентов ЕКЦ</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Главная</a></li>
+            <li class="breadcrumb-item active">База клиентов ЕКЦ</li>
+        </ol>
+    </nav>
+</div>
+<!-- End Page Title -->
+
+<div class="col-lg-8">
+    <div class="card">
+        <div class="card-body">
+            <form method="get">
+            <div class="form-group">
+                <label for="q">Поиск:</label>
+                <input type="text" name="q" id="q" value="{{ request.GET.q }}" class="form-control" placeholder="Поиск по базе">
+            </div>
+            <p></p>
+            <div class="form-group">
+                <label for="number">Номер объекта:</label>
+                <input type="text" name="number" id="number" value="{{ request.GET.number }}" class="form-control" placeholder="Номер объекта">
+            </div>
+            <p></p>
+            <div class="form-group">
+                <label for="company_id">Компания:</label>
+                <select name="company_id" id="company_id" class="form-control">
+                    <option value="">Все компании</option>
+                    {% for company in unique_companies %}
+                        <option value="{{ company.id }}" {% if request.GET.company_id == company.id|stringformat:'s' %}selected{% endif %}>{{ company.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <p></p>
+            <div class="form-group">
+                <label for="crew">Группа реагирования:</label>
+                <select name="crew" id="crew" class="form-control">
+                    <option value="">Выберите группу реагирования</option>
+                    {% for crew in unique_crews %}
+                        {% if crew != None %}
+                            <option value="{{ crew }}" {% if request.GET.crew == crew %}selected{% endif %}>{{ crew }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            <p></p>
+            <div>
+            <button type="submit" class="btn btn-primary">Искать</button>
+                <a href="{% url 'ekcbaza' %}">Сбросить фильтр</a>
+            </div>
+        </form>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Recent Таблица клиентов -->
+<div class="col-lg-12">
+    <p>Всего записей: {{ total_entries }}</p>
+    <div class="card recent-sales overflow-auto">
+
+        <div class="card-body">
+
+<!--            <table class="table table-striped datatable" id="table_bazadog">-->
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">Компания</th>
+                    <th scope="col">№ объекта</th>
+                    <th scope="col">Наименование</th>
+                    <th scope="col">Адрес</th>
+                    <th scope="col">Тип объекта</th>
+                    <th scope="col">Экипаж</th>
+                    <th scope="col"></th>
+                    <th scope="col">Перечень</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for k in klienty %}
+
+                {% if k.date_otklulchenia %}
+                <tr class="otklycheniy">
+                    {% else %}
+                <tr>
+                    {% endif %}
+
+                    <td>{{k.id}}</td>
+                    <td>{{k.companyid.username}}</td>
+                    <td>{{ k.literal }}-{{k.number}}</td>
+                    <td>{{k.name}}</td>
+                    <td>{{k.address}}</td>
+                    <td>{{k.type}}</td>
+                    <td>{{k.crew}}</td>
+                    <td>
+                        <a href="{{ k.get_absolute_url }}">
+                            <button type="button" class="btn btn-secondary">
+                                <i class="bi bi-folder-symlink-fill"></i>
+                            </button>
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{% url 'generate_word' k.id %}">
+                            <button type="button" class="btn btn-secondary">
+                                <i class="bi bi-folder-symlink-fill"></i>
+                            </button>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+
+
+                </tbody>
+            </table>
+
+        </div>
+
+        <!-- Pagination with icons -->
+                <ul class="pagination ml">
+                    {% if klienty.has_previous %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ pagination_url }}&page={{ klienty.previous_page_number }}" aria-label="Previous">
+                          <span aria-hidden="true">&laquo;</span>
+                        </a>
+
+                      </li>
+                    {% endif %}
+
+                    {% if klienty.paginator.num_pages > 1 %}
+                        {% if klienty.number > 3 %}
+                            <li class="page-item active"><a class="page-link" href="?page=1">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">...</a></li>
+                        {% endif %}
+
+                        {% for page_num in klienty.paginator.page_range %}
+                            {% if page_num > klienty.number|add:'-9' and page_num < klienty.number|add:'9' %}
+                                {% if page_num == klienty.number %}
+                                    <li class="page-item active"><a class="page-link" >{{ page_num }}</a></li>
+                                {% else %}
+                                    <li class="page-item"><a class="page-link" href="{{ pagination_url }}&page={{ page_num }}">{{ page_num }}</a></li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if klienty.number < klienty.paginator.num_pages|add:'-9' %}
+                            <li class="page-item"><a class="page-link" href="#">...</a></li>
+                            <li class="page-item active"><a class="page-link" href="{{ pagination_url }}&page={{ klienty.paginator.num_pages }}">{{ klienty.paginator.num_pages }}</a></li>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if klienty.has_next %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ pagination_url }}&page={{ klienty.next_page_number }}" aria-label="Next">
+                          <span aria-hidden="true">&raquo;</span>
+                        </a>
+                      </li>
+                    {% endif %}
+                </ul>
+              </nav><!-- End Pagination with icons -->
+    </div>
+</div><!-- End Recent Sales -->
+{% endblock %}

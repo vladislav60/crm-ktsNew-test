@@ -1,0 +1,32 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="col-lg-6">
+                <div class="card">
+                    <div class="card-body">
+    <h2>Отчет по Участкам Техников</h2>
+    <table class="table table-striped table-bordered table-dark" style="font-size: 13px;">
+        <thead>
+            <tr>
+                <th>Участок техника</th>
+                <th>Общее количество записей</th>
+                <th>Количество юридических лиц (True)</th>
+                <th>Количество юридических лиц (False)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in report_data %}
+                <tr>
+                    <td>{{ data.technician }}</td>
+                    <td>{{ data.total_records }}</td>
+                    <td>{{ data.legalentity_true_count }}</td>
+                    <td>{{ data.legalentity_false_count }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+                </div>
+</div>
+{% endblock %}

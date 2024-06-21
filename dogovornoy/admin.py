@@ -27,6 +27,13 @@ class PartnersRekvizityAdmin(admin.ModelAdmin):
     list_filter = ('vid_too',)
 
 
+@admin.register(rekvizity)
+class rekvizity(admin.ModelAdmin):
+    list_display = ('id', 'polnoe_name', 'adres_company', 'bin', 'iban', 'bic', 'bank', 'telephone_ofiice', 'telephone_buh', 'vid_too', 'doljnost', 'ucheriditel_name_polnoe', 'ucheriditel_name_sokr')
+    search_fields = ('polnoe_name', 'adres_company', 'bin')
+    list_filter = ('vid_too',)
+
+
 @admin.register(vid_sign)
 class VidSignAdmin(admin.ModelAdmin):
     list_display = ('id', 'name_sign', 'name_sign_polnoe')
@@ -41,5 +48,5 @@ class EkipazhAdmin(admin.ModelAdmin):
 
 # Регистрация Базы клиентов договорного в админке
 # admin.site.register(ktsAdmin)
-admin.site.register(rekvizity)
+# admin.site.register(rekvizity)
 admin.site.register(AdditionalService, AdditionalServiceAdmin)

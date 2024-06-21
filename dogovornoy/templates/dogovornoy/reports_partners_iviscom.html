@@ -4,11 +4,11 @@
 {% block content %}
 <!-- Recent Page Title -->
 <div class="pagetitle">
-    <h1>Отчет ТОО "SOB Security"</h1>
+    <h1>Отчет ТОО "IVISCOM"</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
-            <li class="breadcrumb-item active">Отчет TOO "Security"</li>
+            <li class="breadcrumb-item active">Отчет ТОО ТОО "IVISCOM"</li>
         </ol>
     </nav>
 </div>
@@ -41,7 +41,7 @@
     <p>Всего Физиков: {{ partners_kolvo_object_fiz.id__count }}</p>
 
     <div class="col-lg-4">
-    <form method="POST" action="{% url 'sobsecutity_download_fiz' %}">
+    <form method="POST" action="{% url 'iviscom_download_fiz' %}">
     {% csrf_token %}
     <button type="submit"  class="btn btn-primary w-100">Выгрузить отчет Физики</button>
     </form>
@@ -49,7 +49,7 @@
     <p></p>
 
     <div class="col-lg-4">
-    <form method="POST" action="{% url 'sobsecutity_download_ur' %}">
+    <form method="POST" action="{% url 'iviscom_download_ur' %}">
     {% csrf_token %}
     <button type="submit"  class="btn btn-primary w-100">Выгрузить отчет Юрики</button>
     </form>
@@ -60,7 +60,7 @@
 
     <div class="card recent-sales overflow-auto">
     <div class="card-body">
-        <h3>Отчет ТОО "SOB Security"</h3>
+        <h3>Отчет ТОО "IVISCOM"</h3>
         <h5>Отчет за период ({{ start_of_month }} - {{ end_of_month }})  {{ kolvo_day }}</h5>
 
         <table class="table table-bordered fz-table-11">

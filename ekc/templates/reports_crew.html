@@ -1,0 +1,42 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="col-lg-9">
+    <div class="card">
+        <div class="card-body">
+            <h2>Отчет по Экипажам</h2>
+            <a href="{% url 'export_crew_to_excel' %}" class="btn btn-primary">Экспорт в Excel</a>
+            <p></p>
+            <table class="table table-striped table-bordered table-dark" style="font-size: 13px;">
+                <thead>
+                    <tr>
+                        <th>Экипаж</th>
+                        <th>Кол-во объектов КТС</th>
+                        <th>Кол-во Юридические лица КТС</th>
+                        <th>Итоговые часы Юридические лица</th>
+                        <th>Сумма Юридические лица</th>
+                        <th>Физические лица</th>
+                        <th>Сумма Физические лица</th>
+                        <th>Сумма ОБЩАЯ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in crew_stats %}
+                        <tr>
+                            <td>{{ stat.crew }}</td>
+                            <td>{{ stat.total_count }}</td>
+                            <td>{{ stat.legal_count }}</td>
+                            <td>{{ stat.total_hours_legal }}</td>
+                            <td>{{ stat.total_legal_sum }}</td>
+                            <td>{{ stat.physical_count }}</td>
+                            <td>{{ stat.total_physical_sum }}</td>
+                            <td>{{ stat.total_sum }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

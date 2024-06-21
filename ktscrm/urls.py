@@ -27,6 +27,7 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     # №3 регистрируем ссылку на главную страницу
     path('', include('dogovornoy.urls')),
+    path('ekc/', include('ekc.urls')),
 ]
 
 #11 Эмуляция рабочего сервера для фото

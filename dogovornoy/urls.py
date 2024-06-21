@@ -85,6 +85,46 @@ urlpatterns = [
     path('reports_partners_sobsecutity/', reports_partners_sobsecutity, name='reports_partners_sobsecutity'),
     path('sobsecutity_download_fiz/', sobsecutity_download_fiz, name='sobsecutity_download_fiz'),
     path('sobsecutity_download_ur/', sobsecutity_download_ur, name='sobsecutity_download_ur'),
+    # Ссылка страницу отчета ИП "Eye Watch"
+    path('reports_partners_eyewatch/', reports_partners_eyewatch, name='reports_partners_eyewatch'),
+    path('eyewatch_download_fiz/', eyewatch_download_fiz, name='eyewatch_download_fiz'),
+    path('eyewatch_download_ur/', eyewatch_download_ur, name='eyewatch_download_ur'),
+    # Ссылка страницу отчета ТОО "Eurasian Security System"
+    path('reports_partners_eurasian/', reports_partners_eurasian, name='reports_partners_eurasian'),
+    path('eurasian_download_fiz/', eurasian_download_fiz, name='eurasian_download_fiz'),
+    path('eurasian_download_ur/', eurasian_download_ur, name='eurasian_download_ur'),
+    # Ссылка страницу отчета TOO "IVISCOM"
+    path('reports_partners_iviscom/', reports_partners_iviscom, name='reports_partners_iviscom'),
+    path('iviscom_download_fiz/', iviscom_download_fiz, name='iviscom_download_fiz'),
+    path('iviscom_download_ur/', iviscom_download_ur, name='iviscom_download_ur'),
+    # Ссылка страницу отчета ТОО "Б.М.kz Security"
+    path('reports_partners_bmkz/', reports_partners_bmkz, name='reports_partners_bmkz'),
+    path('bmkz_download_fiz/', bmkz_download_fiz, name='bmkz_download_fiz'),
+    path('bmkz_download_ur/', bmkz_download_ur, name='bmkz_download_ur'),
+    # Ссылка страницу отчета ТОО "Монолит Секьюрити"
+    path('reports_partners_monolit/', reports_partners_monolit, name='reports_partners_monolit'),
+    path('monolit_download_fiz/', monolit_download_fiz, name='monolit_download_fiz'),
+    path('monolit_download_ur/', monolit_download_ur, name='monolit_download_ur'),
+    # Ссылка страницу отчета ТОО "Tech-Mart"
+    path('reports_partners_techmart/', reports_partners_techmart, name='reports_partners_techmart'),
+    path('techmart_download_fiz/', techmart_download_fiz, name='techmart_download_fiz'),
+    path('techmart_download_ur/', techmart_download_ur, name='techmart_download_ur'),
+    # Ссылка страницу отчета ТОО "Tech-Mart"
+    path('reports_partners_twojoy/', reports_partners_twojoy, name='reports_partners_twojoy'),
+    path('twojoy_download_fiz/', twojoy_download_fiz, name='twojoy_download_fiz'),
+    path('twojoy_download_ur/', twojoy_download_ur, name='twojoy_download_ur'),
+    # Ссылка страницу отчета 	ТОО "MEDIN"
+    path('reports_partners_medin/', reports_partners_medin, name='reports_partners_medin'),
+    path('medin_download_fiz/', medin_download_fiz, name='medin_download_fiz'),
+    path('medin_download_ur/', medin_download_ur, name='medin_download_ur'),
+    # Ссылка страницу отчета   ИП "Жакитов"
+    path('reports_partners_zhakitov/', reports_partners_zhakitov, name='reports_partners_zhakitov'),
+    path('zhakitov_download_fiz/', zhakitov_download_fiz, name='zhakitov_download_fiz'),
+    path('zhakitov_download_ur/', zhakitov_download_ur, name='zhakitov_download_ur'),
+    # Ссылка страницу отчета ТОО "Эгида-Дружина
+    path('reports_partners_egida/', reports_partners_egida, name='reports_partners_egida'),
+    path('egida_download_fiz/', egida_download_fiz, name='egida_download_fiz'),
+    path('egida_download_ur/', egida_download_ur, name='egida_download_ur'),
     # Ссылка на страницу Отчеты кол-во объектов
     path('reports_kolvo/', reports_kolvo, name='reports_kolvo'),
     # Ссылка на страницу изменения клиента

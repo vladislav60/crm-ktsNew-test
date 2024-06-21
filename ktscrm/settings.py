@@ -37,11 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # №1 Регистрация приложения
     'dogovornoy.apps.DogovornoyConfig',
-    # 'avatar',
-    # 'profiles',
-    # 'debug_toolbar',
+    'ekc',
 ]
 
 MIDDLEWARE = [
@@ -80,15 +77,34 @@ WSGI_APPLICATION = 'ktscrm.wsgi.application'
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
 DATABASES = {
-	'default': {
-		'ENGINE': 'django.db.backends.postgresql_psycopg2',
-	    'NAME': 'crm-kts',
-	    'USER': 'postgres',
-	    'PASSWORD': 'postgres',
-	    'HOST': 'localhost',
-	    'PORT': '5432',
-	}
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'crm-kts',
+        'USER': 'postgres',
+        'PASSWORD': '',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    },
+    'asu_ekc': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'asu_ekc',
+        'USER': 'asu2',
+        'PASSWORD': 'c7VL09DcUnXGKVysq0fV',
+        'HOST': '192.168.1.60',
+        'PORT': '5432',
+    },
 }
+
+# 'asu_ekc': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'asu_ekc',
+#         'USER': 'asu',
+#         'PASSWORD': 'zMIRtcDiOVoI8zkhNPFk',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     },
+
+DATABASE_ROUTERS = ['ktscrm.db_routers.EKCDbRouter']
 
 
 # Password validation

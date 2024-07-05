@@ -32,6 +32,7 @@ class kts(models.Model):
     stoimost_rpo = models.IntegerField(null=True, verbose_name="Стоимость РПО")
     date_podkluchenia = models.DateField(blank=True, null=True, verbose_name="Дата подключения")
     date_otklulchenia = models.DateField(blank=True, null=True, verbose_name="Дата отключения")
+    date_izmenenia = models.DateField(blank=True, null=True, verbose_name="Дата изменения")
     gruppa_reagirovania = models.CharField(max_length=255, blank=True, null=True, verbose_name="Группа реагирования")
     email = models.CharField(max_length=255, blank=True, null=True, verbose_name="Электронный адрес")
     vid_rpo = models.TextField(blank=True, null=True, verbose_name="Вид РПО")

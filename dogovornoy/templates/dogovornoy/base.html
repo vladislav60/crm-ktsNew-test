@@ -334,6 +334,18 @@
                 </li>
 
                 <li>
+                    <a href="{% url 'kts_reports_kolvo' %}">
+                        <i class="bi bi-circle"></i><span>Отчет начальство наши компании</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'partner_reports_kolvo' %}">
+                        <i class="bi bi-circle"></i><span>Отчет начальство партенеры</span>
+                    </a>
+                </li>
+
+                <li>
                     <a href="{% url 'reports_partners' %}">
                         <i class="bi bi-circle"></i><span>Отчет кол-во объектов ТОО "СГС-Плюс"</span>
                     </a>
@@ -480,6 +492,25 @@
                 </li>
             </ul>
         </li><!-- End Главная Nav -->
+
+
+
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#pult-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
+                <i class="bi bi-shield-shaded"></i><span>Пульт Raptor</span>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="ekc-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li>
+                    <a href="{% url 'card_list' %}">
+                        <i class="bi bi-circle"></i><span>База объектов</span>
+                    </a>
+                </li>
+
+            </ul>
+        </li><!-- End Главная Nav -->
+
+
 
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">

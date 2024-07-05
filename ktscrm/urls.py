@@ -28,6 +28,7 @@ urlpatterns = [
     # №3 регистрируем ссылку на главную страницу
     path('', include('dogovornoy.urls')),
     path('ekc/', include('ekc.urls')),
+    path('pult/', include('pult.urls')),
 ]
 
 #11 Эмуляция рабочего сервера для фото

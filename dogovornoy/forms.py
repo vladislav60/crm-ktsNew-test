@@ -16,7 +16,7 @@ class AddKlientDogForm(forms.ModelForm):
                   'mat_otv', 'act_ty', 'time_reag', 'time_reag_nebol', 'yslovie_dogovora', 'klient_name', 'name_object', 'adres', 'iin_bin', 'telephone',
                   'vid_sign', 'urik', 'chasi_po_dog', 'dop_uslugi', 'abon_plata',
                   'object_number', 'peredatchik_number', 'stoimost_rpo', 'date_podkluchenia', 'date_otklulchenia',
-                  'gruppa_reagirovania', 'email',
+                  'gruppa_reagirovania', 'email', 'date_izmenenia',
                   'vid_rpo', 'primechanie', 'prochee', 'agentskie', 'photo', 'exclude_from_report']
         widgets = {
             'udv_number': forms.TextInput(attrs={'class': 'form-control'}),
@@ -55,6 +55,7 @@ class AddKlientDogForm(forms.ModelForm):
                 attrs={'required': 'True', 'min': '0', 'class': 'form-control', 'max': '10000000'}),
             'date_podkluchenia': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'date_otklulchenia': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
+            'date_izmenenia': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'gruppa_reagirovania': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.TextInput(attrs={'class': 'form-control'}),
             'vid_rpo': forms.Textarea(attrs={'class': 'form-control'}),

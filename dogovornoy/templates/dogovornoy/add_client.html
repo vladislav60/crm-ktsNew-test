@@ -210,7 +210,7 @@
                                 <div class="form-error">{{ peredatchik_number.errors }}</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="{{ form.date_podkluchenia.id_for_label }}" class="form-label">
                                     {{ form.date_podkluchenia.label }}
                                 </label>
@@ -218,12 +218,20 @@
                                 <div class="form-error">{{ date_podkluchenia.errors }}</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label for="{{ form.date_otklulchenia.id_for_label }}" class="form-label">
                                     {{ form.date_otklulchenia.label }}
                                 </label>
                                 {{ form.date_otklulchenia }}
                                 <div class="form-error">{{ date_otklulchenia.errors }}</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="{{ form.date_izmenenia.id_for_label }}" class="form-label">
+                                    {{ form.date_izmenenia.label }}
+                                </label>
+                                {{ form.date_izmenenia }}
+                                <div class="form-error">{{ date_izmenenia.errors }}</div>
                             </div>
 
                             <div class="col-md-4">

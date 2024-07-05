@@ -267,7 +267,7 @@
                                 {% endif %}
                             </div>
 
-                            <div class="col-6">
+                            <div class="col-4">
                                 <label for="inputNanme4" class="form-label">Дата подключения</label>
                                 {% if kartochka.date_podkluchenia %}
                                     <input type="text" class="form-control" value="{{ kartochka.date_podkluchenia }}"
@@ -277,10 +277,20 @@
                                 {% endif %}
                             </div>
 
-                            <div class="col-6">
+                            <div class="col-4">
                                 <label for="inputNanme4" class="form-label">Дата отключения</label>
                                 {% if kartochka.date_otklulchenia %}
                                     <input type="text" class="form-control" value="{{ kartochka.date_otklulchenia }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">Дата изменения</label>
+                                {% if kartochka.date_izmenenia %}
+                                    <input type="text" class="form-control" value="{{ kartochka.date_izmenenia }}"
                                            disabled>
                                 {% else %}
                                     <input type="text" class="form-control" value=" " disabled>

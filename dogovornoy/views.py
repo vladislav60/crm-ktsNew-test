@@ -4,7 +4,7 @@ from io import BytesIO
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import AbstractUser
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, F, Q
 from django.utils.decorators import method_decorator
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.paginator import Paginator
@@ -17,7 +17,7 @@ from django.http import HttpResponse, HttpResponseNotFound, Http404, HttpRespons
 from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.views.generic.edit import FormView
-from docxtpl import DocxTemplate
+from docxtpl import *
 import os
 from datetime import *
 from number_to_string import get_string_by_number
@@ -25,6 +25,7 @@ from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 import pandas as pd
 from django.urls import reverse
+from openpyxl.workbook import Workbook
 
 from ktscrm import settings
 from .forms import ExcelImportForm
@@ -32,7 +33,6 @@ from .models import *
 import numpy as np
 from django.utils import timezone
 from datetime import datetime
-from django.db.models import Q
 from django.utils.dateparse import parse_date
 import openpyxl
 from openpyxl.utils import get_column_letter
@@ -195,7 +195,7 @@ def update_client(request, klient_id):
         form = AddKlientDogForm(request.POST, request.FILES, instance=kartochka)
         if form.is_valid():
             form.save()
-            return redirect('baza_dogovorov')
+            return redirect('kartochka_klienta', klient_id=kartochka.pk)
     else:
         form = AddKlientDogForm(instance=kartochka)
 
@@ -384,7 +384,8 @@ def importexcel(request):
                     photo=row['photo'],
                     prochee=row['prochee'],
                     company_name_id=row['company_name_id'],
-                    vid_sign_id=row['vid_sign_id']
+                    vid_sign_id=row['vid_sign_id'],
+                    date_izmenenia=row['date_izmenenia'],
                 )
                 kts_obj.save()
 
@@ -588,18 +589,28 @@ class KartochkaPartner(DetailView):
         sms_uvedomlenie = 0
 
         if partner_object.date_otkluchenia:
-            if (partner_object.date_otkluchenia > start_of_month) and (
-                    partner_object.date_podkluchenia < start_of_month):
+            if isinstance(start_of_month, datetime):
+                start_of_month = start_of_month.date()
+            if isinstance(end_of_month, datetime):
+                end_of_month = end_of_month.date()
+
+            if (partner_object.date_otkluchenia > start_of_month) and (partner_object.date_podkluchenia < start_of_month):
                 num_days = (partner_object.date_otkluchenia - start_of_month).days
-            elif (partner_object.date_otkluchenia > start_of_month) and (partner_object.date_podkluchenia >= start_of_month):
-                num_days = (partner_object.date_otkluchenia - partner_object.date_podkluchenia).days
+            elif (partner_object.date_otkluchenia > start_of_month) and (
+                    partner_object.date_podkluchenia > partner_object.date_otkluchenia):
+                num_days = num_days_mounth - (partner_object.date_podkluchenia - partner_object.date_otkluchenia).days
             elif partner_object.date_otkluchenia > start_of_month:
                 num_days = num_days_mounth - (partner_object.date_podkluchenia - partner_object.date_otkluchenia).days
+            elif partner_object.date_otkluchenia < start_of_month:
+                num_days = num_days_mounth
             else:
                 num_days = (partner_object.date_otkluchenia - start_of_month).days
         else:
-            if partner_object.date_podkluchenia > start_of_month:
-                num_days = (end_of_month - partner_object.date_podkluchenia).days + 1
+            if partner_object.date_podkluchenia:
+                if partner_object.date_podkluchenia > start_of_month:
+                    num_days = (end_of_month - partner_object.date_podkluchenia).days + 1
+                else:
+                    num_days = num_days_mounth
             else:
                 num_days = num_days_mounth
 
@@ -613,6 +624,7 @@ class KartochkaPartner(DetailView):
                     (partner_object.company_name.tehnic_srv_cost_fiz / num_days_mounth) * num_days)
         else:
             itog_tehnical_services = 0
+
 
         if partner_object.rent_gsm:
             if partner_object.urik:
@@ -728,12 +740,12 @@ def login_view(request):
     return render(request, 'accounts/login.html', {'form': form})
 
 
-# Страница отчеты договорной
+
 @login_required
 def reports(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
-    end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc)
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -743,28 +755,19 @@ def reports(request):
             end_of_month = parse_date(end_date)
 
     companies = rekvizity.objects.all()
-    urik_companies = rekvizity.objects.filter(kts__urik=True, kts__date_otklulchenia=None)
-    non_urik_companies_quantity = rekvizity.objects.filter(kts__urik=False, kts__date_otklulchenia=None)
 
     reports = []
 
     for company in companies:
+        kts_company_name = kts.objects.filter(company_name_id=company.id).distinct()
 
-        # 1 otlk
         kts_otkl = kts.objects.filter(
             Q(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
               date_otklulchenia__lte=end_of_month, exclude_from_report=False) |
             Q(company_name_id=company.id, additional_services__date_unsubscribe__gte=start_of_month,
               additional_services__date_unsubscribe__lte=end_of_month, exclude_from_report=False)
         ).distinct()
-        kts_abon_summa_otkl = kts.objects.filter(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
-                                            date_otklulchenia__lte=end_of_month).aggregate(Sum('abon_plata'))
-        kts_count = kts.objects.filter(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
-                                       date_otklulchenia__lte=end_of_month).aggregate(Count('id'))
-        kts_fiz = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia__gte=start_of_month,
-                                     date_otklulchenia__lte=end_of_month).aggregate(Count('id'))
 
-        # 2 podlk
         kts_podkl = kts.objects.filter(
             Q(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
               date_podkluchenia__lte=end_of_month, exclude_from_report=False) |
@@ -772,221 +775,74 @@ def reports(request):
               additional_services__date_added__lte=end_of_month, exclude_from_report=False)
         ).distinct()
 
-        kts_abon_summa_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
-                                                  date_podkluchenia__lte=end_of_month).aggregate(Sum('abon_plata'))
+        kts_izmenenie = kts.objects.filter(
+            Q(company_name_id=company.id, date_izmenenia__gte=start_of_month,
+              date_izmenenia__lte=end_of_month, exclude_from_report=False) |
+            Q(company_name_id=company.id, additional_services__date_added__gte=start_of_month,
+              additional_services__date_added__lte=end_of_month, exclude_from_report=False)
+        ).distinct()
 
-        kts_count_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
-                                             date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
+        kts_abon_summa_otkl = kts_otkl.aggregate(Sum('abon_plata'))
+        kts_count_otkl = kts_otkl.aggregate(Count('id'))
+        kts_fiz_otkl = kts_otkl.filter(urik=False).aggregate(Count('id'))
 
-        kts_fiz_podkl = kts.objects.filter(company_name_id=company.id, urik=False,
-                                           date_podkluchenia__gte=start_of_month,
-                                           date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
+        kts_abon_summa_podkl = kts_podkl.aggregate(Sum('abon_plata'))
+        kts_count_podkl = kts_podkl.aggregate(Count('id'))
+        kts_fiz_podkl = kts_podkl.filter(urik=False).aggregate(Count('id'))
 
-        # 2 Все объекты до выбранной даты
-        kts_podkl_dodate = kts.objects.filter(company_name_id=company.id, date_podkluchenia__lte=end_of_month,
-                                       date_otklulchenia=None, urik=True, exclude_from_report=False)
+        kts_abon_summa_izmenenia = kts_izmenenie.aggregate(Sum('abon_plata'))
+        kts_count_izmenenia = kts_izmenenie.aggregate(Count('id'))
+        kts_fiz_izmenenia = kts_izmenenie.filter(urik=False).aggregate(Count('id'))
 
-
-        # Всего на начало выбранного месяцаkolvo_podkl_fiz
-        kts_count_podkl_alldate = kts.objects.filter(company_name_id=company.id,date_podkluchenia__lte=start_of_month,
-                                                     date_otklulchenia=None,exclude_from_report=False).aggregate(Count('id'))
-
-
-        kts_count_podkl_kv_stmth = kts.objects.filter(company_name_id=company.id, date_podkluchenia__lte=start_of_month,
-                                                     date_otklulchenia=None, name_object="квартира",
-                                                      exclude_from_report=False).aggregate(Count('id'))
-
-        kts_count_podkl_dom_stmth = kts.objects.filter(company_name_id=company.id, date_podkluchenia__lte=start_of_month,
-                                                      date_otklulchenia=None, name_object="дом",
-                                                      exclude_from_report=False).aggregate(Count('id'))
-
-        kts_fiz_podkl_startdate = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia=None,
-                                           date_podkluchenia__lte=start_of_month, exclude_from_report=False).aggregate(Count('id'))
-
-        kts_ur_podkl_startdate = kts.objects.filter(company_name_id=company.id, urik=True, date_otklulchenia=None,
-                                                     date_podkluchenia__lte=start_of_month,
-                                                     exclude_from_report=False).aggregate(Count('id'))
-
-        # Всего на конец выбранного месяца
-        kts_count_podkl_end = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None, urik=True,
-                                                 date_podkluchenia__lte=end_of_month,
-                                                 exclude_from_report=False).aggregate(Count('id'))
-
-        kts_fiz_podkl_end = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia=None,
-                                               date_podkluchenia__lte=end_of_month, exclude_from_report=False).aggregate(Count('id'))
-
-        kts_podkl_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                               date_podkluchenia__lte=end_of_month,
-                                               exclude_from_report=False).aggregate(Count('id'))
-
-        kts_podkl_kv_end_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                           date_podkluchenia__lte=end_of_month,name_object="квартира",
-                                           exclude_from_report=False).aggregate(Count('id'))
-
-        kts_podkl_dom_end_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                  date_podkluchenia__lte=end_of_month, name_object="дом",
-                                                  exclude_from_report=False).aggregate(Count('id'))
-
-        # принято(в т.ч.после вр.снятия )
-        kolvo_podkl_obj_urik = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                             date_podkluchenia__gte=start_of_month, exclude_from_report=False,
-                                             date_podkluchenia__lte=end_of_month, urik=True).aggregate(Count('id'))
-
-        kolvo_podkl_obj_fiz = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia=None,
-                                             date_podkluchenia__gte=start_of_month, exclude_from_report=False,
-                                             date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        kolvo_podkl_obj_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                 date_podkluchenia__gte=start_of_month, exclude_from_report=False,
-                                                 date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        kolvo_podkl_obj_kv = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                 date_podkluchenia__gte=start_of_month, exclude_from_report=False,
-                                                 date_podkluchenia__lte=end_of_month,name_object="квартира").aggregate(Count('id'))
-
-        kolvo_podkl_obj_dom = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                date_podkluchenia__gte=start_of_month, exclude_from_report=False,
-                                                date_podkluchenia__lte=end_of_month, name_object="дом").aggregate(Count('id'))
-
-        # расторженно (в т.ч.после вр.снятия )
-        kolvo_otkl_obj = kts.objects.filter(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
-                                            date_otklulchenia__lte=end_of_month, exclude_from_report=False).aggregate(Count('id'))
-
-        kolvo_otkl_fiz = kts.objects.filter(company_name_id=company.id, urik=False,
-                                            date_otklulchenia__gte=start_of_month,
-                                            date_otklulchenia__lte=end_of_month, exclude_from_report=False).aggregate(Count('id'))
-
-        # экипажи физические лица
-        gruppa_reagirovania_911_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=False, gruppa_reagirovania='911',date_podkluchenia__lte=end_of_month,
-                                                         exclude_from_report=False).aggregate(Count('id'))
-
-        gruppa_reagirovania_bravo21_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                             urik=False, gruppa_reagirovania='Браво-21',date_podkluchenia__lte=end_of_month,
-                                                             exclude_from_report=False).aggregate(Count('id'))
-
-        gruppa_reagirovania_sms_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=False, gruppa_reagirovania='СМС',date_podkluchenia__lte=end_of_month,
-                                                         exclude_from_report=False).aggregate(Count('id'))
-
-        gruppa_reagirovania_asker_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                           urik=False, gruppa_reagirovania='Әскер',date_podkluchenia__lte=end_of_month,
-                                                           exclude_from_report=False).aggregate(Count('id'))
-
-        gruppa_reagirovania_zardem_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                            urik=False, gruppa_reagirovania='Жардем',date_podkluchenia__lte=end_of_month,
-                                                            exclude_from_report=False).aggregate(Count('id'))
-
-        gruppa_reagirovania_kuguar_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                            urik=False, gruppa_reagirovania='Кугуар',
-                                                            date_podkluchenia__lte=end_of_month,
-                                                            exclude_from_report=False).aggregate(Count('id'))
-
-        gruppa_reagirovania_kapchagai_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                            urik=False, gruppa_reagirovania='Капшагай',
-                                                            date_podkluchenia__lte=end_of_month,
-                                                            exclude_from_report=False).aggregate(Count('id'))
-
-        # экипажи юридические лица
-        gruppa_reagirovania_911_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        urik=True, date_podkluchenia__lte=end_of_month,
-                                                        gruppa_reagirovania='911').aggregate(Count('id'))
-
-        gruppa_reagirovania_bravo21_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                            urik=True, gruppa_reagirovania='Браво-21',
-                                                            date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        gruppa_reagirovania_sms_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        urik=True, gruppa_reagirovania='СМС',
-                                                        date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        gruppa_reagirovania_asker_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                          urik=True, gruppa_reagirovania='Эскер',
-                                                          date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        gruppa_reagirovania_zardem_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                           urik=True, gruppa_reagirovania='Жардем',
-                                                           date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        gruppa_reagirovania_kapchagai_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                               urik=True, gruppa_reagirovania='Капшагай',
-                                                               date_podkluchenia__lte=end_of_month,
-                                                               exclude_from_report=False).aggregate(Count('id'))
-
-        gruppa_reagirovania_kuguar_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                              urik=True, gruppa_reagirovania='Кугуар',
-                                                              date_podkluchenia__lte=end_of_month,
-                                                              exclude_from_report=False).aggregate(Count('id'))
-
-
-        # Итого для юридические лицаЭкипажи
-        gruppa_reagirovania_911_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        date_podkluchenia__lte=end_of_month,
-                                                        gruppa_reagirovania='911').aggregate(Count('id'))
-
-        gruppa_reagirovania_bravo21_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                            gruppa_reagirovania='Браво-21',
-                                                            date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        gruppa_reagirovania_sms_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        gruppa_reagirovania='СМС',
-                                                        date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        gruppa_reagirovania_asker_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                          gruppa_reagirovania='Эскер',
-                                                          date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        gruppa_reagirovania_zardem_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                           gruppa_reagirovania='Жардем',
-                                                           date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
-
-        gruppa_reagirovania_kapchagai_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                              gruppa_reagirovania='Капшагай',date_podkluchenia__lte=end_of_month,
-                                                              exclude_from_report=False).aggregate(Count('id'))
-
-        gruppa_reagirovania_kuguar_all = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                           gruppa_reagirovania='Кугуар',
-                                                           date_podkluchenia__lte=end_of_month,
-                                                           exclude_from_report=False).aggregate(Count('id'))
-
-        print(kts_count_podkl)
-        # 2 podlk
         for kts_instance in kts_podkl:
-            # Calculate the total cost of additional services for each kts_instance
             additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
             additional_services_prim = kts_instance.additional_services.all()
             for service in additional_services_prim:
-                kts_instance.primechanie = f"{kts_instance.primechanie}, '{service.service_name}' c '{service.date_added}' а/п была = {kts_instance.abon_plata or 0} "
+                kts_instance.primechanie = f"{kts_instance.primechanie}, '{service.service_name}' с '{service.date_added}' а/п была = {kts_instance.abon_plata or 0} "
 
             if additional_services_cost:
                 if kts_instance.date_podkluchenia.month != start_of_month.month:
                     kts_instance.abon_plata = additional_services_cost
                     kts_abon_summa_podkl['abon_plata__sum'] = (kts_abon_summa_podkl['abon_plata__sum'] or 0) + additional_services_cost
                 else:
-                    kts_instance.abon_plata = kts_instance.abon_plata + additional_services_cost
-                    kts_abon_summa_podkl['abon_plata__sum'] = kts_abon_summa_podkl['abon_plata__sum'] + additional_services_cost
+                    kts_instance.abon_plata += additional_services_cost
+                    kts_abon_summa_podkl['abon_plata__sum'] = (kts_abon_summa_podkl['abon_plata__sum'] or 0) + additional_services_cost
 
-        # 1 otlk
         for kts_instance in kts_otkl:
-            # Calculate the total cost of additional services for each kts_instance
             additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
             additional_services_prim = kts_instance.additional_services.all()
             for service in additional_services_prim:
-                kts_instance.primechanie = f"{kts_instance.primechanie}, '{service.service_name}' c '{service.date_unsubscribe}' а/п была = {kts_instance.abon_plata or 0} "
+                kts_instance.primechanie = f"{kts_instance.primechanie}, '{service.service_name}' с '{service.date_unsubscribe}' а/п была = {kts_instance.abon_plata or 0} "
 
             if additional_services_cost:
                 if kts_instance.date_otklulchenia.month != start_of_month.month:
                     kts_instance.abon_plata = additional_services_cost
                 else:
-                    kts_instance.abon_plata = kts_instance.abon_plata + additional_services_cost
-                    kts_abon_summa_otkl['abon_plata__sum'] = kts_abon_summa_otkl['abon_plata__sum'] + additional_services_cost
+                    kts_instance.abon_plata += additional_services_cost
+                    kts_abon_summa_otkl['abon_plata__sum'] = (kts_abon_summa_otkl['abon_plata__sum'] or 0) + additional_services_cost
+
+
+        for kts_instance in kts_izmenenie:
+            additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
+            additional_services_prim = kts_instance.additional_services.all()
+            for service in additional_services_prim:
+                kts_instance.primechanie = f"{kts_instance.primechanie}, '{service.service_name}' с '{service.date_added}' а/п была = {kts_instance.abon_plata or 0} "
+
+            if additional_services_cost:
+                if kts_instance.date_podkluchenia.month != start_of_month.month:
+                    kts_instance.abon_plata = additional_services_cost
+                    kts_abon_summa_podkl['abon_plata__sum'] = (kts_abon_summa_podkl['abon_plata__sum'] or 0) + additional_services_cost
+                else:
+                    kts_instance.abon_plata += additional_services_cost
+                    kts_abon_summa_podkl['abon_plata__sum'] = (kts_abon_summa_podkl['abon_plata__sum'] or 0) + additional_services_cost
+
 
         reports.append({
-            'companies': companies,
-            'urik_companies': urik_companies,
-            'non_urik_companies_quantity': non_urik_companies_quantity,
+            'kts_company_name': kts_company_name,
+            'company': company,
             'kts_otkl': kts_otkl,
-            'kts_count': kts_count, 'kts_fiz': kts_fiz,
+            'kts_count_otkl': kts_count_otkl,
+            'kts_fiz_otkl': kts_fiz_otkl,
             'kts_podkl': kts_podkl,
             'kts_abon_summa_podkl': kts_abon_summa_podkl,
             'kts_abon_summa_otkl': kts_abon_summa_otkl,
@@ -994,50 +850,150 @@ def reports(request):
             'kts_fiz_podkl': kts_fiz_podkl,
             'start_of_month': start_of_month,
             'end_of_month': end_of_month,
-            'end_of_month': end_of_month,
-            'kts_podkl_dodate': kts_podkl_dodate,
-            'kolvo_podkl_obj_urik': kolvo_podkl_obj_urik,
-            'kolvo_podkl_obj_fiz': kolvo_podkl_obj_fiz,
-            'kts_count_podkl_kv_stmth' : kts_count_podkl_kv_stmth,
-            'kts_count_podkl_dom_stmth' : kts_count_podkl_dom_stmth,
-            'kolvo_otkl_obj': kolvo_otkl_obj,
-            'kolvo_otkl_fiz': kolvo_otkl_fiz,
-            'gruppa_reagirovania_911_fiz': gruppa_reagirovania_911_fiz,
-            'gruppa_reagirovania_sms_fiz': gruppa_reagirovania_sms_fiz,
-            'gruppa_reagirovania_asker_fiz': gruppa_reagirovania_asker_fiz,
-            'gruppa_reagirovania_zardem_fiz': gruppa_reagirovania_zardem_fiz,
-            'gruppa_reagirovania_bravo21_fiz': gruppa_reagirovania_bravo21_fiz,
-            'gruppa_reagirovania_911_ur': gruppa_reagirovania_911_ur,
-            'gruppa_reagirovania_sms_ur': gruppa_reagirovania_sms_ur,
-            'gruppa_reagirovania_asker_ur': gruppa_reagirovania_asker_ur,
-            'gruppa_reagirovania_zardem_ur': gruppa_reagirovania_zardem_ur,
-            'gruppa_reagirovania_bravo21_ur': gruppa_reagirovania_bravo21_ur,
-            'kts_count_podkl_end': kts_count_podkl_end,
-            'kts_fiz_podkl_end': kts_fiz_podkl_end,
-            'kts_count_podkl_alldate': kts_count_podkl_alldate,
-            'kts_fiz_podkl_startdate' : kts_fiz_podkl_startdate,
-            'kts_ur_podkl_startdate' : kts_ur_podkl_startdate,
-            'kolvo_podkl_obj_all':kolvo_podkl_obj_all,
-            'kolvo_podkl_obj_kv':kolvo_podkl_obj_kv,
-            'kolvo_podkl_obj_dom':kolvo_podkl_obj_dom,
-            'kts_podkl_all':kts_podkl_all,
-            'kts_podkl_kv_end_all':kts_podkl_kv_end_all,
-            'kts_podkl_dom_end_all':kts_podkl_dom_end_all,
-            'gruppa_reagirovania_kuguar_fiz':gruppa_reagirovania_kuguar_fiz,
-            'gruppa_reagirovania_kapchagai_fiz':gruppa_reagirovania_kapchagai_fiz,
-            'gruppa_reagirovania_kapchagai_ur':gruppa_reagirovania_kapchagai_ur,
-            'gruppa_reagirovania_kuguar_ur':gruppa_reagirovania_kuguar_ur,
-            'gruppa_reagirovania_sms_all':gruppa_reagirovania_sms_all,
-            'gruppa_reagirovania_bravo21_all':gruppa_reagirovania_bravo21_all,
-            'gruppa_reagirovania_zardem_all':gruppa_reagirovania_zardem_all,
-            'gruppa_reagirovania_911_all':gruppa_reagirovania_911_all,
-            'gruppa_reagirovania_kapchagai_all':gruppa_reagirovania_kapchagai_all,
-            'gruppa_reagirovania_kuguar_all':gruppa_reagirovania_kuguar_all,
-            'gruppa_reagirovania_asker_all':gruppa_reagirovania_asker_all,
-
+            'kts_abon_summa_izmenenia':kts_abon_summa_izmenenia,
+            'kts_count_izmenenia':kts_count_izmenenia,
+            'kts_fiz_izmenenia':kts_fiz_izmenenia,
+            'kts_izmenenie':kts_izmenenie,
         })
-        context = {'reports': reports, 'start_of_month': start_of_month, 'end_of_month': end_of_month}
+
+    context = {'reports': reports, 'start_of_month': start_of_month, 'end_of_month': end_of_month}
     return render(request, 'dogovornoy/reports.html', context)
+
+
+
+@login_required
+def export_reports_to_excel(request):
+    now = timezone.now()
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        if start_date and end_date:
+            start_of_month = parse_date(start_date)
+            end_of_month = parse_date(end_date)
+
+    companies = rekvizity.objects.all()
+
+    reports = []
+
+    for company in companies:
+        kts_company_name = kts.objects.filter(company_name_id=company.id).distinct()
+
+        kts_otkl = kts.objects.filter(
+            Q(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
+              date_otklulchenia__lte=end_of_month, exclude_from_report=False) |
+            Q(company_name_id=company.id, additional_services__date_unsubscribe__gte=start_of_month,
+              additional_services__date_unsubscribe__lte=end_of_month, exclude_from_report=False)
+        ).distinct()
+
+        kts_podkl = kts.objects.filter(
+            Q(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
+              date_podkluchenia__lte=end_of_month, exclude_from_report=False) |
+            Q(company_name_id=company.id, additional_services__date_added__gte=start_of_month,
+              additional_services__date_added__lte=end_of_month, exclude_from_report=False)
+        ).distinct()
+
+        kts_izmenenie = kts.objects.filter(
+            Q(company_name_id=company.id, date_izmenenia__gte=start_of_month,
+              date_izmenenia__lte=end_of_month, exclude_from_report=False) |
+            Q(company_name_id=company.id, additional_services__date_added__gte=start_of_month,
+              additional_services__date_added__lte=end_of_month, exclude_from_report=False)
+        ).distinct()
+
+        kts_abon_summa_otkl = kts_otkl.aggregate(Sum('abon_plata'))
+        kts_count_otkl = kts_otkl.aggregate(Count('id'))
+        kts_fiz_otkl = kts_otkl.filter(urik=False).aggregate(Count('id'))
+
+        kts_abon_summa_podkl = kts_podkl.aggregate(Sum('abon_plata'))
+        kts_count_podkl = kts_podkl.aggregate(Count('id'))
+        kts_fiz_podkl = kts_podkl.filter(urik=False).aggregate(Count('id'))
+
+        kts_abon_summa_izmenenia = kts_izmenenie.aggregate(Sum('abon_plata'))
+        kts_count_izmenenia = kts_izmenenie.aggregate(Count('id'))
+        kts_fiz_izmenenia = kts_izmenenie.filter(urik=False).aggregate(Count('id'))
+
+        reports.append({
+            'kts_company_name': kts_company_name,
+            'company': company,
+            'kts_otkl': kts_otkl,
+            'kts_count_otkl': kts_count_otkl,
+            'kts_fiz_otkl': kts_fiz_otkl,
+            'kts_podkl': kts_podkl,
+            'kts_abon_summa_podkl': kts_abon_summa_podkl,
+            'kts_abon_summa_otkl': kts_abon_summa_otkl,
+            'kts_count_podkl': kts_count_podkl,
+            'kts_fiz_podkl': kts_fiz_podkl,
+            'start_of_month': start_of_month,
+            'end_of_month': end_of_month,
+            'kts_abon_summa_izmenenia': kts_abon_summa_izmenenia,
+            'kts_count_izmenenia': kts_count_izmenenia,
+            'kts_fiz_izmenenia': kts_fiz_izmenenia,
+            'kts_izmenenie': kts_izmenenie,
+        })
+
+    # Create Excel workbook and worksheet
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Отчет по Экипажам"
+
+    # Define column headers
+    columns = [
+        "Компания", "Тип отчета", "№ дог", "Дата", "Клиент", "Наименование объекта",
+        "Адрес", "ИИН/БИН", "Вид сигнализации", "Часы по договору",
+        "Алсеко", "сум.план", "№ объекта", "№ ЦМТ/GSM", "Стоимость РПО",
+        "Дата подключения/отключения/изменения", "Группа реагирования", "Примечание"
+    ]
+    ws.append(columns)
+
+    # Populate the worksheet with data
+    for con in reports:
+        for report_type, kts_list in [('Подключенные', con['kts_podkl']),
+                                      ('Отключенные', con['kts_otkl']),
+                                      ('Изменения', con['kts_izmenenie'])]:
+            for kts_instance in kts_list:
+                additional_services = ", ".join(
+                    f"{service.service_name} ({service.date_added if report_type == 'Подключенные' else service.date_unsubscribe})"
+                    for service in kts_instance.additional_services.all()
+                )
+                row = [
+                    con['company'].polnoe_name,
+                    report_type,
+                    kts_instance.dogovor_number,
+                    kts_instance.data_zakluchenia,
+                    kts_instance.klient_name,
+                    kts_instance.name_object,
+                    kts_instance.adres,
+                    kts_instance.iin_bin,
+                    kts_instance.vid_sign.name_sign,  # Convert to string
+                    kts_instance.chasi_po_dog,
+                    additional_services,
+                    kts_instance.abon_plata,
+                    kts_instance.object_number,
+                    kts_instance.peredatchik_number,
+                    kts_instance.stoimost_rpo,
+                    kts_instance.date_podkluchenia if report_type == 'Подключенные' else
+                    kts_instance.date_otklulchenia if report_type == 'Отключенные' else
+                    kts_instance.date_izmenenia,
+                    kts_instance.gruppa_reagirovania,
+                    kts_instance.primechanie
+                ]
+                ws.append(row)
+
+    # Save the workbook to a BytesIO object
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    # Create the HttpResponse object with the appropriate Excel header
+    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=reports.xlsx'
+
+    return response
+
+
+
 
 
 # Страница отчеты договорной
@@ -1102,7 +1058,7 @@ def reports_agentskie(request):
 def reports_partners(request):
     now = timezone.now()
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
     if request.method == 'POST':
@@ -1113,6 +1069,9 @@ def reports_partners(request):
             end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=1)
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=1).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=1, urik=True).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=1, urik=False).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -1243,6 +1202,9 @@ def reports_partners(request):
         'summ_sms_uvedomlenie': summ_sms_uvedomlenie,
         'summ_fire_alarm': summ_fire_alarm,
         'itog_summ_mounth': itog_summ_mounth,
+        'partners_kolvo_object': partners_kolvo_object,
+        'partners_kolvo_object_ur': partners_kolvo_object_ur,
+        'partners_kolvo_object_fiz': partners_kolvo_object_fiz,
     }
 
     return render(request, 'dogovornoy/reports_partners.html', context)
@@ -1665,7 +1627,7 @@ def reports_partners_akm(request):
     now = timezone.now()
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    num_days_month = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1675,6 +1637,9 @@ def reports_partners_akm(request):
             end_of_month = parse_date(end_date)
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=2)
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=2).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=2, urik=True).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=2, urik=False).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -1695,79 +1660,115 @@ def reports_partners_akm(request):
             if isinstance(end_of_month, datetime):
                 end_of_month = end_of_month.date()
 
-            if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
+            if (kts_instance.date_otkluchenia > start_of_month) and (
+                    kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
             elif (kts_instance.date_otkluchenia > start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
-                num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
+                num_days = num_days_month - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
-                num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
+                num_days = num_days_month - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia < start_of_month:
-                num_days = num_days_mounth
+                num_days = num_days_month
             else:
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-
         else:
-            if kts_instance.date_podkluchenia > start_of_month:
-                num_days = (end_of_month - kts_instance.date_podkluchenia).days + 1
+            if kts_instance.date_podkluchenia:
+                if kts_instance.date_podkluchenia > start_of_month:
+                    num_days = (end_of_month - kts_instance.date_podkluchenia).days + 1
+                else:
+                    num_days = num_days_month
             else:
-                num_days = num_days_mounth
+                num_days = num_days_month
 
         if kts_instance.telemetria:
-            itog_telemetria = int((kts_instance.company_name.telemetria / num_days_mounth) * num_days)
+            itog_telemetria = int((kts_instance.company_name.telemetria / num_days_month) * num_days)
         else:
             itog_telemetria = 0
 
         if kts_instance.rent_gsm:
             if kts_instance.urik:
-                itog_rent_gsm = int((kts_instance.company_name.arenda_ur / num_days_mounth) * num_days)
+                itog_rent_gsm = int((kts_instance.company_name.arenda_ur / num_days_month) * num_days)
             else:
-                itog_rent_gsm = int((kts_instance.company_name.arenda_fiz / num_days_mounth) * num_days)
+                itog_rent_gsm = int((kts_instance.company_name.arenda_fiz / num_days_month) * num_days)
         else:
             itog_rent_gsm = 0
 
         if kts_instance.nabludenie:
             if kts_instance.urik:
-                itog_nabludenie = int((kts_instance.company_name.nabludenie_ur / num_days_mounth) * num_days)
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_ur / num_days_month) * num_days)
             else:
-                itog_nabludenie = int((kts_instance.company_name.nabludenie_fiz / num_days_mounth) * num_days)
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_fiz / num_days_month) * num_days)
         else:
             itog_nabludenie = 0
 
         if kts_instance.tehnical_services:
             if kts_instance.urik:
-                itog_tehnical_services = int(
-                    (kts_instance.company_name.tehnic_srv_cost_ur / num_days_mounth) * num_days)
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_ur / num_days_month) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                    itog_tehnical_services) > 0.5 else math.floor(itog_tehnical_services)
             else:
-                itog_tehnical_services = int(
-                    (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_mounth) * num_days)
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_month) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                    itog_tehnical_services) > 0.5 else math.floor(itog_tehnical_services)
         else:
             itog_tehnical_services = 0
 
         if kts_instance.fire_alarm:
             if kts_instance.urik:
-                itog_fire_alarm = int((kts_instance.company_name.pozharka_ur / num_days_mounth) * num_days)
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_ur / num_days_month) * num_days)
             else:
-                itog_fire_alarm = int((kts_instance.company_name.pozharka_fiz / num_days_mounth) * num_days)
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_fiz / num_days_month) * num_days)
         else:
             itog_fire_alarm = 0
 
         if kts_instance.urik:
-            reagirovanie = int(
-                ((kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            if kts_instance.tariff_per_mounth > 30:
+                reagirovanie = kts_instance.tariff_per_mounth
+            else:
+                reagirovanie = (
+                                       kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_month * num_days
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(
+                    reagirovanie) > 0.5 else math.floor(reagirovanie)
         else:
-            reagirovanie = int(((kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = (kts_instance.tariff_per_mounth / num_days_month) * num_days
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
 
         if kts_instance.sms_uvedomlenie:
-            if kts_instance.sms_number:
-                itog_sms_uvedomlenie = int(
-                    ((kts_instance.company_name.sms * kts_instance.sms_number) / num_days_mounth) * num_days)
+            if kts_instance.urik:
+                if kts_instance.sms_number and kts_instance.company_name.sms_ur:
+                    itog_sms_uvedomlenie = int(
+                        (kts_instance.company_name.sms_ur * kts_instance.sms_number) / num_days_month * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(itog_sms_uvedomlenie)
+                elif kts_instance.company_name.sms_ur:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur) / num_days_month * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = 0
             else:
-                itog_sms_uvedomlenie = int((kts_instance.company_name.sms / num_days_mounth) * num_days)
+                if kts_instance.sms_number and kts_instance.company_name.sms:
+                    itog_sms_uvedomlenie = int(
+                        (kts_instance.company_name.sms * kts_instance.sms_number) / num_days_month * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(itog_sms_uvedomlenie)
+                elif kts_instance.company_name.sms:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms) / num_days_month * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = 0
         else:
             itog_sms_uvedomlenie = 0
 
-        summ_mounth = itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm
+        if kts_instance.primechanie == '50% на 50%':
+            summ_mounth = int((
+                                          itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm) / 2)
+        else:
+            summ_mounth = itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm
+
         summ_telemetria += itog_telemetria
         summ_rent_gsm += itog_rent_gsm
         summ_nabludenie += itog_nabludenie
@@ -1803,6 +1804,9 @@ def reports_partners_akm(request):
         'summ_sms_uvedomlenie': summ_sms_uvedomlenie,
         'summ_fire_alarm': summ_fire_alarm,
         'itog_summ_mounth': itog_summ_mounth,
+        'partners_kolvo_object': partners_kolvo_object,
+        'partners_kolvo_object_ur': partners_kolvo_object_ur,
+        'partners_kolvo_object_fiz': partners_kolvo_object_fiz,
     }
 
     return render(request, 'dogovornoy/reports_partners_akm.html', context)
@@ -2259,6 +2263,9 @@ def reports_partners_rmg(request):
             end_of_month = parse_date(end_date)
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=4)
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=4).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=4, urik=True).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=4, urik=False).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -2396,6 +2403,9 @@ def reports_partners_rmg(request):
         'summ_sms_uvedomlenie': summ_sms_uvedomlenie,
         'summ_fire_alarm': summ_fire_alarm,
         'itog_summ_mounth': itog_summ_mounth,
+        'partners_kolvo_object': partners_kolvo_object,
+        'partners_kolvo_object_ur': partners_kolvo_object_ur,
+        'partners_kolvo_object_fiz': partners_kolvo_object_fiz,
     }
 
     return render(request, 'dogovornoy/reports_partners_rmg.html', context)
@@ -2871,6 +2881,8 @@ def reports_partners_kazkuzet(request):
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=3)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=3).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=3, urik=True).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=3, urik=False).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -3026,6 +3038,8 @@ def reports_partners_kazkuzet(request):
         'summ_fire_alarm': summ_fire_alarm,
         'itog_summ_mounth': itog_summ_mounth,
         'partners_kolvo_object': partners_kolvo_object,
+        'partners_kolvo_object_ur': partners_kolvo_object_ur,
+        'partners_kolvo_object_fiz': partners_kolvo_object_fiz,
     }
 
     return render(request, 'dogovornoy/reports_partners_kazkuzet.html', context)
@@ -10578,11 +10592,10 @@ def monolit_download_ur(request):
 @login_required
 def reports_kolvo(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
-    end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    next_month = now.replace(day=28) + timedelta(days=4)
-    next_end_of_month = next_month - timedelta(days=next_month.day)
-    print(next_end_of_month)
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc)
+    end_of_month = timezone.datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc)
+    next_start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    next_end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -10591,7 +10604,7 @@ def reports_kolvo(request):
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
 
-    print(end_of_month)
+
     companies = rekvizity.objects.all()
     urik_companies = rekvizity.objects.filter(kts__urik=True, kts__date_otklulchenia=None)
     non_urik_companies_quantity = rekvizity.objects.filter(kts__urik=False, kts__date_otklulchenia=None)
@@ -10601,69 +10614,126 @@ def reports_kolvo(request):
     for company in companies:
 
         # 2 Все объекты до выбранной даты
-        kts_podkl = kts.objects.filter(company_name_id=company.id, date_otklulchenia__lte=next_end_of_month, date_podkluchenia__lte=end_of_month, urik=True, exclude_from_report=False)
+        kts_podkl = kts.objects.filter(
+                                            Q(date_otklulchenia__gte=next_start_of_month, date_otklulchenia__lt=next_end_of_month) |
+                                            Q(date_otklulchenia__isnull=True),
+                                            company_name_id=company.id,
+                                            urik=True,
+                                            exclude_from_report=False
+                                        )
 
 
         # Всего на начало выбранного месяца
-        kts_count_podkl = kts.objects.filter(company_name_id=company.id, urik=True, date_otklulchenia__lte=next_end_of_month, date_podkluchenia__lte=start_of_month, exclude_from_report=False).aggregate(Count('id'))
+        kts_count_podkl = kts.objects.filter(
+                                            Q(date_otklulchenia__gte=start_of_month, date_otklulchenia__lte=next_end_of_month) |
+                                            Q(date_otklulchenia__isnull=True),
+                                            date_podkluchenia__lt=start_of_month,
+                                            company_name_id=company.id,
+                                            urik=True,
+                                            exclude_from_report=False
+                                        ).aggregate(Count('id'))
 
 
-        kts_fiz_podkl = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia = None,
-                                           date_podkluchenia__lte=start_of_month, exclude_from_report=False).aggregate(Count('id'))
+        kts_fiz_podkl = kts.objects.filter(
+                                            Q(date_otklulchenia__gte=start_of_month, date_otklulchenia__lte=next_end_of_month) |
+                                            Q(date_otklulchenia__isnull=True),
+                                            date_podkluchenia__lt=start_of_month,
+                                            company_name_id=company.id,
+                                            urik=False,
+                                            exclude_from_report=False
+                                        ).aggregate(Count('id'))
 
         # Всего на конец выбранного месяца
-        kts_count_podkl_end = kts.objects.filter(company_name_id=company.id, urik=True,
-                                             date_podkluchenia__lte=end_of_month, date_otklulchenia = None, exclude_from_report=False).aggregate(Count('id'))
+        kts_count_podkl_end = kts.objects.filter(
+                                            Q(date_otklulchenia__gte=next_start_of_month, date_otklulchenia__lte=next_end_of_month) |
+                                            Q(date_otklulchenia__isnull=True),
+                                            date_podkluchenia__lte=end_of_month,
+                                            company_name_id=company.id,
+                                            urik=True,
+                                            exclude_from_report=False
+                                        ).aggregate(count=Count('id'))['count']
 
-        kts_fiz_podkl_end = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia = None,
-                                           date_podkluchenia__lte=next_end_of_month, exclude_from_report=False).aggregate(Count('id'))
+        kts_fiz_podkl_end = kts.objects.filter(
+                                                Q(date_otklulchenia__gte=next_start_of_month, date_otklulchenia__lte=next_end_of_month) |
+                                                Q(date_otklulchenia__isnull=True),
+                                                date_podkluchenia__lte=end_of_month,
+                                                company_name_id=company.id,
+                                                urik=False,
+                                                exclude_from_report=False
+                                              ).aggregate(count=Count('id'))['count']
 
         # принято(в т.ч.после вр.снятия )
-        kolvo_podkl_obj = kts.objects.filter(company_name_id=company.id, date_otklulchenia = None,
+        kolvo_podkl_obj = kts.objects.filter(company_name_id=company.id, urik=True,
                                              date_podkluchenia__gte=start_of_month, exclude_from_report=False,
-                                             date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
+                                             date_podkluchenia__lte=end_of_month).exclude(
+                                                                                    date_otklulchenia__month=F('date_podkluchenia__month'),
+                                                                                    date_otklulchenia__year=F('date_podkluchenia__year')
+                                                                                ).aggregate(Count('id'))
 
         kolvo_podkl_fiz = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia = None,
-                                             exclude_from_report=False,date_podkluchenia__lte=end_of_month).aggregate(Count('id'))
+                                             exclude_from_report=False,date_podkluchenia__gte=start_of_month,
+                                                                        date_podkluchenia__lte=end_of_month).exclude(
+                                                                                    date_otklulchenia__month=F('date_podkluchenia__month'),
+                                                                                    date_otklulchenia__year=F('date_podkluchenia__year')
+                                                                                ).aggregate(Count('id'))
 
         # расторженно (в т.ч.после вр.снятия )
-        kolvo_otkl_obj = kts.objects.filter(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
-                                            date_otklulchenia__lte=end_of_month, exclude_from_report=False).aggregate(Count('id'))
+        kolvo_otkl_obj = kts.objects.filter(company_name_id=company.id, urik=True,date_otklulchenia__gte=start_of_month,
+                                            date_otklulchenia__lte=end_of_month, exclude_from_report=False).exclude(
+                                                                                    date_podkluchenia__month=F('date_otklulchenia__month'),
+                                                                                    date_podkluchenia__year=F('date_otklulchenia__year')
+                                                                                ).aggregate(Count('id'))
 
         kolvo_otkl_fiz = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia__gte=start_of_month,
                                             date_otklulchenia__lte=end_of_month, exclude_from_report=False).aggregate(Count('id'))
 
+
         # экипажи физические лица
         gruppa_reagirovania_911_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia = None,
-                                                    urik=False, gruppa_reagirovania='911', exclude_from_report=False).aggregate(Count('id'))
+                                                    urik=False, gruppa_reagirovania='911', exclude_from_report=False).aggregate(count=Count('id'))['count']
 
         gruppa_reagirovania_bravo21_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                     urik=False, gruppa_reagirovania='Браво-21', exclude_from_report=False).aggregate(Count('id'))
+                                                     urik=False, gruppa_reagirovania='Браво-21', exclude_from_report=False).aggregate(count=Count('id'))['count']
 
         gruppa_reagirovania_sms_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        urik=False, gruppa_reagirovania='СМС', exclude_from_report=False).aggregate(Count('id'))
+                                                        urik=False, gruppa_reagirovania='СМС', exclude_from_report=False).aggregate(count=Count('id'))['count']
 
         gruppa_reagirovania_asker_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=False, gruppa_reagirovania='Эскер', exclude_from_report=False).aggregate(Count('id'))
+                                                         urik=False, gruppa_reagirovania='Эскер', exclude_from_report=False).aggregate(count=Count('id'))['count']
 
         gruppa_reagirovania_zardem_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=False, gruppa_reagirovania='Жардем', exclude_from_report=False).aggregate(Count('id'))
+                                                         urik=False, gruppa_reagirovania='Жардем', exclude_from_report=False).aggregate(count=Count('id'))['count']
+
+        gruppa_reagirovania_kuguar_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
+                                                            urik=False, gruppa_reagirovania='Кугуар').aggregate(count=Count('id'))['count']
+
+
+        kolvo_ekipazh_fiz = int(kts_fiz_podkl_end - (gruppa_reagirovania_911_fiz + gruppa_reagirovania_bravo21_fiz + gruppa_reagirovania_sms_fiz +
+                             gruppa_reagirovania_asker_fiz + gruppa_reagirovania_zardem_fiz + gruppa_reagirovania_kuguar_fiz))
 
         # экипажи юридические лица
         gruppa_reagirovania_911_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=True, gruppa_reagirovania='911').aggregate(Count('id'))
+                                                         urik=True, gruppa_reagirovania='911').aggregate(count=Count('id'))['count']
 
         gruppa_reagirovania_bravo21_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                    urik=True, gruppa_reagirovania='Браво-21').aggregate(Count('id'))
+                                                    urik=True, gruppa_reagirovania='Браво-21').aggregate(count=Count('id'))['count']
 
         gruppa_reagirovania_sms_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=True, gruppa_reagirovania='СМС').aggregate(Count('id'))
+                                                         urik=True, gruppa_reagirovania='СМС').aggregate(count=Count('id'))['count']
 
         gruppa_reagirovania_asker_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        urik=True, gruppa_reagirovania='Эскер').aggregate(Count('id'))
+                                                        urik=True, gruppa_reagirovania='Эскер').aggregate(count=Count('id'))['count']
 
         gruppa_reagirovania_zardem_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        urik=True, gruppa_reagirovania='Жардем').aggregate(Count('id'))
+                                                        urik=True, gruppa_reagirovania='Жардем').aggregate(count=Count('id'))['count']
+
+        gruppa_reagirovania_kuguar_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
+                                                           urik=True, gruppa_reagirovania='Кугуар').aggregate(count=Count('id'))['count']
+
+
+        kolvo_ekipazh_ur = int(kts_count_podkl_end - (gruppa_reagirovania_911_ur + gruppa_reagirovania_bravo21_ur + gruppa_reagirovania_sms_ur
+                                                  + gruppa_reagirovania_asker_ur + gruppa_reagirovania_zardem_ur + gruppa_reagirovania_kuguar_ur))
+
 
         reports.append({
             'companies': companies,
@@ -10675,7 +10745,6 @@ def reports_kolvo(request):
             'kts_count_podkl_end': kts_count_podkl_end,
             'kts_fiz_podkl_end': kts_fiz_podkl_end,
             'start_of_month': start_of_month,
-            'end_of_month': end_of_month,
             'end_of_month': end_of_month,
             'kolvo_podkl_obj': kolvo_podkl_obj,
             'kolvo_podkl_fiz': kolvo_podkl_fiz,
@@ -10691,6 +10760,10 @@ def reports_kolvo(request):
             'gruppa_reagirovania_asker_ur': gruppa_reagirovania_asker_ur,
             'gruppa_reagirovania_zardem_ur': gruppa_reagirovania_zardem_ur,
             'gruppa_reagirovania_bravo21_ur': gruppa_reagirovania_bravo21_ur,
+            'gruppa_reagirovania_kuguar_ur': gruppa_reagirovania_kuguar_ur,
+            'gruppa_reagirovania_kuguar_fiz': gruppa_reagirovania_kuguar_fiz,
+            'kolvo_ekipazh_fiz': kolvo_ekipazh_fiz,
+            'kolvo_ekipazh_ur': kolvo_ekipazh_ur,
         })
         context = {'reports': reports, 'start_of_month': start_of_month, 'end_of_month': end_of_month}
     return render(request, 'dogovornoy/reports_kolvo.html', context)
@@ -10698,7 +10771,427 @@ def reports_kolvo(request):
 
 
 
+# Вычисляет итоговую сумму по каждому клиенту партнера
+def calculate_monthly_sum(kts_instance, start_of_month, end_of_month, num_days_month):
+    if kts_instance.date_otkluchenia:
+        if isinstance(start_of_month, datetime):
+            start_of_month = start_of_month.date()
+        if isinstance(end_of_month, datetime):
+            end_of_month = end_of_month.date()
 
+        if (kts_instance.date_otkluchenia > start_of_month) and (
+                kts_instance.date_podkluchenia < start_of_month):
+            num_days = (kts_instance.date_otkluchenia - start_of_month).days
+        elif (kts_instance.date_otkluchenia > start_of_month) and (
+                kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
+            num_days = num_days_month - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
+        elif kts_instance.date_otkluchenia > start_of_month:
+            num_days = num_days_month - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
+        elif kts_instance.date_otkluchenia < start_of_month:
+            num_days = num_days_month
+        else:
+            num_days = (kts_instance.date_otkluchenia - start_of_month).days
+    else:
+        if kts_instance.date_podkluchenia:
+            if kts_instance.date_podkluchenia > start_of_month:
+                num_days = (end_of_month - kts_instance.date_podkluchenia).days + 1
+            else:
+                num_days = num_days_month
+        else:
+            num_days = num_days_month
+
+    if kts_instance.telemetria:
+        itog_telemetria = int((kts_instance.company_name.telemetria / num_days_month) * num_days)
+    else:
+        itog_telemetria = 0
+
+    if kts_instance.rent_gsm:
+        if kts_instance.urik:
+            itog_rent_gsm = int((kts_instance.company_name.arenda_ur / num_days_month) * num_days)
+        else:
+            itog_rent_gsm = int((kts_instance.company_name.arenda_fiz / num_days_month) * num_days)
+    else:
+        itog_rent_gsm = 0
+
+    if kts_instance.nabludenie:
+        if kts_instance.urik:
+            itog_nabludenie = int((kts_instance.company_name.nabludenie_ur / num_days_month) * num_days)
+        else:
+            itog_nabludenie = int((kts_instance.company_name.nabludenie_fiz / num_days_month) * num_days)
+    else:
+        itog_nabludenie = 0
+
+    if kts_instance.tehnical_services:
+        if kts_instance.urik:
+            itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_ur / num_days_month) * num_days
+            itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                itog_tehnical_services) > 0.5 else math.floor(itog_tehnical_services)
+        else:
+            itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_month) * num_days
+            itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                itog_tehnical_services) > 0.5 else math.floor(itog_tehnical_services)
+    else:
+        itog_tehnical_services = 0
+
+    if kts_instance.fire_alarm:
+        if kts_instance.urik:
+            itog_fire_alarm = int((kts_instance.company_name.pozharka_ur / num_days_month) * num_days)
+        else:
+            itog_fire_alarm = int((kts_instance.company_name.pozharka_fiz / num_days_month) * num_days)
+    else:
+        itog_fire_alarm = 0
+
+    if kts_instance.urik:
+        if kts_instance.tariff_per_mounth > 30:
+            reagirovanie = kts_instance.tariff_per_mounth
+        else:
+            reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_month * num_days
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
+    else:
+        reagirovanie = (kts_instance.tariff_per_mounth / num_days_month) * num_days
+        reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+            reagirovanie)
+
+    if kts_instance.sms_uvedomlenie:
+        if kts_instance.urik:
+            if kts_instance.sms_number and kts_instance.company_name.sms_ur:
+                itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur * kts_instance.sms_number) / num_days_month * num_days)
+                itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(itog_sms_uvedomlenie) > 0.5 else math.floor(itog_sms_uvedomlenie)
+            elif kts_instance.company_name.sms_ur:
+                itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur) / num_days_month * num_days)
+                itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(itog_sms_uvedomlenie) > 0.5 else math.floor(itog_sms_uvedomlenie)
+            else:
+                itog_sms_uvedomlenie = 0
+        else:
+            if kts_instance.sms_number and kts_instance.company_name.sms:
+                itog_sms_uvedomlenie = int((kts_instance.company_name.sms * kts_instance.sms_number) / num_days_month * num_days)
+                itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(itog_sms_uvedomlenie) > 0.5 else math.floor(itog_sms_uvedomlenie)
+            elif kts_instance.company_name.sms:
+                itog_sms_uvedomlenie = int((kts_instance.company_name.sms) / num_days_month * num_days)
+                itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(itog_sms_uvedomlenie) > 0.5 else math.floor(itog_sms_uvedomlenie)
+            else:
+                itog_sms_uvedomlenie = 0
+    else:
+        itog_sms_uvedomlenie = 0
+
+    if kts_instance.primechanie == '50% на 50%':
+        summ_mounth = int((itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm) / 2)
+    else:
+        summ_mounth = itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm
+
+    return summ_mounth
+
+
+
+@login_required
+def partner_reports_kolvo(request):
+    now = timezone.now()
+    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1], tzinfo=timezone.utc).date()
+
+    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
+    next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()
+    next_end_of_month = datetime(next_month.year, next_month.month,
+                                 calendar.monthrange(next_month.year, next_month.month)[1], tzinfo=timezone.utc).date()
+
+    num_days_month = calendar.monthrange(now.year, now.month - 1)[1]
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        if start_date and end_date:
+            start_of_month = datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_of_month = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    partners = partners_rekvizity.objects.all()
+    reports = []
+    itog_all = 0
+    kolvo_podkl_obj_summ = 0
+    kolvo_otkl_obj_summ = 0
+    kts_itog_object_all = 0
+    kts_itog_object_end_all = 0
+    kts_fiz_podkl_all = 0
+    kts_fiz_podkl_end_all = 0
+    kts_count_podkl_all = 0
+    kts_count_podkl_end_all = 0
+
+    for partner in partners:
+        connected_objects = partners_object.objects.filter(company_name=partner)
+
+        kts_podkl_start = connected_objects.filter(
+            Q(date_otkluchenia__gte=start_of_month, date_otkluchenia__lte=next_end_of_month) |
+            Q(date_otkluchenia__isnull=True),
+            date_podkluchenia__lt=start_of_month,
+        )
+
+        kts_count_podkl = connected_objects.filter(
+            Q(date_otkluchenia__gte=start_of_month, date_otkluchenia__lte=next_end_of_month) |
+            Q(date_otkluchenia__isnull=True),
+            date_podkluchenia__lt=start_of_month,
+            urik=True,
+        ).aggregate(count=Count('id'))['count']
+
+        kts_count_podkl_all += kts_count_podkl
+
+        kts_fiz_podkl = connected_objects.filter(
+            Q(date_otkluchenia__gte=start_of_month, date_otkluchenia__lte=next_end_of_month) |
+            Q(date_otkluchenia__isnull=True),
+            date_podkluchenia__lt=start_of_month,
+            urik=False,
+        ).aggregate(count=Count('id'))['count']
+
+        kts_fiz_podkl_all += kts_fiz_podkl
+
+        kts_itog_object = kts_count_podkl + kts_fiz_podkl
+        kts_itog_object_all  += kts_itog_object
+
+        kts_count_podkl_end = connected_objects.filter(
+            Q(date_otkluchenia__gte=next_start_of_month, date_otkluchenia__lte=next_end_of_month) |
+            Q(date_otkluchenia__isnull=True),
+            date_podkluchenia__lte=end_of_month,
+            urik=True,
+        ).aggregate(count=Count('id'))['count']
+
+        kts_count_podkl_end_all += kts_count_podkl_end
+
+        kts_fiz_podkl_end = connected_objects.filter(
+            Q(date_otkluchenia__gte=next_start_of_month, date_otkluchenia__lte=next_end_of_month) |
+            Q(date_otkluchenia__isnull=True),
+            date_podkluchenia__lte=end_of_month,
+            urik=False,
+        ).aggregate(count=Count('id'))['count']
+
+        kts_fiz_podkl_end_all += kts_fiz_podkl_end
+
+        kts_itog_object_end = kts_count_podkl_end + kts_fiz_podkl_end
+        kts_itog_object_end_all += kts_itog_object_end
+
+        kolvo_podkl_obj = connected_objects.filter(
+            date_podkluchenia__gte=start_of_month,
+            date_podkluchenia__lte=end_of_month
+        ).aggregate(count=Count('id'))['count']
+
+        kolvo_podkl_obj_summ += kolvo_podkl_obj
+
+        kolvo_otkl_obj = connected_objects.filter(
+            date_otkluchenia__gte=start_of_month,
+            date_otkluchenia__lte=end_of_month,
+        ).aggregate(count=Count('id'))['count']
+
+        kolvo_otkl_obj_summ += kolvo_otkl_obj
+
+        podkl_otlk_raznica = kolvo_podkl_obj - kolvo_otkl_obj
+
+        rost_all = kolvo_podkl_obj_summ - kolvo_otkl_obj_summ
+
+        itog_summ_mounth = 0
+        itog_summ_mounth_start = 0
+
+        for kts_instance in connected_objects:
+            summ_mounth = calculate_monthly_sum(kts_instance, start_of_month, end_of_month, num_days_month)
+            itog_summ_mounth += summ_mounth
+            itog_all += summ_mounth
+
+        for kts_instance in kts_podkl_start:
+            summ_mounth_start = calculate_monthly_sum(kts_instance, start_of_month, end_of_month, num_days_month)
+            itog_summ_mounth_start += summ_mounth_start
+
+        money_raznica = itog_summ_mounth - itog_summ_mounth_start
+
+        reports.append({
+            'partner': partner,
+            'kts_count_podkl': kts_count_podkl,
+            'kts_fiz_podkl': kts_fiz_podkl,
+            'kts_count_podkl_end': kts_count_podkl_end,
+            'kts_fiz_podkl_end': kts_fiz_podkl_end,
+            'kts_itog_object': kts_itog_object,
+            'kts_itog_object_end': kts_itog_object_end,
+            'kolvo_podkl_obj': kolvo_podkl_obj,
+            'kolvo_otkl_obj': kolvo_otkl_obj,
+            'podkl_otlk_raznica': podkl_otlk_raznica,
+            'itog_summ_mounth': itog_summ_mounth,
+            'itog_summ_mounth_start': itog_summ_mounth_start,
+            'money_raznica': money_raznica,
+        })
+
+    context = {
+        'reports': reports,
+        'start_of_month': start_of_month,
+        'end_of_month': end_of_month,
+        'itog_all': itog_all,
+        'kolvo_podkl_obj_summ': kolvo_podkl_obj_summ,
+        'kolvo_otkl_obj_summ': kolvo_otkl_obj_summ,
+        'rost_all': rost_all,
+        'kts_itog_object_end_all': kts_itog_object_end_all,
+        'kts_itog_object_all': kts_itog_object_all,
+        'kts_fiz_podkl_all': kts_fiz_podkl_all,
+        'kts_fiz_podkl_end_all': kts_fiz_podkl_end_all,
+        'kts_count_podkl_all': kts_count_podkl_all,
+        'kts_count_podkl_end_all': kts_count_podkl_end_all,
+    }
+
+    return render(request, 'dogovornoy/partner_reports.html', context)
+
+
+
+@login_required
+def kts_reports_kolvo(request):
+    now = timezone.now()
+    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1], tzinfo=timezone.utc).date()
+
+    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
+    next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()
+    next_end_of_month = datetime(next_month.year, next_month.month,
+                                 calendar.monthrange(next_month.year, next_month.month)[1], tzinfo=timezone.utc).date()
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        if start_date and end_date:
+            start_of_month = datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_of_month = datetime.strptime(end_date, "%Y-%m-%d").date()
+
+    partners = rekvizity.objects.all()
+    reports = []
+    itog_all_start = 0
+    kolvo_podkl_obj_summ = 0
+    kolvo_otkl_obj_summ = 0
+    kts_itog_object_all = 0
+    kts_itog_object_end_all = 0
+    kts_fiz_podkl_all = 0
+    kts_fiz_podkl_end_all = 0
+    kts_count_podkl_all = 0
+    kts_count_podkl_end_all = 0
+    itog_all_end = 0
+
+    for partner in partners:
+        connected_objects = kts.objects.filter(company_name=partner)
+
+        kts_money_start = connected_objects.filter(
+            Q(date_otklulchenia__gte=start_of_month) |
+            Q(date_otklulchenia__isnull=True),
+            date_podkluchenia__lt=start_of_month,
+        )
+
+        kts_money_end = connected_objects.filter(
+            Q(date_otklulchenia__gte=end_of_month) |
+            Q(date_otklulchenia__isnull=True),
+            date_podkluchenia__lt=end_of_month,
+        )
+
+        kts_count_podkl = connected_objects.filter(
+            Q(date_otklulchenia__gte=start_of_month) |
+            Q(date_otklulchenia__isnull=True),
+            date_podkluchenia__lt=start_of_month,
+            urik=True,
+        ).aggregate(count=Count('id'))['count']
+
+        kts_count_podkl_all += kts_count_podkl
+
+        kts_fiz_podkl = connected_objects.filter(
+            Q(date_otklulchenia__gte=start_of_month) |
+            Q(date_otklulchenia__isnull=True),
+            date_podkluchenia__lt=start_of_month,
+            urik=False,
+        ).aggregate(count=Count('id'))['count']
+
+        kts_fiz_podkl_all += kts_fiz_podkl
+
+        kts_itog_object = kts_count_podkl + kts_fiz_podkl
+        kts_itog_object_all  += kts_itog_object
+
+        kts_count_podkl_end = connected_objects.filter(
+            Q(date_otklulchenia__gte=end_of_month) |
+            Q(date_otklulchenia__isnull=True),
+            date_podkluchenia__lte=end_of_month,
+            urik=True,
+        ).aggregate(count=Count('id'))['count']
+
+        kts_count_podkl_end_all += kts_count_podkl_end
+
+        kts_fiz_podkl_end = connected_objects.filter(
+            Q(date_otklulchenia__gte=end_of_month) |
+            Q(date_otklulchenia__isnull=True),
+            date_podkluchenia__lte=end_of_month,
+            urik=False,
+        ).aggregate(count=Count('id'))['count']
+
+        kts_fiz_podkl_end_all += kts_fiz_podkl_end
+
+        kts_itog_object_end = kts_count_podkl_end + kts_fiz_podkl_end
+        kts_itog_object_end_all += kts_itog_object_end
+
+        kolvo_podkl_obj = connected_objects.filter(
+            date_podkluchenia__gte=start_of_month,
+            date_podkluchenia__lte=end_of_month
+        ).aggregate(count=Count('id'))['count']
+
+        kolvo_podkl_obj_summ += kolvo_podkl_obj
+
+        kolvo_otkl_obj = connected_objects.filter(
+            date_otklulchenia__gte=start_of_month,
+            date_otklulchenia__lte=end_of_month,
+        ).aggregate(count=Count('id'))['count']
+
+        kolvo_otkl_obj_summ += kolvo_otkl_obj
+
+        podkl_otlk_raznica = kolvo_podkl_obj - kolvo_otkl_obj
+
+        rost_all = kolvo_podkl_obj_summ - kolvo_otkl_obj_summ
+
+        itog_summ_mounth_end = 0
+        itog_summ_mounth_start = 0
+
+        for kts_instance in kts_money_start:
+            if kts_instance.abon_plata:
+                itog_summ_mounth_start += kts_instance.abon_plata
+                itog_all_start += kts_instance.abon_plata
+
+        for kts_instance in kts_money_end:
+            if kts_instance.abon_plata:
+                itog_summ_mounth_end += kts_instance.abon_plata
+                itog_all_end += kts_instance.abon_plata
+
+        money_raznica = itog_summ_mounth_end - itog_summ_mounth_start
+        money_raznica_all = itog_all_end - itog_all_start
+
+        reports.append({
+            'partner': partner,
+            'kts_count_podkl': kts_count_podkl,
+            'kts_fiz_podkl': kts_fiz_podkl,
+            'kts_count_podkl_end': kts_count_podkl_end,
+            'kts_fiz_podkl_end': kts_fiz_podkl_end,
+            'kts_itog_object': kts_itog_object,
+            'kts_itog_object_end': kts_itog_object_end,
+            'kolvo_podkl_obj': kolvo_podkl_obj,
+            'kolvo_otkl_obj': kolvo_otkl_obj,
+            'podkl_otlk_raznica': podkl_otlk_raznica,
+            'itog_summ_mounth_end': itog_summ_mounth_end,
+            'itog_summ_mounth_start': itog_summ_mounth_start,
+            'money_raznica': money_raznica,
+        })
+
+    context = {
+        'reports': reports,
+        'start_of_month': start_of_month,
+        'end_of_month': end_of_month,
+        'kolvo_podkl_obj_summ': kolvo_podkl_obj_summ,
+        'kolvo_otkl_obj_summ': kolvo_otkl_obj_summ,
+        'rost_all': rost_all,
+        'kts_itog_object_end_all': kts_itog_object_end_all,
+        'kts_itog_object_all': kts_itog_object_all,
+        'kts_fiz_podkl_all': kts_fiz_podkl_all,
+        'kts_fiz_podkl_end_all': kts_fiz_podkl_end_all,
+        'kts_count_podkl_all': kts_count_podkl_all,
+        'kts_count_podkl_end_all': kts_count_podkl_end_all,
+        'itog_all_end': itog_all_end,
+        'itog_all_start': itog_all_start,
+        'money_raznica_all': money_raznica_all,
+    }
+
+    return render(request, 'dogovornoy/kts_reports_kolvo.html', context)
 
 
 

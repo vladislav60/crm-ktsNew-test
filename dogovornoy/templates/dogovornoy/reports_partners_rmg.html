@@ -36,7 +36,9 @@
 {#    </form></div>#}
 
 <div class="col-lg-12">
-    <p>Всего записей: 0</p>
+    <p>Всего объектов: {{ partners_kolvo_object.id__count }}</p>
+    <p>Всего Юриков: {{ partners_kolvo_object_ur.id__count }}</p>
+    <p>Всего Физиков: {{ partners_kolvo_object_fiz.id__count }}</p>
 
     <div class="col-lg-4">
     <form method="POST" action="{% url 'rmg_download_fiz' %}">

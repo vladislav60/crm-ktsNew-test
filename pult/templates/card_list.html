@@ -1,0 +1,68 @@
+<!-- templates/pult/card_list.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cards List</title>
+</head>
+<body>
+    <h1>Cards List</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>CARDID</th>
+                <th>BASENUMBER</th>
+                <th>OTISNUMBER</th>
+                <th>OBJECTNAME</th>
+                <th>CALLSIGN</th>
+                <th>CALLNUMBER</th>
+                <th>INFO</th>
+                <th>PARTICULARITY</th>
+                <th>PHONES</th>
+                <th>SCHEME</th>
+                <th>UNITNUMBER</th>
+                <th>UNITTYPE</th>
+                <th>ZONESSTATE</th>
+                <th>ISPROTECTED</th>
+                <th>GSMPHONE</th>
+                <th>WORKSTATION</th>
+                <th>ORGID</th>
+                <th>AGREEMENT</th>
+                <th>LOST</th>
+                <th>TEST</th>
+                <th>FLAGS</th>
+                <th>LAT</th>
+                <th>LON</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for card in cards %}
+                <tr>
+                    <td>{{ card.cardid }}</td>
+                    <td>{{ card.basenumber }}</td>
+                    <td>{{ card.otisnumber }}</td>
+                    <td>{{ card.objectname }}</td>
+                    <td>{{ card.callsign }}</td>
+                    <td>{{ card.callnumber }}</td>
+                    <td>{{ card.info }}</td>
+                    <td>{{ card.particularity }}</td>
+                    <td>{{ card.phones }}</td>
+                    <td>{{ card.scheme }}</td>
+                    <td>{{ card.unitnumber }}</td>
+                    <td>{{ card.unittype }}</td>
+                    <td>{{ card.zonesstate }}</td>
+                    <td>{{ card.isprotected }}</td>
+                    <td>{{ card.gsmphone }}</td>
+                    <td>{{ card.workstation }}</td>
+                    <td>{{ card.orgid }}</td>
+                    <td>{{ card.agreement }}</td>
+                    <td>{{ card.lost }}</td>
+                    <td>{{ card.test }}</td>
+                    <td>{{ card.flags }}</td>
+                    <td>{{ card.lat }}</td>
+                    <td>{{ card.lon }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

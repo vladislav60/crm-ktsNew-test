@@ -39,6 +39,7 @@ urlpatterns = [
     path('add_client_partner/', views.AddClientPartner.as_view(), name='add_client_partner'),
     # Ссылка на страницу Отчеты договорной
     path('reports_dog/', reports, name='reports_dog'),
+    path('export_reports_to_excel/', export_reports_to_excel, name='export_reports_to_excel'),
     # Ссылка на страницу Отчеты агенские
     path('reports_agentskie/', reports_agentskie, name='reports_agentskie'),
     # Ссылка на страницу Отчеты партнеры
@@ -127,6 +128,8 @@ urlpatterns = [
     path('egida_download_ur/', egida_download_ur, name='egida_download_ur'),
     # Ссылка на страницу Отчеты кол-во объектов
     path('reports_kolvo/', reports_kolvo, name='reports_kolvo'),
+    path('partner_reports_kolvo/', partner_reports_kolvo, name='partner_reports_kolvo'),
+    path('kts_reports_kolvo/', kts_reports_kolvo, name='kts_reports_kolvo'),
     # Ссылка на страницу изменения клиента
     path('update_client/<int:klient_id>/', views.update_client, name='update_client'),
     # Ссылка на страницу изменения клиента партнеров

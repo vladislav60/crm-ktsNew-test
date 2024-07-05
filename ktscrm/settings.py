@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'dogovornoy.apps.DogovornoyConfig',
     'ekc',
+    'pult',
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
@@ -93,18 +95,22 @@ DATABASES = {
         'HOST': '192.168.1.60',
         'PORT': '5432',
     },
+    'third_db': {
+        'ENGINE': 'mssql',
+        'NAME': 'GBASE',
+        'USER': 'vlad',
+        'PASSWORD': 'KtsPCN$2024!$_Lol',
+        'HOST': '192.168.1.20',
+        'PORT': '1433',
+
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+        },
+    },
 }
 
-# 'asu_ekc': {
-#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#         'NAME': 'asu_ekc',
-#         'USER': 'asu',
-#         'PASSWORD': 'zMIRtcDiOVoI8zkhNPFk',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     },
 
-DATABASE_ROUTERS = ['ktscrm.db_routers.EKCDbRouter']
+DATABASE_ROUTERS = ['ktscrm.db_routers.EKCDbRouter', 'ktscrm.db_routers.ThirdDBRouter']
 
 
 # Password validation

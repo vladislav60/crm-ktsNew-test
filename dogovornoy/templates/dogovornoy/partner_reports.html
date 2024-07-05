@@ -1,0 +1,76 @@
+{% extends 'dogovornoy/base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>Отчеты по партнерам</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+            <li class="breadcrumb-item active">Отчеты по партнерам</li>
+        </ol>
+    </nav>
+</div>
+
+<form method="POST">
+    {% csrf_token %}
+    <label for="start_date">Дата от:</label>
+    <input type="date" name="start_date">
+    <label for="end_date">до:</label>
+    <input type="date" name="end_date">
+    <button type="submit">Применить</button>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Отчет за период {{ start_of_month }} - {{ end_of_month }}</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Партнер</th>
+                    <th>Физические лица</th>
+                    <th>Юридические лица</th>
+                    <th>Итого Объектов</th>
+                    <th>Сумма в месяц</th>
+                    <th>Подключения</th>
+                    <th>Отключения</th>
+                    <th>Рост объектов на</th>
+{#                    <th>Рост денег</th>#}
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>{{ report.partner.polnoe_name }}</td>
+                    <td>{{ report.kts_count_podkl }} | {{ report.kts_count_podkl_end }}</td>
+                    <td>{{ report.kts_fiz_podkl }} | {{ report.kts_fiz_podkl_end }}</td>
+                    <td>{{ report.kts_itog_object }} | {{ report.kts_itog_object_end }}</td>
+                    <td>{{ report.itog_summ_mounth|intcomma }}</td>
+                    <td>{{ report.kolvo_podkl_obj }}</td>
+                    <td>{{ report.kolvo_otkl_obj }}</td>
+                    {% if report.podkl_otlk_raznica > 0 %}
+                        <td style="background-color: #c0fdc0;">+{{ report.podkl_otlk_raznica }}</td>
+                        {% elif report.podkl_otlk_raznica == 0 %}
+                        <td>{{ report.podkl_otlk_raznica }}</td>
+                        {% else %}
+                        <td style="background-color: #fdcdc0;">{{ report.podkl_otlk_raznica }}</td>
+                    {% endif %}
+{#                    <td>{{ report.money_raznica }}</td>#}
+                </tr>
+                {% endfor %}
+                <tr>
+                    <td>Итого</td>
+                    <td>{{ kts_count_podkl_all }} | {{ kts_count_podkl_end_all }}</td>
+                    <td>{{ kts_fiz_podkl_all }} | {{ kts_fiz_podkl_end_all }}</td>
+                    <td>{{ kts_itog_object_all }} | {{ kts_itog_object_end_all }}</td>
+                    <td>{{ itog_all|intcomma }}</td>
+                    <td>{{ kolvo_podkl_obj_summ }}</td>
+                    <td>{{ kolvo_otkl_obj_summ }}</td>
+                    <td>{{ rost_all }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

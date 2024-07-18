@@ -178,7 +178,9 @@ class AddClient(FormView):
 class AddClientPartner(FormView):
     template_name = 'dogovornoy/add_client_partner.html'
     form_class = AddKlientDogFormPartner
-    success_url = '/baza_partnerov/'
+
+    def get_success_url(self):
+        return reverse('kartochka_klienta', kwargs={'klient_id': self.kartochka.pk})
 
     def form_valid(self, form):
         form.save()
@@ -13756,6 +13758,30 @@ def zhakitov_download_ur(request):
     response['Content-Disposition'] = f'attachment; filename=TOO "Zhakitov" Uriki {now.date()}.xlsx'
 
     return response
+
+
+class CreateTaskView(CreateView):
+    model = Task
+    form_class = TaskForm
+    template_name = 'dogovornoy/create_task.html'
+    success_url = reverse_lazy('baza_dogovorov')
+
+    def form_valid(self, form):
+        # Здесь можно добавить дополнительную логику обработки данных формы, если это необходимо
+        return super().form_valid(form)
+
+
+
+class TaskListView(ListView):
+    model = Task
+    context_object_name = 'tasks'
+    template_name = 'task_list.html'
+    paginate_by = 10  # Опционально, если нужна пагинация
+
+    def get_queryset(self):
+        # Используйте select_related для оптимизации загрузки связанных данных
+        return Task.objects.filter(assigned_to=self.request.user).select_related('client').order_by('-created_at')
+
 
 
 

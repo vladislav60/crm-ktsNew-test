@@ -140,3 +140,28 @@ class AdditionalServiceForm(forms.ModelForm):
         }
 
 
+class TaskForm(forms.ModelForm):
+    client = forms.ModelChoiceField(
+        queryset=kts.objects.all(),
+        label="Client",
+        # Указываем функцию, которая будет формировать отображаемое значение в списке
+        to_field_name="name_object",  # Убедитесь, что у модели kts есть поле name_object
+        empty_label="Select Client",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = Task
+        fields = ['client', 'assigned_to', 'description']
+
+    def __init__(self, *args, **kwargs):
+        super(TaskForm, self).__init__(*args, **kwargs)
+        self.fields['client'].label_from_instance = self.label_from_instance
+
+    # В этой функции определяем, как будет отображаться каждый элемент в списке
+    def label_from_instance(self, obj):
+        # Возвращаем нужное отображение, например, номер объекта или что-то еще
+        return f"{str(obj.object_number) + ' - ' + str(obj.dogovor_number) + ' - ' + obj.klient_name}"
+
+
+

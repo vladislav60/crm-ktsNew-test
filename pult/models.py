@@ -48,7 +48,8 @@ class Aesevents(models.Model):
 
 class Alarme(models.Model):
     alarmid = models.AutoField(db_column='AlarmID', primary_key=True, db_comment='ID тревоги')  # Field name made lowercase.
-    zoneid = models.IntegerField(db_column='ZoneID', db_comment='ID зоны')  # Field name made lowercase.
+    zoneid = models.ForeignKey('Zones', db_column='ZoneID', db_comment='ID зоны', on_delete=models.CASCADE,
+                               related_name='alarms')
     userid = models.IntegerField(db_column='UserID', blank=True, null=True, db_comment='ID оператора (userа)')  # Field name made lowercase.
     state = models.IntegerField(db_column='State', db_comment='Состояние - неподтвержденная, ')  # Field name made lowercase.
     receivetime = models.DateTimeField(db_column='ReceiveTime', blank=True, null=True, db_comment='Время приема тревожного событи')  # Field name made lowercase.
@@ -57,7 +58,7 @@ class Alarme(models.Model):
     recovertime = models.DateTimeField(db_column='RecoverTime', blank=True, null=True, db_comment='Время восстановления зоны')  # Field name made lowercase.
     lastreceivetime = models.DateTimeField(db_column='LastReceiveTime', blank=True, null=True, db_comment='Время приема последней тревоги')  # Field name made lowercase.
     receivecount = models.IntegerField(db_column='ReceiveCount', db_comment='Сколько раз срабатывала тревог')  # Field name made lowercase.
-    reason = models.IntegerField(db_column='Reason', blank=True, null=True, db_comment='Причина срабатывания (отработк')  # Field name made lowercase.
+    reason = models.ForeignKey('Reasons', db_column='Reason', blank=True, null=True, db_comment='Причина срабатывания (отработк)', related_name='reason', on_delete=models.CASCADE)  # Field name made lowercase.
     sendtime_deg = models.DateTimeField(db_column='SendTime_Deg', blank=True, null=True, db_comment='Время отправки тревоги в ЕКЦ')  # Field name made lowercase.
     receivetime_deg = models.DateTimeField(db_column='ReceiveTime_Deg', blank=True, null=True, db_comment='Время приема дежурной частью( ')  # Field name made lowercase.
     confirmtime_deg = models.DateTimeField(db_column='ConfirmTime_Deg', blank=True, null=True, db_comment='Время отработки дежурной часть')  # Field name made lowercase.
@@ -277,22 +278,22 @@ class BaseUnittype(models.Model):
 
 class Cards(models.Model):
     cardid = models.AutoField(db_column='CARDID', primary_key=True)  # Field name made lowercase.
-    basenumber = models.IntegerField(db_column='BASENUMBER', db_comment='Номер базы')  # Field name made lowercase.
-    otisnumber = models.IntegerField(db_column='OTISNUMBER', db_comment='Номер Отиса')  # Field name made lowercase.
+    basenumber = models.ForeignKey('Bases', db_column='BASENUMBER', db_comment='Номер базы', on_delete=models.CASCADE)  # Дабавил Key
+    otisnumber = models.IntegerField(db_column='OTISNUMBER', db_comment='Номер договора')  # Field name made lowercase.
     objectname = models.CharField(db_column='OBJECTNAME', max_length=250, db_comment='Наименование объекта, владелец')  # Field name made lowercase.
     callsign = models.CharField(db_column='CALLSIGN', max_length=10, blank=True, null=True, db_comment='Позывной группы реагирования')  # Field name made lowercase.
     callnumber = models.IntegerField(db_column='CALLNUMBER', blank=True, null=True, db_comment='Номер группы реагирования')  # Field name made lowercase.
     info = models.CharField(db_column='INFO', max_length=255, db_comment='Адрес и инофрмация об объекте')  # Field name made lowercase.
     particularity = models.CharField(db_column='PARTICULARITY', max_length=500, blank=True, null=True, db_comment='Особенности объекта')  # Field name made lowercase.
-    phones = models.CharField(db_column='PHONES', max_length=255, blank=True, null=True)  # Field name made lowercase.
+    phones = models.CharField(db_column='PHONES', max_length=255, blank=True, null=True, db_comment='Номер телефона клиента')  # Field name made lowercase.
     scheme = models.BinaryField(db_column='SCHEME', blank=True, null=True, db_comment='Схема расположения объекта')  # Field name made lowercase.
-    unitnumber = models.IntegerField(db_column='UNITNUMBER', blank=True, null=True)  # Field name made lowercase.
-    unittype = models.IntegerField(db_column='UNITTYPE', blank=True, null=True)  # Field name made lowercase.
+    unitnumber = models.IntegerField(db_column='UNITNUMBER', blank=True, null=True, db_comment='Номер модуля')  # Field name made lowercase.
+    unittype = models.ForeignKey('Unittype', db_column='UNITTYPE', blank=True, null=True, on_delete=models.CASCADE)
     zonesstate = models.IntegerField(db_column='ZONESSTATE', blank=True, null=True)  # Field name made lowercase.
     isprotected = models.CharField(db_column='ISPROTECTED', max_length=1, blank=True, null=True)  # Field name made lowercase.
     gsmphone = models.CharField(db_column='GSMPHONE', max_length=10, blank=True, null=True)  # Field name made lowercase.
     workstation = models.IntegerField(db_column='WORKSTATION', blank=True, null=True)  # Field name made lowercase.
-    orgid = models.IntegerField(db_column='ORGID', blank=True, null=True)  # Field name made lowercase.
+    orgid = models.ForeignKey('Org', db_column='ORGID', blank=True, null=True, on_delete=models.SET_NULL)  # Field name made lowercase.
     agreement = models.CharField(db_column='AGREEMENT', max_length=20, blank=True, null=True)  # Field name made lowercase.
     lost = models.IntegerField(db_column='LOST', blank=True, null=True)  # Field name made lowercase.
     test = models.IntegerField(db_column='TEST', blank=True, null=True)  # Field name made lowercase.
@@ -1247,8 +1248,10 @@ class Zonekinds(models.Model):
 
 class Zones(models.Model):
     zoneid = models.AutoField(db_column='ZoneID', primary_key=True, db_comment='ID зоны')  # Field name made lowercase.
-    cardid = models.IntegerField(db_column='CARDID', db_comment='ID ОБЪЕКТА')  # Field name made lowercase.
-    sectionid = models.IntegerField(db_column='SectionID')  # Field name made lowercase.
+    cardid = models.ForeignKey('Cards', db_column='CARDID', on_delete=models.CASCADE, db_comment='ID ОБЪЕКТА',
+                               related_name='zones')  # Field name made lowercase.
+    sectionid = models.ForeignKey('Sections', db_column='SectionID', on_delete=models.CASCADE, db_comment='ID раздела',
+                                  related_name='sections')  # Field name made lowercase.
     zonenumber = models.IntegerField(db_column='ZoneNumber', db_comment='Логический номер зоны')  # Field name made lowercase.
     type = models.IntegerField(db_column='Type', db_comment='Тип зоны по обслуживанию')  # Field name made lowercase.
     kind = models.IntegerField(db_column='Kind', db_comment='Тип зоны аппратный (нормально ')  # Field name made lowercase.

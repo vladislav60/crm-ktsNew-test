@@ -1,0 +1,123 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>Карточка клиента</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'card_list' %}">Назад к списку</a></li>
+            <li class="breadcrumb-item active">Карточка клиента</li>
+        </ol>
+    </nav>
+</div>
+<p></p>
+
+<div class="card col-lg-12" style="border-radius: 10px;margin: 10px auto;padding: 20px">
+    <h3>{{ card.objectname }}</h3>
+    <p></p>
+    <p><strong>Модуль: </strong>{{ card.basenumber.name}}-{{ card.unitnumber }}</p>
+    <p><strong>Объект: </strong>{{ card.orgid.name}}-{{ card.otisnumber }}</p>
+    <p><strong>Договор: </strong> {{ card.agreement }}</p>
+    <p><strong>Обслуживание: </strong>
+        {% if card.isprotected == '1' %}
+            Да
+        {% else %}
+            Нет
+        {% endif %}
+    </p>
+    <p><strong>Адрес: </strong> {{ card.info }}</p>
+    <p><strong>Телефон: </strong> {{ card.phones }}</p>
+    <p><strong>Экипаж: </strong> {{ card.callsign }}-{{ card.callnumber }}</p>
+    <p></p>
+
+    <h3>Зоны объекта</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Раздел</th>
+                <th>Номер зоны</th>
+                <th>Тип</th>
+                <th>Описание</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for zone in zones %}
+            <tr>
+                <td>{{ zone.sectionid.sectionname }}</td>
+                <td>{{ zone.zonenumber }}</td>
+                <td>{{ zone.type }}</td>
+                <td>{{ zone.info }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Тревоги</h2>
+    <div id="alarms-container" class="alarms-container">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID Тревоги</th>
+                    <th>Зона</th>
+                    <th>Причина</th>
+                    <th>Кол-во тревог</th>
+                    <th>Время приема</th>
+                    <th>Время подтверждения</th>
+                    <th>Время отработки</th>
+                    <th>Восстановление</th>
+                    <th>Последнее</th>
+                    <th>Посылка в ЕКЦ</th>
+                    <th>Прием в ЕКЦ</th>
+                    <th>Подтв в ЕКЦ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for alarm in alarms %}
+                <tr>
+                    <td>{{ alarm.alarmid }}</td>
+                    <td>{{ alarm.zoneid.zonenumber }}</td> <!-- Use the ForeignKey to access zonenumber -->
+                    <td>{{ alarm.reason.name }}</td> <!-- Use the ForeignKey to access zonenumber -->
+                    <td>{{ alarm.receivecount }}</td> <!-- Use the ForeignKey to access zonenumber -->
+                    <td>{{ alarm.receivetime }}</td>
+                    <td>{{ alarm.confirmtime }}</td>
+                    <td>{{ alarm.processtime }}</td>
+                    <td>{{ alarm.recovertime }}</td>
+                    <td>{{ alarm.lastreceivetime }}</td>
+                    <td>{{ alarm.sendtime_deg }}</td>
+                    <td>{{ alarm.receivetime_deg }}</td>
+                    <td>{{ alarm.confirmtime_deg }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <a id="toggle-alarms" class="">Показать все тревоги</a>
+</div>
+
+<script>
+    document.getElementById('toggle-alarms').addEventListener('click', function() {
+        var container = document.getElementById('alarms-container');
+        var button = document.getElementById('toggle-alarms');
+        if (container.classList.contains('collapsed')) {
+            container.classList.remove('collapsed');
+            button.textContent = 'Скрыть тревоги';
+        } else {
+            container.classList.add('collapsed');
+            button.textContent = 'Показать все тревоги';
+        }
+    });
+</script>
+
+<style>
+    .alarms-container {
+        max-height: 200px; /* Set the desired height */
+        overflow: hidden;
+        transition: max-height 0.5s ease;
+    }
+    .alarms-container.collapsed {
+        max-height: none;
+    }
+</style>
+
+{% endblock %}

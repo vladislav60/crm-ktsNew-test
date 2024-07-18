@@ -1,0 +1,11 @@
+{% extends 'dogovornoy/base.html' %}  <!-- Assuming you have a base.html -->
+
+{% block content %}
+<h2>Создать новую задачу</h2>
+    <p></p>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Отправить заявку</button>
+</form>
+{% endblock %}

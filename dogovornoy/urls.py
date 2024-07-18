@@ -148,5 +148,8 @@ urlpatterns = [
     path('additional_service/<int:service_id>', views.delete_additional_service, name='delete_additional_service'),
     # Функция редактирования дополнительный услуг
     path('additional_service/<int:service_id>/edit/', views.edit_additional_service, name='edit_additional_service'),
+    # отправка заявок
+    path('new_task/', CreateTaskView.as_view(), name='create_task'),
+    path('task_list/', TaskListView.as_view(), name='task_list'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

@@ -1,0 +1,64 @@
+{% extends 'dogovornoy/base.html' %}
+
+{% block content %}
+    <div class="card" style="padding: 70px">
+<h2>Лист заданий</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Причина заявки</th>
+            <th>Номер объекта</th>
+            <th>Номер договора</th>
+            <th>Клиент</th>
+            <th>От кого</th>
+            <th>Дата получения</th>
+            <th>Статус</th>
+            <th>Действие</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+        <tr>
+            <td>{{ task.description }}</td>
+            <td>{{ task.client.object_number }}</td>
+            <td>{{ task.client.dogovor_number }}</td>
+            <td>{{ task.client.klient_name }}</td>
+            <td>{{ task.assigned_to }}</td>
+            <td>{{ task.created_at }}</td>
+            <td>
+                {% if task.completed_at %}
+                Завершенная
+                {% elif task.accepted_at %}
+                В процессе
+                {% else %}
+                Новая
+                {% endif %}
+            </td>
+            <td>
+{#                <a href="{% url 'task_detail' task.pk %}">View</a>#}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% if is_paginated %}
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+{% endif %}
+    </div>
+{% endblock %}

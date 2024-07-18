@@ -1,0 +1,24 @@
+<div class="col-lg-6">
+    <h1>Отчет тревог по участкам</h1>
+    <table class="table table-striped table-bordered" style="font-size: 18px;">
+        <thead>
+            <tr>
+                <th>Участок</th>
+                <th>Общее количество тревог</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in alarms_by_uchastok %}
+                <tr>
+                    <td>{{ row.uchastok }}</td>
+                    <td>{{ row.total_alarms }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+<form method="GET" action="{% url 'export_alarms_to_excel' %}">
+    <button type="submit" class="btn btn-success">Экспорт в Excel</button>
+</form>

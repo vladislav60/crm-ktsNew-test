@@ -1,7 +1,10 @@
+from django.contrib.auth.models import User
 from django.db import models
 
 # 9 Создание модели таблица договора
 from django.urls import reverse
+
+from ktscrm import settings
 
 
 class kts(models.Model):
@@ -179,3 +182,19 @@ class partners_rekvizity(models.Model):
     class Meta:
         verbose_name = "Реквизиты партнеров"
         verbose_name_plural = "Реквизиты партнеров"
+
+
+class Task(models.Model):
+    client = models.ForeignKey('kts', on_delete=models.CASCADE, verbose_name="Client")
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE)  # Using Django's default user model
+    description = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    completion_note = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return self.description
+
+
+

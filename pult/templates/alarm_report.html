@@ -1,0 +1,116 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+{% load custom_filters %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>Alarm Report</h1>
+</div>
+
+<form method="GET" action="{% url 'alarm_report' %}">
+    <label for="start_date">Start Date:</label>
+    <input type="date" id="start_date" name="start_date" value="{{ start_date }}">
+    <label for="end_date">End Date:</label>
+    <input type="date" id="end_date" name="end_date" value="{{ end_date }}">
+    <button type="submit">Filter</button>
+</form>
+
+    <p></p>
+<h2>Топ клиентов по тревогам за месяц</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Номер объекта</th>
+            <th>Модуль</th>
+            <th>Имя клиента</th>
+            <th>Всего тревог</th>
+            <th>Среднее Время подтверждения (мин.)</th>
+            <th>Среднее Время отработки (мин.)</th>
+            <th>Частая причина</th>
+            <th>Карточка</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in report %}
+        <tr>
+            <td>{{ row.otisnumber }}</td>
+            <td>{{ row.unitnumber }}</td>
+            <td>{{ row.client }}</td>
+            <td>{{ row.total_alarms }}</td>
+            <td>{{ row.time_to_confirm|floatformat:2 }}</td>
+            <td>{{ row.time_to_process|floatformat:2 }}</td>
+            <td>{{ row.reason }}</td>
+            <td>
+                <a href="{% url 'card_detail' row.client_id %}" class="btn btn-primary">Карточка</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>Тревоги за прошедшие сутки (клиенты > 3 тревог)</h2>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Номер объекта</th>
+            <th>Модуль</th>
+            <th>Имя клиента</th>
+            <th>ID тревоги</th>
+            <th>Время приема</th>
+            <th>Время подтверждения</th>
+            <th>Отпр в деж</th>
+            <th>Прием в деж</th>
+            <th>Подтв в деж</th>
+            <th>Отработано оператором</th>
+            <th>Причина</th>
+            <th>Кол-во тревог</th>
+            <th>Карточка</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in yesterdays_report %}
+        <tr>
+            <td>{{ row.otisnumber }}</td>
+            <td>{{ row.unitnumber }}</td>
+            <td>{{ row.client }}</td>
+            <td>{{ row.alarmid }}</td>
+            <td>{{ row.receivetime }}</td>
+            <td>{{ row.confirmtime }}</td>
+            <td>{{ row.sendtime_deg }}</td>
+            <td>{{ row.receivetime_deg }}</td>
+            <td>{{ row.confirmtime_deg }}</td>
+            <td>{{ row.processtime }}</td>
+            <td>{{ row.reason }}</td>
+            <td>{{ row.receivecount }}</td>
+            <td>
+                <a href="{% url 'card_detail' row.client_id %}" class="btn btn-primary">Карточка</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="col-lg-6">
+    <h1>Отчет тревог по дням за месяц</h1>
+    <table class="table table-striped table-bordered" style="font-size: 18px;">
+        <thead>
+            <tr>
+                <th>Callnumber</th>
+                {% for day in days_in_month %}
+                    <th>{{ day }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in alarm_counts %}
+                <tr>
+                    <td>{{ row.callsign }}-{{ row.callnumber }}</td>
+                    {% for day in days_in_month %}
+                        <td>{{ row|get_item:day }}</td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table></div>
+
+{% endblock %}

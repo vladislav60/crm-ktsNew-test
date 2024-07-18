@@ -497,13 +497,19 @@
 
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#pult-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
-                <i class="bi bi-shield-shaded"></i><span>Пульт Raptor</span>
+                <i class="bi bi-server"></i><span>Пульт Raptor</span>
                 <i class="bi bi-chevron-down ms-auto"></i>
             </a>
-            <ul id="ekc-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+            <ul id="pult-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
                 <li>
                     <a href="{% url 'card_list' %}">
                         <i class="bi bi-circle"></i><span>База объектов</span>
+                    </a>
+                </li>
+
+                <li>
+                    <a href="{% url 'alarm_report' %}">
+                        <i class="bi bi-circle"></i><span>Отчет по тревогам</span>
                     </a>
                 </li>
 

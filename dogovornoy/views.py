@@ -351,7 +351,7 @@ def importexcel(request):
             # Load the Excel data into a Pandas dataframe
             df = pd.read_excel(excel_file)
             df = df.replace({np.nan: None})
-            print(df)
+            # print(df)
             # Iterate over the rows of the dataframe and create kts objects
             for index, row in df.iterrows():
                 kts_obj = kts(
@@ -411,7 +411,7 @@ def partnerts_importexel(request):
             # Load the Excel data into a Pandas dataframe
             df = pd.read_excel(excel_file)
             df = df.replace({np.nan: None})
-            print(df)
+            # print(df)
             # Iterate over the rows of the dataframe and create kts objects
             for index, row in df.iterrows():
                 partners_obj = partners_object(
@@ -458,7 +458,7 @@ def importrekvizity(request):
             # Load the Excel data into a Pandas dataframe
             df = pd.read_excel(excel_file)
             df = df.replace({np.nan: None})
-            print(df)
+            # print(df)
             # Iterate over the rows of the dataframe and create kts objects
             for index, row in df.iterrows():
                 rekvizity_obj = rekvizity(
@@ -497,7 +497,7 @@ def importvidsign(request):
             # Load the Excel data into a Pandas dataframe
             df = pd.read_excel(excel_file)
             df = df.replace({np.nan: None})
-            print(df)
+            # print(df)
             # Iterate over the rows of the dataframe and create kts objects
             for index, row in df.iterrows():
                 vidsign_obj = vid_sign(
@@ -526,7 +526,7 @@ def importekipazh(request):
             # Load the Excel data into a Pandas dataframe
             df = pd.read_excel(excel_file)
             df = df.replace({np.nan: None})
-            print(df)
+            # print(df)
             # Iterate over the rows of the dataframe and create kts objects
             for index, row in df.iterrows():
                 ekipazh_obj = ekipazh(
@@ -1114,7 +1114,7 @@ def reports_partners(request):
                     num_days = num_days_mounth
             else:
                 num_days = num_days_mounth
-                
+
 
         if kts_instance.telemetria:
             itog_telemetria = int((kts_instance.company_name.telemetria / num_days_mounth) * num_days)
@@ -1267,7 +1267,7 @@ def reports_partners_download_urik(request):
                     num_days = num_days_mounth
             else:
                 num_days = num_days_mounth
-                
+
 
         if kts_instance.telemetria:
             itog_telemetria = int((kts_instance.company_name.telemetria / num_days_mounth) * num_days)
@@ -13765,7 +13765,7 @@ class CreateTaskView(CreateView):
     model = Task
     form_class = TaskForm
     clients = kts.objects.all()
-    print(clients)
+    # print(clients)
     template_name = 'dogovornoy/create_task.html'
     success_url = reverse_lazy('task_list')
 

@@ -147,62 +147,37 @@
 
                 <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
                     <i class="bi bi-chat-left-text"></i>
-                    <span class="badge bg-success badge-number">3</span>
+                    <span class="badge bg-success badge-number">{{ new_tasks_count }}</span>
                 </a><!-- End Messages Icon -->
 
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow messages">
                     <li class="dropdown-header">
-                        You have 3 new messages
-                        <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
+                        У Вас {{ new_tasks_count }} задачь
+                        <a href="{% url 'task_list' %}"><span class="badge rounded-pill bg-primary p-2 ms-2">Перейти</span></a>
                     </li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
 
+                    {% for task in new_tasks_list %}
                     <li class="message-item">
                         <a href="#">
                             <img src="{% static 'dogovornoy/images/messages-1.jpg' %}" alt="" class="rounded-circle">
                             <div>
-                                <h4>Maria Hudson</h4>
-                                <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                <p>4 hrs. ago</p>
+                                <h4>{{ task.assigned_to.username }}</h4>
+                                <p><strong>Задача: </strong>{{ task.description }}</p>
+                                <p>{{ task.created_at }}</p>
                             </div>
                         </a>
                     </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
+                    {% endfor %}
 
-                    <li class="message-item">
-                        <a href="#">
-                            <img src="{% static 'dogovornoy/images/messages-2.jpg' %}" alt="" class="rounded-circle">
-                            <div>
-                                <h4>Anna Nelson</h4>
-                                <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                <p>6 hrs. ago</p>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-
-                    <li class="message-item">
-                        <a href="#">
-                            <img src="{% static 'dogovornoy/images/messages-3.jpg' %}" alt="" class="rounded-circle">
-                            <div>
-                                <h4>David Muldon</h4>
-                                <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                <p>8 hrs. ago</p>
-                            </div>
-                        </a>
-                    </li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
 
                     <li class="dropdown-footer">
-                        <a href="#">Show all messages</a>
+                        <a href="{% url 'task_list' %}">Список всех задач</a>
                     </li>
 
                 </ul><!-- End Messages Dropdown Items -->
@@ -221,8 +196,8 @@
 
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
                     <li class="dropdown-header">
-                        <h6>Алина</h6>
-                        <span>Договорной</span>
+                        <h6>{{ user.username }}</h6>
+                        <span>Отдел</span>
                     </li>
                     <li>
                         <hr class="dropdown-divider">

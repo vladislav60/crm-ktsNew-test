@@ -11,9 +11,10 @@ from django.core.paginator import Paginator
 from urllib.parse import urlencode
 # from django.contrib.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
+from django.views import View
 from django.views.generic.edit import FormMixin
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, HttpResponseNotFound, Http404, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseNotFound, Http404, HttpResponseRedirect, JsonResponse
 from django.urls import reverse, reverse_lazy
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.views.generic.edit import FormView
@@ -13763,8 +13764,10 @@ def zhakitov_download_ur(request):
 class CreateTaskView(CreateView):
     model = Task
     form_class = TaskForm
+    clients = kts.objects.all()
+    print(clients)
     template_name = 'dogovornoy/create_task.html'
-    success_url = reverse_lazy('baza_dogovorov')
+    success_url = reverse_lazy('task_list')
 
     def form_valid(self, form):
         # Здесь можно добавить дополнительную логику обработки данных формы, если это необходимо
@@ -13781,6 +13784,33 @@ class TaskListView(ListView):
     def get_queryset(self):
         # Используйте select_related для оптимизации загрузки связанных данных
         return Task.objects.filter(assigned_to=self.request.user).select_related('client').order_by('-created_at')
+
+
+
+class AcceptTaskView(View):
+    def post(self, request, pk):
+        task = get_object_or_404(Task, pk=pk)
+        task.accept_task()
+        return redirect(reverse('task_list'))
+
+
+class CompleteTaskView(View):
+    def post(self, request, pk):
+        note = request.POST.get('note', '')
+        task = get_object_or_404(Task, pk=pk)
+        task.complete_task(note)
+        return redirect(reverse('task_list'))
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -3,6 +3,7 @@ from django.db import models
 
 # 9 Создание модели таблица договора
 from django.urls import reverse
+from django.utils import timezone
 
 from ktscrm import settings
 
@@ -185,9 +186,9 @@ class partners_rekvizity(models.Model):
 
 
 class Task(models.Model):
-    client = models.ForeignKey('kts', on_delete=models.CASCADE, verbose_name="Client")
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE)  # Using Django's default user model
-    description = models.TextField()
+    client = models.ForeignKey('kts', on_delete=models.CASCADE, verbose_name="id клиента из ктс")
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Отправить сотруднику")  # Using Django's default user model
+    description = models.TextField(verbose_name="Примечание")
     created_at = models.DateTimeField(auto_now_add=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
@@ -195,6 +196,15 @@ class Task(models.Model):
 
     def __str__(self):
         return self.description
+
+    def accept_task(self):
+        self.accepted_at = timezone.now()
+        self.save()
+
+    def complete_task(self, note):
+        self.completed_at = timezone.now()
+        self.completion_note = note
+        self.save()
 
 
 

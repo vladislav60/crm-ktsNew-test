@@ -110,6 +110,7 @@ DATABASES = {
 }
 
 
+
 DATABASE_ROUTERS = ['ktscrm.db_routers.EKCDbRouter', 'ktscrm.db_routers.ThirdDBRouter']
 
 

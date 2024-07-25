@@ -2,13 +2,15 @@
 
 {% block content %}
     <div class="card" style="padding: 70px">
-<h2>Лист заданий</h2>
-<table class="table">
+    <a href="{% url 'create_task' %}" style="font-size: 20px; margin-bottom: 20px;right: 30px; top: 30px; display:block; position: absolute;">
+        <i class="bi bi-plus"></i>
+        <span>Новая задача</span>
+    </a>
+<h2>Текущие задания</h2>
+<table class="table table-bordered table-striped" style="text-align: center">
     <thead>
         <tr>
             <th>Причина заявки</th>
-            <th>Номер объекта</th>
-            <th>Номер договора</th>
             <th>Клиент</th>
             <th>От кого</th>
             <th>Дата получения</th>
@@ -18,11 +20,10 @@
     </thead>
     <tbody>
         {% for task in tasks %}
+            {% if not task.completed_at %}
         <tr>
             <td>{{ task.description }}</td>
-            <td>{{ task.client.object_number }}</td>
-            <td>{{ task.client.dogovor_number }}</td>
-            <td>{{ task.client.klient_name }}</td>
+            <td style="font-weight: bold">{{ task.client.object_number }} -  {{ task.client.dogovor_number }} - {{ task.client.klient_name }} - {{ task.client.name_object }}</td>
             <td>{{ task.assigned_to }}</td>
             <td>{{ task.created_at }}</td>
             <td>
@@ -32,33 +33,44 @@
                 В процессе
                 {% else %}
                 Новая
+                    <form action="{% url 'accept_task' task.pk %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn-primary btn" style="margin: 5px">Принять</button>
+            </form>
                 {% endif %}
             </td>
             <td>
-{#                <a href="{% url 'task_detail' task.pk %}">View</a>#}
+            {% if task.accepted_at and not task.completed_at %}
+            <form action="{% url 'complete_task' task.pk %}" method="post">
+                {% csrf_token %}
+                <input type="text" name="note" placeholder="Completion Note" class="form-control">
+                <button type="submit" class="btn-primary btn" style="margin: 5px">Завершить</button>
+                {% endif %}
+            </form>
             </td>
         </tr>
+            {% endif %}
         {% endfor %}
     </tbody>
 </table>
-{% if is_paginated %}
-<div class="pagination">
-    <span class="step-links">
-        {% if page_obj.has_previous %}
-            <a href="?page=1">&laquo; first</a>
-            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
-        {% endif %}
-
-        <span class="current">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-        </span>
-
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">next</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
-        {% endif %}
-    </span>
-</div>
-{% endif %}
+{#{% if is_paginated %}#}
+{#<div class="pagination">#}
+{#    <span class="step-links">#}
+{#        {% if page_obj.has_previous %}#}
+{#            <a href="?page=1">&laquo; first</a>#}
+{#            <a href="?page={{ page_obj.previous_page_number }}">previous</a>#}
+{#        {% endif %}#}
+{##}
+{#        <span class="current">#}
+{#            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.#}
+{#        </span>#}
+{##}
+{#        {% if page_obj.has_next %}#}
+{#            <a href="?page={{ page_obj.next_page_number }}">next</a>#}
+{#            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>#}
+{#        {% endif %}#}
+{#    </span>#}
+{#</div>#}
+{#{% endif %}#}
     </div>
 {% endblock %}

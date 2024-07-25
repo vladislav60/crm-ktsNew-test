@@ -39,15 +39,19 @@ def alarm_report(request):
     end_of_yesterday = yesterday.replace(hour=23, minute=59, second=59, microsecond=999999)
 
     # Filter out alarms where sendtime_deg is empty and within the current month
-    alarms = Alarme.objects.using('third_db').exclude(sendtime_deg__isnull=True).select_related('zoneid__cardid', 'reason').filter(receivetime__gte=start_of_month)
+    alarms = Alarme.objects.using('third_db').exclude(sendtime_deg__isnull=True, receivetime_deg__isnull=True, confirmtime_deg__isnull=True).select_related('zoneid__cardid', 'reason').filter(receivetime__gte=start_of_month)
 
     # Prepare data for the report
     data = []
     for alarm in alarms:
+        receivetime_deg = alarm.receivetime_deg if alarm.receivetime_deg and pd.notnull(alarm.receivetime_deg) else None
+        confirmtime_deg = alarm.confirmtime_deg if alarm.confirmtime_deg and pd.notnull(alarm.confirmtime_deg) else None
         if alarm.receivetime:
             data.append({
                 'alarmid': alarm.alarmid,
                 'client': alarm.zoneid.cardid.objectname,
+                'zone': alarm.zoneid.zonenumber,
+                'zone_info': alarm.zoneid.info,
                 'client_id': alarm.zoneid.cardid.pk,  # Ensure this is correct
                 'receivetime': alarm.receivetime,
                 'confirmtime': alarm.confirmtime,
@@ -55,8 +59,8 @@ def alarm_report(request):
                 'reason': alarm.reason.name if alarm.reason else 'Unknown',
                 'sendtime_deg': alarm.sendtime_deg,
                 'receivecount': alarm.receivecount,
-                'confirmtime_deg': alarm.confirmtime_deg,
-                'receivetime_deg': alarm.receivetime_deg,
+                'confirmtime_deg': confirmtime_deg,
+                'receivetime_deg': receivetime_deg,
                 'unitnumber': alarm.zoneid.cardid.unitnumber,
                 'otisnumber': alarm.zoneid.cardid.otisnumber,
                 'callnumber': alarm.zoneid.cardid.callnumber,
@@ -80,7 +84,7 @@ def alarm_report(request):
     common_reasons = common_reasons.loc[common_reasons.groupby('client')['reason_count'].idxmax()][['client', 'reason']]
 
     # Filter clients with total_alarms >= 3
-    total_alarms = total_alarms[total_alarms['total_alarms'] >= 3]
+    total_alarms = total_alarms[total_alarms['total_alarms'] >= 7]
 
     # Time of day analysis
     df['hour'] = df['receivetime'].dt.hour

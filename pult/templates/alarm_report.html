@@ -55,7 +55,9 @@
             <th>Номер объекта</th>
             <th>Модуль</th>
             <th>Имя клиента</th>
-            <th>ID тревоги</th>
+            <th>Зона</th>
+            <th>Описание зоны</th>
+{#            <th>ID тревоги</th>#}
             <th>Время приема</th>
             <th>Время подтверждения</th>
             <th>Отпр в деж</th>
@@ -73,12 +75,21 @@
             <td>{{ row.otisnumber }}</td>
             <td>{{ row.unitnumber }}</td>
             <td>{{ row.client }}</td>
-            <td>{{ row.alarmid }}</td>
+            <td>{{ row.zone }}</td>
+            <td>{{ row.zone_info }}</td>
+{#            <td>{{ row.alarmid }}</td>#}
             <td>{{ row.receivetime }}</td>
             <td>{{ row.confirmtime }}</td>
             <td>{{ row.sendtime_deg }}</td>
-            <td>{{ row.receivetime_deg }}</td>
-            <td>{{ row.confirmtime_deg }}</td>
+            {% if row.receivetime_deg %}
+                <td></td>
+                {% else %}
+                <td></td>
+            {% endif %}
+{#            <td>{{ row.receivetime_deg }}</td>#}
+{#            <td>{{ row.confirmtime_deg }}</td>#}
+            <td></td>
+            <td></td>
             <td>{{ row.processtime }}</td>
             <td>{{ row.reason }}</td>
             <td>{{ row.receivecount }}</td>

@@ -517,6 +517,22 @@
         </li><!-- End Главная Nav -->
 
 
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#todolist-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
+                <i class="bi bi-card-checklist"></i><span>Рабочие задачи</span>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="todolist-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li>
+                    <a href="{% url 'task_list' %}">
+                        <i class="bi bi-circle"></i><span>Ваши задачи</span>
+                    </a>
+                </li>
+
+            </ul>
+        </li><!-- End Главная Nav -->
+
+
 
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">

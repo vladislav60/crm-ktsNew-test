@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'ekc',
     'pult',
     'django.contrib.humanize',
+    # 'accounts',
+    'accounts.apps.AccountsConfig',
 ]
 
 MIDDLEWARE = [

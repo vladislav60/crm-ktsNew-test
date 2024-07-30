@@ -70,6 +70,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'dogovornoy.context_processors.task_counter',
+                'dogovornoy.context_processors.add_user_profile',
             ],
         },
     },

@@ -13813,5 +13813,3 @@ class CompleteTaskView(View):
 
 
 
-
-

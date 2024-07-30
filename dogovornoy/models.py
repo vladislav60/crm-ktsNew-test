@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
-
+from django.conf import settings
 # 9 Создание модели таблица договора
 from django.urls import reverse
 from django.utils import timezone
@@ -205,6 +205,39 @@ class Task(models.Model):
         self.completed_at = timezone.now()
         self.completion_note = note
         self.save()
+
+
+class TaskReason(models.Model):
+    reason = models.CharField(max_length=255, verbose_name="Причина")
+
+    def __str__(self):
+        return self.reason
+
+    class Meta:
+        verbose_name = "Причина заявки"
+        verbose_name_plural = "Причины заявок"
+
+
+
+class TechnicalTask(models.Model):
+    technician = models.ForeignKey(User, related_name='received_tasks', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, related_name='sent_tasks', on_delete=models.CASCADE)
+    client_object_id = models.IntegerField()  # Используем IntegerField для хранения ID клиента
+    sent_time = models.DateTimeField(auto_now_add=True)
+    accepted_time = models.DateTimeField(null=True, blank=True)
+    arrival_time = models.DateTimeField(null=True, blank=True)
+    completion_time = models.DateTimeField(null=True, blank=True)
+    reason = models.ForeignKey(TaskReason, on_delete=models.SET_NULL, null=True)
+    note = models.TextField(blank=True)
+    result = models.TextField(blank=True)
+
+    def __str__(self):
+        # При необходимости, получаем объект Cards через API или запрос к third_db
+        return f'Task for client ID {self.client_object_id} by {self.technician.username}'
+
+
+
+
 
 
 

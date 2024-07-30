@@ -8,3 +8,9 @@ def task_counter(request):
         context['new_tasks_count'] = new_tasks_count
         context['new_tasks_list'] = new_tasks
     return context
+
+
+def add_user_profile(request):
+    if request.user.is_authenticated:
+        return {'user_profile': request.user.userprofile}
+    return {}

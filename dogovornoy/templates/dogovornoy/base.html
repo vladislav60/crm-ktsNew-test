@@ -46,15 +46,15 @@
 
     <div class="d-flex align-items-center justify-content-between">
         <a href="{% url 'home' %}" class="logo d-flex align-items-center">
-            <img src="{% static 'dogovornoy/images/logo.png' %}" alt="">
-            <span class="d-none d-lg-block">КузетТехноСервис</span>
+            <img src="{% static 'dogovornoy/images/logo.png' %}" alt="" style="max-height: 44px!important;">
+            <span class="d-none d-lg-block">Кузет-Сенiм</span>
         </a>
         <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->
 
     <div class="search-bar">
         <form class="search-form d-flex align-items-center" method="POST" action="#">
-            <input type="text" name="query" placeholder="Search" title="Enter search keyword">
+            <input type="text" name="query" placeholder="Поиск" title="Enter search keyword">
             <button type="submit" title="Search"><i class="bi bi-search"></i></button>
         </form>
     </div><!-- End Search Bar -->
@@ -162,7 +162,11 @@
                     {% for task in new_tasks_list %}
                     <li class="message-item">
                         <a href="#">
-                            <img src="{% static 'dogovornoy/images/messages-1.jpg' %}" alt="" class="rounded-circle">
+                            {% if user_profile.avatar %}
+                            <img src="{{ user_profile.avatar.url }}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>
+                             {% else %}
+                             <img src="{% static 'dogovornoy/avatars/default_avatar.jpg' %}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>
+                        {% endif  %}
                             <div>
                                 <h4>{{ task.assigned_to.username }}</h4>
                                 <p><strong>Задача: </strong>{{ task.description }}</p>
@@ -196,6 +200,11 @@
 
                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
                     <li class="dropdown-header">
+                        {% if user_profile.avatar %}
+                            <img src="{{ user_profile.avatar.url }}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>
+                             {% else %}
+                             <img src="{% static 'dogovornoy/avatars/default_avatar.jpg' %}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>
+                        {% endif  %}
                         <h6>{{ user.username }}</h6>
                         <span>Отдел</span>
                     </li>

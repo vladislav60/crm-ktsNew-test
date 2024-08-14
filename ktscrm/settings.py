@@ -84,32 +84,12 @@ WSGI_APPLICATION = 'ktscrm.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'crm-kts',
-        'USER': 'postgres',
-        'PASSWORD': '',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    },
-    'asu_ekc': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'asu_ekc',
-        'USER': 'asu2',
-        'PASSWORD': 'c7VL09DcUnXGKVysq0fV',
-        'HOST': '192.168.1.60',
+        'NAME': 'crm-kts',
+        'USER': 'django_ktscrm',
+        'PASSWORD': 'c7VL09DcUnXGKVysq0fV!$',
+        'HOST': 'postgres_kts',
         'PORT': '5432',
-    },
-    'third_db': {
-        'ENGINE': 'mssql',
-        'NAME': 'GBASE',
-        'USER': 'vlad',
-        'PASSWORD': 'KtsPCN$2024!$_Lol',
-        'HOST': '192.168.1.20',
-        'PORT': '1433',
-
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-        },
     },
 }
 

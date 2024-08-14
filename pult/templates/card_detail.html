@@ -16,33 +16,34 @@
 
 
     <!-- Button to open modal -->
-<button type="button" data-bs-toggle="modal" data-bs-target="#createTaskModal">Create Task</button>
+<button type="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">Создать заявку</button>
 
-<!-- Modal Structure -->
-<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <form id="taskForm" method="POST">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="createTaskModalLabel">Create Task</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <!-- Dynamically populated user select -->
-          <select id="userSelect" class="form-select" aria-label="Technician select">
-            <!-- Options added by JavaScript -->
-          </select>
-          <!-- Checkboxes for reasons -->
-          <div id="reasonChecks">
-            <!-- Checkboxes added by JavaScript -->
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-primary">Send to Telegram</button>
-        </div>
-      </div>
-    </form>
-  </div>
+<!-- Modal -->
+<div class="modal fade" id="createTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="taskForm" method="POST" action="{% url 'create_task' %}">
+            {% csrf_token %}
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создать задачу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <select id="userSelect" class="form-select">
+                        <!-- Options added by JavaScript -->
+                    </select>
+                    <p></p>
+                    <p></p>
+                    <div id="reasonChecks">
+                        <!-- Checkboxes added by JavaScript -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Отправить в Telegram</button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 
 
@@ -142,32 +143,70 @@
         }
     });
 
-    document.getElementById('taskForm').addEventListener('submit', function(event) {
-      event.preventDefault();
-      const selectedUser = document.getElementById('userSelect').value;
-      const selectedReasons = Array.from(document.querySelectorAll('#reasonChecks input[type="checkbox"]:checked')).map(el => el.value);
+    document.addEventListener('DOMContentLoaded', function() {
+    const fetchAndPopulate = (url, elementId, isCheckbox) => {
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById(elementId);
+                data.forEach(item => {
+                    const elem = isCheckbox ? document.createElement('input') : document.createElement('option');
+                    if (isCheckbox) {
+                        elem.type = 'checkbox';
+                        elem.value = item.id;
+                        const label = document.createElement('label');
+                        label.textContent = item.name;
+                        label.appendChild(elem);
+                        container.appendChild(label);
+                    } else {
+                        elem.textContent = item.name;
+                        elem.value = item.id;
+                        container.appendChild(elem);
+                    }
+                });
+            });
+    };
 
-      fetch('/path/to/task/creation/', { // Change to your actual endpoint
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}' // Handle CSRF
-        },
-        body: JSON.stringify({user: selectedUser, reasons: selectedReasons})
-      }).then(response => {
-        if (response.ok) {
-          return response.json();
-        }
-        throw new Error('Failed to create task');
-      }).then(data => {
-        console.log('Task created:', data);
-        // Close modal
-        $('#createTaskModal').modal('hide');
-        // Optionally reset form or display success message
-      }).catch(error => {
-        console.error('Error:', error);
-      });
-    });
+    {#fetchAndPopulate('{% url "api_technicians" %}', 'userSelect', false);#}
+    {#fetchAndPopulate('{% url "api_task_reasons" %}', 'reasonChecks', true);#}
+});
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+    fetch('{% url "api_technicians" %}')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('userSelect');
+            data.forEach(user => {
+                const option = new Option(user.name, user.id);
+                select.add(option);
+            });
+        });
+});
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+    fetch('{% url "api_task_reasons" %}')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('reasonChecks');
+            data.forEach(reason => {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = 'reason-' + reason.id;
+                checkbox.value = reason.id;
+                const label = document.createElement('label');
+                label.htmlFor = 'reason-' + reason.id;
+                label.textContent = reason.name;
+                container.appendChild(checkbox);
+                container.appendChild(document.createTextNode(' ')); // Добавить пробел для отступа
+                container.appendChild(label);
+                container.appendChild(document.createElement('br')); // Добавить перевод строки
+            });
+        });
+});
+
+
 </script>
 
 <style>

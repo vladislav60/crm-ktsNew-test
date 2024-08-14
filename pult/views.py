@@ -3,12 +3,14 @@ from calendar import *
 import re
 
 import now as now
-from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render, get_object_or_404, redirect
 from .models import *
 import pandas as pd
 from .models import Alarme
 from datetime import *
+from .forms import *
+from django.contrib import messages
 
 
 
@@ -230,6 +232,36 @@ def export_alarms_to_excel(request):
         df.to_excel(writer, index=False)
 
     return response
+
+
+
+def create_task(request):
+    if request.method == 'POST':
+        form = TaskCreationForm(request.POST)
+        if form.is_valid():
+            new_task = form.save(commit=False)
+            # Добавьте дополнительную логику, если это необходимо
+            new_task.sender = request.user
+            new_task.save()
+            messages.success(request, 'Задача успешно создана и отправлена в Telegram.')
+            return redirect('some_view_name')  # перенаправление на страницу с задачами
+    else:
+        form = TaskCreationForm()
+
+    return render(request, 'pult/create_task.html', {'form': form})
+
+
+
+def api_technicians(request):
+    technicians = User.objects.filter(userprofile__department='Техники')
+    data = [{'id': tech.id, 'name': tech.username} for tech in technicians]
+    return JsonResponse(data, safe=False)
+
+
+def api_task_reasons(request):
+    reasons = TaskReason.objects.all()
+    data = [{'id': reason.id, 'name': reason.reason} for reason in reasons]
+    return JsonResponse(data, safe=False)
 
 
 

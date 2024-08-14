@@ -51,3 +51,5 @@ class EkipazhAdmin(admin.ModelAdmin):
 # admin.site.register(ktsAdmin)
 # admin.site.register(rekvizity)
 admin.site.register(AdditionalService, AdditionalServiceAdmin)
+admin.site.register(TaskReason)
+admin.site.register(TechnicalTask)

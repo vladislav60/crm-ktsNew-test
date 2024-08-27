@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     # 'accounts',
     'accounts.apps.AccountsConfig',
+    'whitenoise.runserver_nostatic',
 ]
 
 MIDDLEWARE = [
@@ -53,7 +54,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'ktscrm.urls'
@@ -86,12 +87,34 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'crm-kts',
-        'USER': 'django_ktscrm',
+        'USER': 'crmktsuser',
         'PASSWORD': 'c7VL09DcUnXGKVysq0fV!$',
-        'HOST': 'postgres_kts',
+        'HOST': '192.168.1.60',
         'PORT': '5432',
     },
+    'asu_ekc': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'asu_ekc',
+        'USER': 'asu2',
+        'PASSWORD': 'c7VL09DcUnXGKVysq0fV',
+        'HOST': '192.168.1.60',
+        'PORT': '5432',
+    },
+    'third_db': {
+        'ENGINE': 'mssql',
+        'NAME': 'GBASE',
+        'USER': 'vlad',
+        'PASSWORD': 'KtsPCN$2024!$_Lol',
+        'HOST': '192.168.1.20',
+        'PORT': '1433',
+
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+        },
+    },
 }
+
+
 
 
 
@@ -139,9 +162,11 @@ DATE_INPUT_FORMATS = ('%d-%m-%Y','%Y-%m-%d')
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 #11 дериктории CSS и js
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
-STATICFILES_DIRS = []
+
+STATICFILES_DIRS = (os.path.join(BASE_DIR,'dogovornoy/static'),os.path.join(BASE_DIR, 'static'),)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
@@ -154,3 +179,4 @@ LOGIN_URL = '/login/'
 INTERNAL_IPS = [
     '*',
 ]
+

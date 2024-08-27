@@ -1,24 +1,14 @@
-version: '4.32'
+version: "3.8"
 
 services:
-  postgres-db:
-    image: postgres:latest
-    container_name: postgres_kts
-    environment:
-      POSTGRES_USER: django_ktscrm
-      POSTGRES_PASSWORD: c7VL09DcUnXGKVysq0fV!$
-      POSTGRES_DB: crm-kts
-    ports:
-      - "5433:5432"
-
-  web:
+  crm_kts_image:
+    platform: linux/amd64
     build: .
     command: gunicorn ktscrm.wsgi:application --bind 0.0.0.0:8000
     volumes:
       - .:/app
     ports:
       - "8008:8000"
-    depends_on:
-      - postgres-db
     environment:
-      - DATABASE_URL=postgres://django_ktscrm:c7VL09DcUnXGKVysq0fV!$@postgres-db:5432/crm-kts
+      - DATABASE_URL=postgres://django_ktscrm:c7VL09DcUnXGKVysq0fV!$@127.0.0.1:5432/crm-kts
+

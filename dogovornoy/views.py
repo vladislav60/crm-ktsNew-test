@@ -76,7 +76,19 @@ def create_dogovor(request, klient_id):
     if request.method == "GET":
         passport_info = kts.objects.get(pk=klient_id)
         vid_sign1 = vid_sign.objects.get(pk=passport_info.vid_sign_id)
-        if ((passport_info.mat_otv == '0') and (passport_info.urik == False)):
+        if (passport_info.urik == False) and (vid_sign1.name_sign == 'ТС'):
+            doc = DocxTemplate(os.path.abspath('media/dogovor4.docx'))
+            split_names_klient_ = passport_info.klient_name.split()
+            if len(split_names_klient_) == 3:
+                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.{split_names_klient_[2][0]}.'.title()
+            elif len(split_names_klient_) == 2:
+                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.'.title()
+            else:
+                short_names_klient = split_names_klient_[0].title()
+        elif (passport_info.urik == True) and (vid_sign1.name_sign == 'ТС'):
+            doc = DocxTemplate(os.path.abspath('media/dogovor5.docx'))
+            short_names_klient = ""
+        elif ((passport_info.mat_otv == '0') and (passport_info.urik == False)):
             doc = DocxTemplate(os.path.abspath('media/ots-fizlica-bezmat.docx'))
             split_names_klient_ = passport_info.klient_name.split()
             if len(split_names_klient_) == 3:
@@ -97,18 +109,6 @@ def create_dogovor(request, klient_id):
                 short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.'.title()
             else:
                 short_names_klient = split_names_klient_[0].title()
-        elif (passport_info.urik == False) and (vid_sign1.name_sign == 'тс'):
-            doc = DocxTemplate(os.path.abspath('media/dogovor4.docx'))
-            split_names_klient_ = passport_info.klient_name.split()
-            if len(split_names_klient_) == 3:
-                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.{split_names_klient_[2][0]}.'.title()
-            elif len(split_names_klient_) == 2:
-                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.'.title()
-            else:
-                short_names_klient = split_names_klient_[0].title()
-        elif (passport_info.urik == True) and (vid_sign1.name_sign == 'тс'):
-            doc = DocxTemplate(os.path.abspath('media/dogovor5.docx'))
-            short_names_klient = ""
         elif (passport_info.mat_otv != '0') and (passport_info.urik == True) and (
                 (vid_sign1.name_sign == 'ОТС') or (vid_sign1.name_sign == 'ОС')):
             doc = DocxTemplate(os.path.abspath('media/dogovor2.docx'))

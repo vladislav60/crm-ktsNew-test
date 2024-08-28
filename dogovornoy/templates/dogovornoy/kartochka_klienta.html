@@ -8,6 +8,11 @@
                 <div class="card">
                     <div class="card-body">
 
+                    <a href="{% url 'baza_dogovorov' %}" style="font-size: 20px; margin-bottom: 20px;right: 42px; top: 30px; display:block; position: absolute;">
+                        <i class="bi bi-arrow-left"></i>
+                        <span>Назад</span>
+                    </a>
+
                         <h5 class="card-title">Карточка клиента</h5>
 
                         <div id="carouselExampleSlidesOnly" class="carousel slide" data-bs-ride="carousel">
@@ -24,24 +29,30 @@
                         </div><!-- End Slides only carousel-->
 
                         <form class="row g-3">
-                            <div class="col-6">
-                                <label for="inputNanme4" class="form-label">Номер УДВ</label>
 
-                                {% if kartochka.udv_number %}
-                                    <input type="text" class="form-control" value="{{ kartochka.udv_number }}" disabled>
+
+                        <div class="col-6">
+                                <label for="inputNanme4" class="form-label">№ объекта</label>
+                                {% if kartochka.object_number %}
+                                    <input type="text" class="form-control" value="{{ kartochka.object_number }}"
+                                           disabled>
                                 {% else %}
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
                             </div>
-                            <div class="col-6">
-                                <label for="inputNanme4" class="form-label">Дата и Кем выдано</label>
 
-                                {% if kartochka.date_udv %}
-                                    <input type="text" class="form-control" value="{{ kartochka.date_udv }}" disabled>
+                            <div class="col-6">
+                                <label for="inputNanme4" class="form-label">№ передатчика/GSM</label>
+                                {% if kartochka.peredatchik_number %}
+                                    <input type="text" class="form-control" value="{{ kartochka.peredatchik_number }}"
+                                           disabled>
                                 {% else %}
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
                             </div>
+
+
+
                             <div class="col-6">
                                 <label for="inputNanme4" class="form-label">Компания</label>
 
@@ -247,21 +258,22 @@
                                 {% endif %}
                             </div>
 
-                            <div class="col-6">
-                                <label for="inputNanme4" class="form-label">№ объекта</label>
-                                {% if kartochka.object_number %}
-                                    <input type="text" class="form-control" value="{{ kartochka.object_number }}"
-                                           disabled>
+
+
+                        <div class="col-6">
+                                <label for="inputNanme4" class="form-label">Номер УДВ</label>
+
+                                {% if kartochka.udv_number %}
+                                    <input type="text" class="form-control" value="{{ kartochka.udv_number }}" disabled>
                                 {% else %}
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
                             </div>
-
                             <div class="col-6">
-                                <label for="inputNanme4" class="form-label">№ передатчика/GSM</label>
-                                {% if kartochka.peredatchik_number %}
-                                    <input type="text" class="form-control" value="{{ kartochka.peredatchik_number }}"
-                                           disabled>
+                                <label for="inputNanme4" class="form-label">Дата и Кем выдано</label>
+
+                                {% if kartochka.date_udv %}
+                                    <input type="text" class="form-control" value="{{ kartochka.date_udv }}" disabled>
                                 {% else %}
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}

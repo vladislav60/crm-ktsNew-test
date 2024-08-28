@@ -60,7 +60,17 @@ def index(request):
     return render(request, 'dogovornoy/index.html', context=context)
 
 
-# Шаблон создание договоров
+def format_date(date_str):
+    try:
+        # Попробуем распарсить дату из строки в формате 'гггг-мм-дд'
+        parsed_date = datetime.strptime(date_str, '%Y-%m-%d')
+        # Возвращаем дату в формате 'дд.мм.гггг'
+        return parsed_date.strftime('%d.%m.%Y')
+    except ValueError:
+        # Если формат не соответствует, возвращаем исходную строку
+        return date_str
+
+
 @login_required
 def create_dogovor(request, klient_id):
     if request.method == "GET":
@@ -69,24 +79,39 @@ def create_dogovor(request, klient_id):
         if ((passport_info.mat_otv == '0') and (passport_info.urik == False)):
             doc = DocxTemplate(os.path.abspath('media/ots-fizlica-bezmat.docx'))
             split_names_klient_ = passport_info.klient_name.split()
-            short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.{split_names_klient_[2][0]}.'.title()
+            if len(split_names_klient_) == 3:
+                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.{split_names_klient_[2][0]}.'.title()
+            elif len(split_names_klient_) == 2:
+                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.'.title()
+            else:
+                short_names_klient = split_names_klient_[0].title()
         elif ((passport_info.mat_otv == '0') and (passport_info.urik == True)):
-            doc = DocxTemplate(os.path.abspath('media/ОС-ТС юр.лиц.нов без мат.ответственности.docx'))
+            doc = DocxTemplate(os.path.abspath('media/dogovor3.docx'))
             short_names_klient = ""
         elif ((passport_info.mat_otv != '0') and (passport_info.urik == False)):
-            doc = DocxTemplate(os.path.abspath('media/Договор ОТС Квартира-дом физ.лицо.docx'))
+            doc = DocxTemplate(os.path.abspath('media/dogovor1.docx'))
             split_names_klient_ = passport_info.klient_name.split()
-            short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.{split_names_klient_[2][0]}.'.title()
+            if len(split_names_klient_) == 3:
+                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.{split_names_klient_[2][0]}.'.title()
+            elif len(split_names_klient_) == 2:
+                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.'.title()
+            else:
+                short_names_klient = split_names_klient_[0].title()
         elif (passport_info.urik == False) and (vid_sign1.name_sign == 'тс'):
-            doc = DocxTemplate(os.path.abspath('media/ТС физ.лица без материальной.docx'))
+            doc = DocxTemplate(os.path.abspath('media/dogovor4.docx'))
             split_names_klient_ = passport_info.klient_name.split()
-            short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.{split_names_klient_[2][0]}.'.title()
+            if len(split_names_klient_) == 3:
+                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.{split_names_klient_[2][0]}.'.title()
+            elif len(split_names_klient_) == 2:
+                short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.'.title()
+            else:
+                short_names_klient = split_names_klient_[0].title()
         elif (passport_info.urik == True) and (vid_sign1.name_sign == 'тс'):
-            doc = DocxTemplate(os.path.abspath('media/ТС юр.лица без материальной.docx'))
+            doc = DocxTemplate(os.path.abspath('media/dogovor5.docx'))
             short_names_klient = ""
         elif (passport_info.mat_otv != '0') and (passport_info.urik == True) and (
                 (vid_sign1.name_sign == 'ОТС') or (vid_sign1.name_sign == 'ОС')):
-            doc = DocxTemplate(os.path.abspath('media/ОС-ТС юр.лиц. нов для ИП.docx'))
+            doc = DocxTemplate(os.path.abspath('media/dogovor2.docx'))
             short_names_klient = ""
         else:
             print('test')
@@ -95,7 +120,9 @@ def create_dogovor(request, klient_id):
         itog_oplata = passport_info.abon_plata + (additional_services_cost or 0)
         rekvizity_test = rekvizity.objects.get(pk=passport_info.company_name_id)
         current_date = date.today()
-        current_date = current_date.strftime("%d/%m/%Y")
+        current_date = current_date.strftime('%d.%m.%Y')
+        now_year = datetime.now().year
+        formatted_date = format_date(passport_info.data_zakluchenia)
         currency_main = ('тенге', 'тенге', 'тенге')
         currency_additional = ('тиын', 'тиына', 'тиынов')
         itog_oplata_propis = get_string_by_number(itog_oplata, currency_main, currency_additional)
@@ -118,7 +145,8 @@ def create_dogovor(request, klient_id):
             'date_udv': passport_info.date_udv,
             'dogovor_number': passport_info.dogovor_number,
             'date': current_date,
-            'date_zakl': passport_info.data_zakluchenia,
+            'now_year':now_year,
+            'date_zakl': formatted_date,
             'klient_name': passport_info.klient_name,
             'company_name': passport_info.company_name,
             'time_reag': passport_info.time_reag,

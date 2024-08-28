@@ -149,7 +149,7 @@ urlpatterns = [
     # Функция редактирования дополнительный услуг
     path('additional_service/<int:service_id>/edit/', views.edit_additional_service, name='edit_additional_service'),
     # отправка заявок
-    path('new_task/', CreateTaskView.as_view(), name='create_task'),
+    path('create_task/', CreateTaskView.as_view(), name='create_task'),
     # path('new_task/', views.create_task, name='create_task'),
     path('task_list/', TaskListView.as_view(), name='task_list'),
     path('task/accept/<int:pk>/', AcceptTaskView.as_view(), name='accept_task'),

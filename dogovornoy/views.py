@@ -207,9 +207,7 @@ class AddClient(FormView):
 class AddClientPartner(FormView):
     template_name = 'dogovornoy/add_client_partner.html'
     form_class = AddKlientDogFormPartner
-
-    def get_success_url(self):
-        return reverse('kartochka_klienta', kwargs={'klient_id': self.kartochka.pk})
+    success_url = '/baza_partnerov/'
 
     def form_valid(self, form):
         form.save()

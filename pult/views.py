@@ -235,20 +235,20 @@ def export_alarms_to_excel(request):
 
 
 
-def create_task(request):
-    if request.method == 'POST':
-        form = TaskCreationForm(request.POST)
-        if form.is_valid():
-            new_task = form.save(commit=False)
-            # Добавьте дополнительную логику, если это необходимо
-            new_task.sender = request.user
-            new_task.save()
-            messages.success(request, 'Задача успешно создана и отправлена в Telegram.')
-            return redirect('some_view_name')  # перенаправление на страницу с задачами
-    else:
-        form = TaskCreationForm()
-
-    return render(request, 'pult/create_task.html', {'form': form})
+# def create_task(request):
+#     if request.method == 'POST':
+#         form = TaskCreationForm(request.POST)
+#         if form.is_valid():
+#             new_task = form.save(commit=False)
+#             # Добавьте дополнительную логику, если это необходимо
+#             new_task.sender = request.user
+#             new_task.save()
+#             messages.success(request, 'Задача успешно создана и отправлена в Telegram.')
+#             return redirect('some_view_name')  # перенаправление на страницу с задачами
+#     else:
+#         form = TaskCreationForm()
+#
+#     return render(request, 'pult/create_task.html', {'form': form})
 
 
 

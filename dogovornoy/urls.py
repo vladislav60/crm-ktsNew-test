@@ -154,5 +154,9 @@ urlpatterns = [
     path('task_list/', TaskListView.as_view(), name='task_list'),
     path('task/accept/<int:pk>/', AcceptTaskView.as_view(), name='accept_task'),
     path('task/complete/<int:pk>/', CompleteTaskView.as_view(), name='complete_task'),
+    path('copy_client/<int:pk>/', CopyClientView.as_view(), name='copy_client'),
+    path('create_technical_task/', CreateTechnicalTaskView.as_view(), name='create_technical_task'),
+    path('api_technicians/', TechniciansAPIView, name='api_technicians'),  # Уберите .as_view()
+    path('api_task_reasons/', TaskReasonsAPIView, name='api_task_reasons'),  # Уберите .as_view()
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

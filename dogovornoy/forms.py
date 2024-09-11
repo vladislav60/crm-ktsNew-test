@@ -163,6 +163,26 @@ class TaskForm(forms.ModelForm):
         return f"{obj.object_number} - {obj.dogovor_number} - {obj.klient_name} - {obj.name_object}"
 
 
+class TaskFormDog(forms.ModelForm):
+    client_id = forms.CharField(widget=forms.HiddenInput())  # Скрытое поле для client_id
+
+    class Meta:
+        model = Task
+        fields = ['assigned_to', 'description', 'client_id']  # Добавляем поле client_id
+        labels = {
+            'assigned_to': 'Отправить сотруднику',
+            'description': 'Описание задачи',
+        }
+        widgets = {
+            'assigned_to': forms.Select(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super(TaskFormDog, self).__init__(*args, **kwargs)
+        self.fields['assigned_to'].queryset = User.objects.all()  # Настройка пользователей
+
+
 
 
 

@@ -3,6 +3,7 @@
 
 {% block content %}
 
+
 <!-- Recent Page Title -->
 <div class="pagetitle">
     <h1>База клиентов</h1>
@@ -52,7 +53,7 @@
                     <button type="submit" class="btn btn-primary">Поиск по базе</button>
 
 
-                </div>
+
             </form>
 
             <a href="{% url 'baza_dogovorov' %}" style="font-size: 20px; margin-bottom: 20px;right: 30px; bottom: 2px; display:block; position: absolute;">
@@ -129,8 +130,85 @@
                             </button>
                         </a>
                     </td>
-                </tr>
-                {% endfor %}
+
+                    <!-- Кнопка для открытия модального окна -->
+                    <td>
+                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#createTaskModal-{{ k.pk }}">
+                            <i class="bi bi-list-task"></i>
+                        </button>
+                    </td>
+
+                     <!-- Кнопка для копирования клиента -->
+                        <td>
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#copyClientModal-{{ k.pk }}">
+                                <i class="bi bi-files"></i>
+                            </button>
+                        </td>
+
+                    <td>
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#CreateTechnicalTask">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </td>
+
+                    </tr>
+
+                <!-- Форма внутри модального окна -->
+                <div class="modal fade" id="createTaskModal-{{ k.pk }}" tabindex="-1" aria-labelledby="createTaskModalLabel-{{ k.pk }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="createTaskModalLabel-{{ k.pk }}">Создать задачу</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+                            <form id="TaskForm-{{ k.pk }}" method="post" action="{% url 'baza_dogovorov' %}">
+                                {% csrf_token %}
+                                <!-- Скрытое поле для передачи client_id -->
+                                <input type="hidden" name="client_id" value="{{ k.pk }}">
+
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        {{ task_form.description.label_tag }}
+                                        {{ task_form.description }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ task_form.assigned_to.label_tag }}
+                                        {{ task_form.assigned_to }}
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                                    <button type="submit" class="btn btn-primary">Создать задачу</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Модальное окно для подтверждения копирования клиента -->
+                <div class="modal fade" id="copyClientModal-{{ k.pk }}" tabindex="-1" aria-labelledby="copyClientModalLabel-{{ k.pk }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="copyClientModalLabel-{{ k.pk }}">Скопировать клиента</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                Вы уверены, что хотите скопировать клиента "{{ k.klient_name }}"?
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                <a href="{% url 'copy_client' k.pk %}">
+                                    <button type="button" class="btn btn-primary">Скопировать</button>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            {% endfor %}
 
 
                 </tbody>
@@ -182,4 +260,104 @@
               </nav><!-- End Pagination with icons -->
     </div>
 </div><!-- End Recent Sales -->
+
+    <div class="modal fade" id="CreateTechnicalTask" tabindex="-1" aria-labelledby="CreateTechnicalTask" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="CreateTechnicalTask">Заявка технику</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'create_technical_task' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="technician_id" class="form-label">Техник:</label>
+                        <select name="technician_id" class="form-select" id="userSelect">
+                            <!-- Здесь добавляются пользователи через JS -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reasonChecks">Причины:</label>
+                        <div id="reasonChecks"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="client_object_id" class="form-label">ID клиента база Raptor:</label>
+                        <input type="text" name="client_object_id" class="form-control" id="client_object_id">
+                    </div>
+                    <div class="mb-3">
+                        <label for="note" class="form-label">Заметка:</label>
+                        <textarea name="note" class="form-control" id="note"></textarea>
+                    </div>
+
+                    <!-- Скрытое поле для хранения строкового списка выбранных причин -->
+                    <input type="hidden" name="reason" id="selectedReasonsField">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Отправить задачу</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+    <script>
+
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('{% url "api_technicians" %}')
+        .then(response => response.json())
+        .then(data => {
+            const select = document.getElementById('userSelect');
+            data.forEach(user => {
+                const option = new Option(user.name, user.id);
+                select.add(option);
+            });
+        });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('{% url "api_task_reasons" %}')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('reasonChecks');
+            data.forEach(reason => {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = 'reason-' + reason.id;
+                checkbox.value = reason.reason;  // Используем название причины как значение
+                const label = document.createElement('label');
+                label.htmlFor = 'reason-' + reason.id;
+                label.textContent = reason.reason;
+
+                // Добавляем обработчик изменения для каждого чекбокса
+                checkbox.addEventListener('change', function() {
+                    updateReasonsField();  // Обновляем скрытое поле при изменении
+                });
+
+                container.appendChild(checkbox);
+                container.appendChild(document.createTextNode(' '));
+                container.appendChild(label);
+                container.appendChild(document.createElement('br')); // Для перевода строки
+            });
+        });
+});
+
+// Собираем выбранные причины и записываем их в скрытое поле
+function updateReasonsField() {
+    const selectedReasons = [];
+    document.querySelectorAll('#reasonChecks input[type="checkbox"]:checked').forEach((checkbox) => {
+        selectedReasons.push(checkbox.value);  // Собираем имя причины
+    });
+    document.getElementById('selectedReasonsField').value = selectedReasons.join(', ');  // Обновляем скрытое поле
+}
+
+// При отправке формы еще раз обновляем скрытое поле, на всякий случай
+document.getElementById('submitTaskForm').addEventListener('click', function() {
+    updateReasonsField();  // Обновляем строку с причинами в скрытом поле перед отправкой формы
+});
+
+
+</script>
+
 {% endblock %}

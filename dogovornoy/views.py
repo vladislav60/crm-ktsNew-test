@@ -2,6 +2,7 @@ import calendar
 import math
 from io import BytesIO
 
+import telegram
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Count, Sum, F, Q
@@ -28,7 +29,9 @@ import pandas as pd
 from django.urls import reverse
 from openpyxl.workbook import Workbook
 
+from ekc.models import *
 from ktscrm import settings
+from pult.models import *
 from .forms import ExcelImportForm
 from .models import *
 import numpy as np
@@ -270,6 +273,7 @@ class DogBaza(ListView):
     context_object_name = 'klienty'
 
     def get(self, request, *args, **kwargs):
+        # Логика фильтрации и пагинации
         queryset = kts.objects.all()
         query = self.request.GET.get('q')
         company_names = rekvizity.objects.values_list('id', 'polnoe_name')
@@ -306,9 +310,52 @@ class DogBaza(ListView):
             del params['page']
         pagination_url = request.path + '?' + urlencode(params)
 
-        return render(request, self.template_name,
-                      {'klienty': page_obj, 'company_names': company_names,
-                       'pagination_url': pagination_url, 'total_entries': queryset.count()})
+        # Передаем форму в контекст
+        task_form = TaskFormDog()
+
+        return render(request, self.template_name, {
+            'klienty': page_obj,
+            'company_names': company_names,
+            'pagination_url': pagination_url,
+            'total_entries': queryset.count(),
+            'task_form': task_form  # Передаем форму в шаблон
+        })
+
+    def post(self, request, *args, **kwargs):
+        # Получаем ID клиента из POST данных формы
+        client_id = request.POST.get('client_id')
+        print(client_id)
+
+        try:
+            client = kts.objects.get(pk=client_id)
+        except kts.DoesNotExist:
+            return redirect('error_page')  # Обработайте случай, когда клиент не найден
+
+        # Обработка формы
+        task_form = TaskFormDog(request.POST)
+        if task_form.is_valid():
+            task = task_form.save(commit=False)
+            task.created_by = request.user  # Устанавливаем текущего пользователя как создателя задачи
+            task.client = client  # Устанавливаем клиента
+            task.save()  # Сохраняем задачу
+            return redirect('task_list')  # Перенаправляем после успешного создания задачи
+        else:
+            # Логика фильтрации и пагинации при ошибке
+            queryset = kts.objects.all()
+            paginator = Paginator(queryset, per_page=25)
+            page_number = request.GET.get('page')
+            page_obj = paginator.get_page(page_number)
+
+            params = request.GET.copy()
+            if 'page' in params:
+                del params['page']
+            pagination_url = request.path + '?' + urlencode(params)
+
+            return render(request, self.template_name, {
+                'klienty': page_obj,
+                'task_form': task_form,  # Передаем форму с ошибками
+                'pagination_url': pagination_url
+            })
 
 
 @method_decorator(login_required, name='dispatch')
@@ -598,6 +645,59 @@ class KartochkaKlienta(DetailView):
             return self.render_to_response(context)
 
 
+class CopyClientView(View):
+    def get(self, request, pk):
+        # Находим оригинального клиента
+        original_client = get_object_or_404(kts, pk=pk)
+
+        # Проверяем, есть ли у оригинального клиента обязательные поля
+        if not original_client.company_name:
+            # Вы можете либо установить значение по умолчанию, либо перенаправить с сообщением об ошибке
+            return redirect('error_page')  # Убедитесь, что вы обрабатываете этот случай
+
+        # Копируем все данные, кроме ID и обязательные поля заполняем корректно
+        new_client = kts.objects.create(
+            udv_number=original_client.udv_number,
+            date_udv = original_client.date_udv,
+            company_name = original_client.company_name,
+            dogovor_number = original_client.dogovor_number,
+            data_zakluchenia = original_client.data_zakluchenia,
+            nalichiye_dogovora = original_client.nalichiye_dogovora,
+            mat_otv = original_client.mat_otv,
+            act_ty = original_client.act_ty,
+            time_reag = original_client.time_reag,
+            time_reag_nebol = original_client.time_reag_nebol,
+            yslovie_dogovora = original_client.yslovie_dogovora,
+            klient_name = original_client.klient_name,
+            name_object = original_client.name_object,
+            adres = original_client.adres,
+            iin_bin = original_client.iin_bin,
+            telephone = original_client.telephone,
+            vid_sign = original_client.vid_sign,
+            urik = original_client.urik,
+            chasi_po_dog = original_client.chasi_po_dog,
+            dop_uslugi = original_client.dop_uslugi,
+            abon_plata = original_client.abon_plata,
+            object_number = original_client.object_number,
+            peredatchik_number = original_client.peredatchik_number,
+            stoimost_rpo = original_client.stoimost_rpo,
+            date_podkluchenia = original_client.date_podkluchenia,
+            date_otklulchenia = original_client.date_otklulchenia,
+            date_izmenenia = original_client.date_izmenenia,
+            gruppa_reagirovania = original_client.gruppa_reagirovania,
+            email = original_client.email,
+            vid_rpo = original_client.vid_rpo,
+            primechanie = original_client.primechanie,
+            agentskie = original_client.agentskie,
+            photo = original_client.photo,
+            prochee = original_client.prochee,
+            exclude_from_report = original_client.exclude_from_report,
+        )
+
+        # Перенаправляем на страницу базы договоров после успешного копирования
+        return redirect('baza_dogovorov')
+
+
 @method_decorator(login_required, name='dispatch')
 class KartochkaPartner(DetailView):
     model = partners_object
@@ -610,10 +710,10 @@ class KartochkaPartner(DetailView):
 
         now = timezone.now()
         partner_object = self.get_object()
-        num_days_mounth = calendar.monthrange(now.year, now.month)[1]
+        num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]
 
-        start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-        end_of_month = datetime(now.year, now.month, num_days_mounth, tzinfo=timezone.utc).date()
+        start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+        end_of_month = datetime(now.year, now.month-1, num_days_mounth, tzinfo=timezone.utc).date()
 
         sms_uvedomlenie = 0
 
@@ -1029,8 +1129,8 @@ def export_reports_to_excel(request):
 @login_required
 def reports_agentskie(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
-    end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc)
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc)
+    end_of_month = timezone.datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1123,7 +1223,7 @@ def reports_partners(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -1243,7 +1343,7 @@ def reports_partners(request):
 def reports_partners_download_urik(request):
     now = timezone.now()
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
     if request.method == 'POST':
@@ -1276,7 +1376,7 @@ def reports_partners_download_urik(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -1434,7 +1534,7 @@ def reports_partners_download_urik(request):
     ws[f'C{row_num+11}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num+12}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'D{row_num+12}'] = '___________________'
-    ws[f'E{row_num+12}'] = 'Рассказчикова Н.Н.'
+    ws[f'E{row_num+12}'] = 'Пак И.C.'
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -1448,9 +1548,9 @@ def reports_partners_download_urik(request):
 @login_required
 def sgs_plus_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1482,7 +1582,7 @@ def sgs_plus_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -1639,7 +1739,7 @@ def sgs_plus_download_fiz(request):
     ws[f'C{row_num+4}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num+5}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'D{row_num+5}'] = '___________________'
-    ws[f'E{row_num+5}'] = 'Рассказчикова Н.Н.'
+    ws[f'E{row_num+5}'] = 'Пак И.C.'
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -1692,7 +1792,7 @@ def reports_partners_akm(request):
             if (kts_instance.date_otkluchenia > start_of_month) and (
                     kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_month - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -1844,9 +1944,9 @@ def reports_partners_akm(request):
 @login_required
 def akm_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1882,7 +1982,7 @@ def akm_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -2045,7 +2145,7 @@ def akm_download_fiz(request):
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'J{row_num + 5}'] = '___________________'
-    ws[f'M{row_num + 5}'] = 'Рассказчикова Н.Н.'
+    ws[f'M{row_num + 5}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -2060,9 +2160,9 @@ def akm_download_fiz(request):
 @login_required
 def akm_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -2098,7 +2198,7 @@ def akm_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -2261,7 +2361,7 @@ def akm_download_ur(request):
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'I{row_num + 5}'] = '___________________'
-    ws[f'O{row_num + 5}'] = 'Рассказчикова Н.Н.'
+    ws[f'O{row_num + 5}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -2317,7 +2417,7 @@ def reports_partners_rmg(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -2443,9 +2543,9 @@ def reports_partners_rmg(request):
 @login_required
 def rmg_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -2481,7 +2581,7 @@ def rmg_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -2648,7 +2748,7 @@ def rmg_download_fiz(request):
     ws[f'D{row_num + 5}'] = 'Сверку проверили:'
     ws[f'C{row_num + 6}'] = 'ТОО "Кузет-Сенiм"'
     ws[f'E{row_num + 6}'] = '___________________/'
-    ws[f'G{row_num + 6}'] = 'Рассказчикова Н.Н./'
+    ws[f'G{row_num + 6}'] = 'Пак И.C./'
     ws[f'C{row_num + 7}'] = 'ТОО "RMG GROUP"'
     ws[f'E{row_num + 7}'] = '____________________/'
     ws[f'G{row_num + 7}'] = '__________________/'
@@ -2666,9 +2766,9 @@ def rmg_download_fiz(request):
 @login_required
 def rmg_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -2704,7 +2804,7 @@ def rmg_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -2871,7 +2971,7 @@ def rmg_download_ur(request):
     ws[f'D{row_num + 5}'] = 'Сверку проверили:'
     ws[f'C{row_num + 6}'] = 'ТОО "Кузет-Сенiм"'
     ws[f'E{row_num + 6}'] = '___________________/'
-    ws[f'G{row_num + 6}'] = 'Рассказчикова Н.Н./'
+    ws[f'G{row_num + 6}'] = 'Пак И.C.'
     ws[f'C{row_num + 7}'] = 'ТОО "RMG GROUP"'
     ws[f'E{row_num + 7}'] = '____________________/'
     ws[f'G{row_num + 7}'] = '__________________/'
@@ -2934,7 +3034,7 @@ def reports_partners_kazkuzet(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -3115,7 +3215,7 @@ def kazkuzet_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -3297,7 +3397,7 @@ def kazkuzet_download_fiz(request):
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'J{row_num + 5}'] = '___________________'
-    ws[f'M{row_num + 5}'] = 'Рассказчикова Н.Н.'
+    ws[f'M{row_num + 5}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -3351,7 +3451,7 @@ def kazkuzet_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -3530,7 +3630,7 @@ def kazkuzet_download_ur(request):
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'J{row_num + 5}'] = '___________________'
-    ws[f'M{row_num + 5}'] = 'Рассказчикова Н.Н.'
+    ws[f'M{row_num + 5}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -3586,7 +3686,7 @@ def reports_partners_sgs(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -3767,7 +3867,7 @@ def sgs_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -3951,7 +4051,7 @@ def sgs_download_fiz(request):
     ws[f'H{row_num + 7}'] = '_________________________'
     ws[f'B{row_num + 8}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 8}'] = '___________________'
-    ws[f'K{row_num + 8}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 8}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -4004,7 +4104,7 @@ def sgs_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -4188,7 +4288,7 @@ def sgs_download_ur(request):
     ws[f'H{row_num + 7}'] = '_________________________'
     ws[f'B{row_num + 8}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 8}'] = '_________________________'
-    ws[f'K{row_num + 8}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 8}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -4245,7 +4345,7 @@ def reports_partners_ipkim(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -4428,7 +4528,7 @@ def ipkim_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -4595,7 +4695,7 @@ def ipkim_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -4650,7 +4750,7 @@ def ipkim_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -4817,7 +4917,7 @@ def ipkim_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -4870,7 +4970,7 @@ def reports_partners_kuzets(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -5057,7 +5157,7 @@ def kuzets_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -5231,7 +5331,7 @@ def kuzets_download_fiz(request):
     ws[f'C{row_num + 11}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 12}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'D{row_num + 12}'] = '_________________'
-    ws[f'E{row_num + 12}'] = 'Рассказчикова Н.Н.'
+    ws[f'E{row_num + 12}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -5286,7 +5386,7 @@ def kuzets_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -5464,7 +5564,7 @@ def kuzets_download_ur(request):
     ws[f'C{row_num + 11}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 12}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'D{row_num + 12}'] = '_________________'
-    ws[f'E{row_num + 12}'] = 'Рассказчикова Н.Н.'
+    ws[f'E{row_num + 12}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -5518,7 +5618,7 @@ def reports_partners_samohvalov(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -5704,7 +5804,7 @@ def samohvalov_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -5877,7 +5977,7 @@ def samohvalov_download_fiz(request):
     ws[f'C{row_num + 7}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 8}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'D{row_num + 8}'] = '_________________'
-    ws[f'E{row_num + 8}'] = 'Рассказчикова Н.Н.'
+    ws[f'E{row_num + 8}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -5933,7 +6033,7 @@ def samohvalov_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -6107,7 +6207,7 @@ def samohvalov_download_ur(request):
     ws[f'C{row_num + 7}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 8}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'D{row_num + 8}'] = '_________________'
-    ws[f'E{row_num + 8}'] = 'Рассказчикова Н.Н.'
+    ws[f'E{row_num + 8}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -6165,7 +6265,7 @@ def reports_partners_sobsecutity(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -6349,7 +6449,7 @@ def sobsecutity_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -6515,7 +6615,7 @@ def sobsecutity_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -6570,7 +6670,7 @@ def sobsecutity_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -6736,7 +6836,7 @@ def sobsecutity_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -6789,7 +6889,7 @@ def reports_partners_egida(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -6976,7 +7076,7 @@ def egida_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -7150,7 +7250,7 @@ def egida_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -7204,7 +7304,7 @@ def egida_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -7376,7 +7476,7 @@ def egida_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'I{row_num + 6}'] = '_________________'
-    ws[f'F{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'F{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -7435,7 +7535,7 @@ def reports_partners_eyewatch(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -7622,7 +7722,7 @@ def eyewatch_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -7796,7 +7896,7 @@ def eyewatch_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -7850,7 +7950,7 @@ def eyewatch_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -8022,7 +8122,7 @@ def eyewatch_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -8077,7 +8177,7 @@ def reports_partners_iviscom(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -8264,7 +8364,7 @@ def iviscom_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -8438,7 +8538,7 @@ def iviscom_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -8494,7 +8594,7 @@ def iviscom_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -8666,7 +8766,7 @@ def iviscom_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -8721,7 +8821,7 @@ def reports_partners_eurasian(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -8908,7 +9008,7 @@ def eurasian_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -9082,7 +9182,7 @@ def eurasian_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -9138,7 +9238,7 @@ def eurasian_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -9310,7 +9410,7 @@ def eurasian_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -9366,7 +9466,7 @@ def reports_partners_bmkz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -9553,7 +9653,7 @@ def bmkz_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -9727,7 +9827,7 @@ def bmkz_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -9781,7 +9881,7 @@ def bmkz_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -9953,7 +10053,7 @@ def bmkz_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -10011,7 +10111,7 @@ def reports_partners_monolit(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -10198,7 +10298,7 @@ def monolit_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -10372,7 +10472,7 @@ def monolit_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -10426,7 +10526,7 @@ def monolit_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -10598,7 +10698,7 @@ def monolit_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -10611,20 +10711,15 @@ def monolit_download_ur(request):
 
 
 
-
-
-
-
-
-
-
 @login_required
 def reports_kolvo(request):
     now = timezone.now()
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc)
     end_of_month = timezone.datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc)
     next_start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    print(next_start_of_month)
     next_end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    print(next_end_of_month)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -10644,7 +10739,7 @@ def reports_kolvo(request):
 
         # 2 Все объекты до выбранной даты
         kts_podkl = kts.objects.filter(
-                                            Q(date_otklulchenia__gte=next_start_of_month, date_otklulchenia__lt=next_end_of_month) |
+                                            Q(date_otklulchenia__gte=start_of_month, date_otklulchenia__lte=end_of_month) |
                                             Q(date_otklulchenia__isnull=True),
                                             company_name_id=company.id,
                                             urik=True,
@@ -10654,7 +10749,7 @@ def reports_kolvo(request):
 
         # Всего на начало выбранного месяца
         kts_count_podkl = kts.objects.filter(
-                                            Q(date_otklulchenia__gte=start_of_month, date_otklulchenia__lte=next_end_of_month) |
+                                            Q(date_otklulchenia__gte=start_of_month) |
                                             Q(date_otklulchenia__isnull=True),
                                             date_podkluchenia__lt=start_of_month,
                                             company_name_id=company.id,
@@ -10664,7 +10759,7 @@ def reports_kolvo(request):
 
 
         kts_fiz_podkl = kts.objects.filter(
-                                            Q(date_otklulchenia__gte=start_of_month, date_otklulchenia__lte=next_end_of_month) |
+                                            Q(date_otklulchenia__gte=start_of_month) |
                                             Q(date_otklulchenia__isnull=True),
                                             date_podkluchenia__lt=start_of_month,
                                             company_name_id=company.id,
@@ -10674,7 +10769,7 @@ def reports_kolvo(request):
 
         # Всего на конец выбранного месяца
         kts_count_podkl_end = kts.objects.filter(
-                                            Q(date_otklulchenia__gte=next_start_of_month, date_otklulchenia__lte=next_end_of_month) |
+                                            Q(date_otklulchenia__gte=next_start_of_month) |
                                             Q(date_otklulchenia__isnull=True),
                                             date_podkluchenia__lte=end_of_month,
                                             company_name_id=company.id,
@@ -10683,7 +10778,7 @@ def reports_kolvo(request):
                                         ).aggregate(count=Count('id'))['count']
 
         kts_fiz_podkl_end = kts.objects.filter(
-                                                Q(date_otklulchenia__gte=next_start_of_month, date_otklulchenia__lte=next_end_of_month) |
+                                                Q(date_otklulchenia__gte=next_start_of_month) |
                                                 Q(date_otklulchenia__isnull=True),
                                                 date_podkluchenia__lte=end_of_month,
                                                 company_name_id=company.id,
@@ -10707,7 +10802,7 @@ def reports_kolvo(request):
                                                                                 ).aggregate(Count('id'))
 
         # расторженно (в т.ч.после вр.снятия )
-        kolvo_otkl_obj = kts.objects.filter(company_name_id=company.id, urik=True,date_otklulchenia__gte=start_of_month,
+        kolvo_otkl_obj = kts.objects.filter(company_name_id=company.id, urik=True, date_otklulchenia__gte=start_of_month,
                                             date_otklulchenia__lte=end_of_month, exclude_from_report=False).exclude(
                                                                                     date_podkluchenia__month=F('date_otklulchenia__month'),
                                                                                     date_podkluchenia__year=F('date_otklulchenia__year')
@@ -10811,7 +10906,7 @@ def calculate_monthly_sum(kts_instance, start_of_month, end_of_month, num_days_m
         if (kts_instance.date_otkluchenia > start_of_month) and (
                 kts_instance.date_podkluchenia < start_of_month):
             num_days = (kts_instance.date_otkluchenia - start_of_month).days
-        elif (kts_instance.date_otkluchenia > start_of_month) and (
+        elif (kts_instance.date_otkluchenia >= start_of_month) and (
                 kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
             num_days = num_days_month - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
         elif kts_instance.date_otkluchenia > start_of_month:
@@ -10919,7 +11014,7 @@ def partner_reports_kolvo(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1], tzinfo=timezone.utc).date()
 
-    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
+    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month-1)[1])
     next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()
     next_end_of_month = datetime(next_month.year, next_month.month,
                                  calendar.monthrange(next_month.year, next_month.month)[1], tzinfo=timezone.utc).date()
@@ -11070,7 +11165,7 @@ def kts_reports_kolvo(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1], tzinfo=timezone.utc).date()
 
-    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
+    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month-1)[1])
     next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()
     next_end_of_month = datetime(next_month.year, next_month.month,
                                  calendar.monthrange(next_month.year, next_month.month)[1], tzinfo=timezone.utc).date()
@@ -11265,7 +11360,7 @@ def reports_partners_techmart(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -11452,7 +11547,7 @@ def techmart_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -11626,7 +11721,7 @@ def techmart_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -11680,7 +11775,7 @@ def techmart_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -11852,7 +11947,7 @@ def techmart_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -11911,7 +12006,7 @@ def reports_partners_twojoy(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -12099,7 +12194,7 @@ def twojoy_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -12273,7 +12368,7 @@ def twojoy_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -12327,7 +12422,7 @@ def twojoy_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -12499,7 +12594,7 @@ def twojoy_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -12556,7 +12651,7 @@ def reports_partners_medin(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -12744,7 +12839,7 @@ def medin_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -12967,7 +13062,7 @@ def medin_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -13189,7 +13284,7 @@ def reports_partners_zhakitov(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -13375,7 +13470,7 @@ def zhakitov_download_fiz(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -13549,7 +13644,7 @@ def zhakitov_download_fiz(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -13603,7 +13698,7 @@ def zhakitov_download_ur(request):
 
             if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
                 num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia > start_of_month) and (
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
                     kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
                 num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
             elif kts_instance.date_otkluchenia > start_of_month:
@@ -13775,7 +13870,7 @@ def zhakitov_download_ur(request):
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Рассказчикова Н.Н.'
+    ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -13826,6 +13921,103 @@ class CompleteTaskView(View):
         task = get_object_or_404(Task, pk=pk)
         task.complete_task(note)
         return redirect(reverse('task_list'))
+
+
+class CreateTechnicalTaskView(View):
+    def post(self, request, *args, **kwargs):
+        technician_id = request.POST.get('technician_id')
+        client_object_id = request.POST.get('client_object_id')
+        ekcbase_object_id = request.POST.get('client_object_id')
+        note = request.POST.get('note')
+        reason = request.POST.get('reason')  # Получаем строку с причинами через запятую
+
+        # Получаем технику
+        technician = get_object_or_404(User, pk=technician_id)
+
+        # Создаем задачу
+        task = TechnicalTask.objects.create(
+            technician=technician,
+            sender=request.user,
+            client_object_id=client_object_id,
+            ekcbase_object_id=ekcbase_object_id,
+            reason=reason,  # Сохраняем строку с причинами
+            note=note
+        )
+
+        # Отправляем уведомление в Telegram (если нужно)
+        send_telegram_message(technician, task)
+
+        return redirect('baza_dogovorov')  # Перенаправляем на страницу списка задач
+
+
+def get_card_from_third_db(card_id):
+    try:
+        card = Cards.objects.using('third_db').get(cardid=card_id)
+        return card
+    except Cards.DoesNotExist:
+        return None
+
+
+def get_zones_from_third_db(card_id):
+    try:
+        zones = Zones.objects.using('third_db').filter(cardid=card_id).select_related('sectionid')
+        return zones
+    except Zones.DoesNotExist:
+        return None
+
+
+def get_card_from_asuekc(card_id):
+    try:
+        card_asuekc = GuardedObjects.objects.using('asu_ekc').get(pk=card_id)
+        return card_asuekc
+    except Cards.DoesNotExist:
+        return None
+
+
+def send_telegram_message(technician, task):
+    card = get_card_from_third_db(task.client_object_id)
+    bot = telegram.Bot(token=settings.TELEGRAM_BOT_TOKEN)
+    zones = get_zones_from_third_db(task.client_object_id)
+    message = f"Новая заявка для {technician.username}:\n"
+    message += " \n"
+    message += f"Наименование клиента: { card.objectname }\n"
+    message += " \n"
+    message += f"Номер модуля: { card.unitnumber }\n"
+    message += " \n"
+    message += f"Адрес: { card.info }\n"
+    message += " \n"
+    message += f"Телефон: { card.phones }\n"
+    message += " \n"
+    message += f"Причина: {task.reason}\n"
+    message += " \n"
+    message += f"Примечание к заявке: {task.note}\n"
+
+    if zones.exists():
+        message += "Зоны клиента:\n"
+        for zone in zones:
+            message += f"{zone.sectionid.sectionname}, {zone.zonenumber}, {zone.info}\n"
+            message += " \n"
+    else:
+        message += "Зоны не найдены.\n"
+
+    try:
+        bot.send_message(chat_id=technician.userprofile.telegram_id, text=message)
+        print("Сообщение успешно отправлено")
+    except Exception as e:
+        print(f"Ошибка при отправке сообщения в Telegram: {e}")
+
+
+
+def TechniciansAPIView(request):
+    technicians = User.objects.filter(userprofile__department__icontains="Техник")  # Фильтрация списка техников
+    data = [{'id': technician.id, 'name': technician.username} for technician in technicians]
+    return JsonResponse(data, safe=False)
+
+
+def TaskReasonsAPIView(request):
+    reasons = TaskReason.objects.all()
+    data = [{'id': reason.id, 'reason': reason.reason} for reason in reasons]
+    return JsonResponse(data, safe=False)
 
 
 

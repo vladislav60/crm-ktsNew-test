@@ -223,11 +223,12 @@ class TechnicalTask(models.Model):
     technician = models.ForeignKey(User, related_name='received_tasks', on_delete=models.CASCADE)
     sender = models.ForeignKey(User, related_name='sent_tasks', on_delete=models.CASCADE)
     client_object_id = models.IntegerField()  # Используем IntegerField для хранения ID клиента
+    ekcbase_object_id = models.IntegerField(null=True, blank=True)  # Используем IntegerField для хранения ID клиента
     sent_time = models.DateTimeField(auto_now_add=True)
     accepted_time = models.DateTimeField(null=True, blank=True)
     arrival_time = models.DateTimeField(null=True, blank=True)
     completion_time = models.DateTimeField(null=True, blank=True)
-    reason = models.ForeignKey(TaskReason, on_delete=models.SET_NULL, null=True)
+    reason = models.TextField(null=True, blank=True)
     note = models.TextField(blank=True)
     result = models.TextField(blank=True)
 

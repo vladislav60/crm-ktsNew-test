@@ -82,34 +82,9 @@ def format_date(date_str):
 
 
 def get_current_month_russian():
-    # Устанавливаем русскую локаль для корректного отображения месяца
-    locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
-    now = timezone.now()
-    # Получаем текущий месяц как строку в родительном падеже
-    current_date = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-
-    # Получаем текущий месяц в именительном падеже через словарь
-    months = {
-        1: "Январь",
-        2: "Февраль",
-        3: "Март",
-        4: "Апрель",
-        5: "Май",
-        6: "Июнь",
-        7: "Июль",
-        8: "Август",
-        9: "Сентябрь",
-        10: "Октябрь",
-        11: "Ноябрь",
-        12: "Декабрь"
-    }
-
-    # Получаем номер текущего месяца
-    current_month_number = current_date.month
-
-    # Возвращаем месяц в именительном падеже
-    return months[current_month_number]
-
+    months = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+    now = datetime.now()
+    return months[now.month - 2]
 
 
 def get_current_year():

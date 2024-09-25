@@ -1,10 +1,14 @@
 import calendar
+import json
+import locale
 import math
 from io import BytesIO
 
+import pyodbc as pyodbc
 import telegram
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import AbstractUser
+from django.db import connections
 from django.db.models import Count, Sum, F, Q
 from django.utils.decorators import method_decorator
 from django.contrib.auth.forms import AuthenticationForm
@@ -13,6 +17,7 @@ from urllib.parse import urlencode
 # from django.contrib.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.views import View
+from django.views.decorators.csrf import csrf_exempt
 from django.views.generic.edit import FormMixin
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, HttpResponseNotFound, Http404, HttpResponseRedirect, JsonResponse
@@ -28,6 +33,8 @@ from django.contrib.auth import authenticate, login, logout
 import pandas as pd
 from django.urls import reverse
 from openpyxl.workbook import Workbook
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update, Bot
+from telegram.ext import CallbackQueryHandler, Updater, updater, Dispatcher
 
 from ekc.models import *
 from ktscrm import settings
@@ -72,6 +79,43 @@ def format_date(date_str):
     except ValueError:
         # Если формат не соответствует, возвращаем исходную строку
         return date_str
+
+
+def get_current_month_russian():
+    # Устанавливаем русскую локаль для корректного отображения месяца
+    locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
+    now = timezone.now()
+    # Получаем текущий месяц как строку в родительном падеже
+    current_date = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
+
+    # Получаем текущий месяц в именительном падеже через словарь
+    months = {
+        1: "Январь",
+        2: "Февраль",
+        3: "Март",
+        4: "Апрель",
+        5: "Май",
+        6: "Июнь",
+        7: "Июль",
+        8: "Август",
+        9: "Сентябрь",
+        10: "Октябрь",
+        11: "Ноябрь",
+        12: "Декабрь"
+    }
+
+    # Получаем номер текущего месяца
+    current_month_number = current_date.month
+
+    # Возвращаем месяц в именительном падеже
+    return months[current_month_number]
+
+
+
+def get_current_year():
+    # Получаем текущий год
+    current_year = datetime.now().year
+    return current_year
 
 
 @login_required
@@ -626,8 +670,18 @@ class KartochkaKlienta(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         kts_instance = self.get_object()
+
+        # Вычисляем общую стоимость дополнительных услуг
         additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
-        itog_oplata = kts_instance.abon_plata + (additional_services_cost or 0)
+
+        # Проверка отключения всех дополнительных услуг
+        if kts_instance.additional_services.filter(date_unsubscribe__isnull=False).exists():
+            # Если есть хотя бы одна услуга с датой отключения
+            itog_oplata = kts_instance.abon_plata - (additional_services_cost or 0)
+        else:
+            # Если все дополнительные услуги активны
+            itog_oplata = kts_instance.abon_plata + (additional_services_cost or 0)
+
         context['itog_oplata'] = itog_oplata
         context['form'] = AdditionalServiceForm()
         return context
@@ -882,6 +936,7 @@ def reports(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     companies = rekvizity.objects.all()
 
@@ -1002,6 +1057,7 @@ def export_reports_to_excel(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     companies = rekvizity.objects.all()
 
@@ -1138,6 +1194,7 @@ def reports_agentskie(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     companies = rekvizity.objects.all()
     urik_companies = rekvizity.objects.filter(kts__urik=True, kts__date_otklulchenia=None)
@@ -1189,6 +1246,7 @@ def reports_partners(request):
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1198,9 +1256,9 @@ def reports_partners(request):
             end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=1)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=1).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=1, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=1, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=1).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=1, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=1, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -1346,12 +1404,18 @@ def reports_partners_download_urik(request):
     end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=1, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
+
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=1, urik=True)
 
@@ -1458,11 +1522,14 @@ def reports_partners_download_urik(request):
         summ_fire_alarm += itog_fire_alarm
         itog_summ_mounth += summ_mounth
         summ_kts = summ_telemetria + summ_rent_gsm + summ_nabludenie + summ_sms_uvedomlenie
-        summ_senim = summ_reagirovanie + summ_tehnical_services
+        summ_senim = summ_reagirovanie + summ_tehnical_services + summ_fire_alarm
         summ_all_company = summ_kts + summ_senim
 
         reports.append({
             'kts_instance': kts_instance,
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
             'num_days_mounth': num_days_mounth,
@@ -1490,6 +1557,11 @@ def reports_partners_download_urik(request):
     template_path = os.path.join(settings.MEDIA_ROOT, 'reports_partner_sgsplus_urik.xlsx')
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
+
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'C{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 11
@@ -1528,11 +1600,11 @@ def reports_partners_download_urik(request):
     ws[f'D{row_num+9}'] = report['summ_senim']
     ws[f'D{row_num+8}'] = report['summ_kts']
     ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'F{row_num+6}'] = report['num_days_mounth']
+    ws[f'F{row_num+6}'] = report['partners_kolvo_object']
     ws[f'C{row_num+10}'] = 'Итого к оплате за май 2024г..:'
     ws[f'J{row_num+10}'] = report['summ_all_company']
     ws[f'C{row_num+11}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num+12}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'C{row_num+12}'] = 'Исполнитель: бухгалтер'
     ws[f'D{row_num+12}'] = '___________________'
     ws[f'E{row_num+12}'] = 'Пак И.C.'
     output = BytesIO()
@@ -1540,7 +1612,7 @@ def reports_partners_download_urik(request):
     output.seek(0)
 
     response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=СГС-Плюс ЮР.xlsx'
+    response['Content-Disposition'] = 'attachment; filename=SGS_PLUS_URIK.xlsx'
 
     return response
 
@@ -1552,12 +1624,19 @@ def sgs_plus_download_fiz(request):
     end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
 
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=1, urik=False).exclude(
+        date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
+
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=1, urik=False)
 
@@ -1667,6 +1746,9 @@ def sgs_plus_download_fiz(request):
         summ_all_company = summ_kts + summ_senim
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -1695,6 +1777,11 @@ def sgs_plus_download_fiz(request):
     template_path = os.path.join(settings.MEDIA_ROOT, 'sgs_plus_download_fiz.xlsx')
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
+
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'D{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
@@ -1728,24 +1815,24 @@ def sgs_plus_download_fiz(request):
     ws[f'M{row_num+1}'] = report['summ_sms_uvedomlenie']
     # ws[f'P{row_num+1}'] = report['summ_fire_alarm']
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
-    ws[f'C{row_num+2}'] = 'Итого охраняется:'
-    # ws[f'C{row_num+8}'] = 'ТОО "КузетТехноСервис"'
-    # ws[f'D{row_num+9}'] = report['summ_senim']
-    # ws[f'D{row_num+8}'] = report['summ_kts']
-    # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'G{row_num+2}'] = report['num_days_mounth']
-    ws[f'C{row_num+3}'] = 'Итого к оплате за май 2024г..:'
-    ws[f'I{row_num+3}'] = report['summ_all_company']
-    ws[f'C{row_num+4}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num+5}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'D{row_num+5}'] = '___________________'
-    ws[f'E{row_num+5}'] = 'Пак И.C.'
+    ws[f'C{row_num+3}'] = 'Итого охраняется:'
+    ws[f'C{row_num+4}'] = 'ТОО "КузетТехноСервис"'
+    ws[f'F{row_num+5}'] = report['summ_senim']
+    ws[f'F{row_num+4}'] = report['summ_kts']
+    ws[f'C{row_num+5}'] = 'ТОО "КузетСенiм"'
+    ws[f'G{row_num+3}'] = report['partners_kolvo_object']
+    ws[f'C{row_num+7}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'H{row_num+7}'] = report['summ_all_company']
+    ws[f'C{row_num+8}'] = '(В том числе НДС 12%)'
+    ws[f'C{row_num+9}'] = 'Исполнитель: бухгалтер'
+    ws[f'F{row_num+9}'] = '___________________'
+    ws[f'H{row_num+9}'] = 'Пак И.C.'
     output = BytesIO()
     wb.save(output)
     output.seek(0)
 
     response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=СГС-Плюс Физ.xlsx'
+    response['Content-Disposition'] = f'attachment; filename=SGS_PLUS_FIZIKI_{now.date()}.xlsx'
 
     return response
 
@@ -1764,11 +1851,12 @@ def reports_partners_akm(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=2)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=2).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=2, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=2, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=2).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=2, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=2, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -1947,6 +2035,10 @@ def akm_download_fiz(request):
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1954,6 +2046,7 @@ def akm_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=2, urik=False)
     akm_fiz_count = partners_object.objects.filter(company_name_id=2, urik=False).aggregate(Count('id'))
@@ -2070,6 +2163,9 @@ def akm_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -2099,6 +2195,10 @@ def akm_download_fiz(request):
     template_path = os.path.join(settings.MEDIA_ROOT, 'akm_download_fiz.xlsx')
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
+
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
@@ -2135,7 +2235,7 @@ def akm_download_fiz(request):
     # ws[f'P{row_num+1}'] = report['summ_fire_alarm']
     ws[f'O{row_num}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 2}'] = 'Итого охраняется:'
-    ws[f'G{row_num + 2}'] = report['akm_fiz_count']
+    ws[f'G{row_num + 2}'] = report['partners_kolvo_object']
     # ws[f'C{row_num+8}'] = 'ТОО "КузетТехноСервис"'
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
@@ -2143,7 +2243,7 @@ def akm_download_fiz(request):
     ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
     ws[f'J{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
-    ws[f'D{row_num + 5}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'D{row_num + 5}'] = 'Исполнитель: бухгалтер'
     ws[f'J{row_num + 5}'] = '___________________'
     ws[f'M{row_num + 5}'] = 'Пак И.C.'
 
@@ -2163,6 +2263,10 @@ def akm_download_ur(request):
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -2170,6 +2274,7 @@ def akm_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=2, urik=True)
     akm_fiz_count = partners_object.objects.filter(company_name_id=2, urik=True).aggregate(Count('id'))
@@ -2286,6 +2391,9 @@ def akm_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -2316,6 +2424,10 @@ def akm_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -2330,28 +2442,29 @@ def akm_download_ur(request):
         ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
         ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
         ws[f'J{row_num}'] = report['num_days']
-        # ws[f'H{row_num}'] = report['itog_rent_gsm']
-        # ws[f'I{row_num}'] = report['itog_telemetria']
-        # ws[f'J{row_num}'] = report['itog_nabludenie']
-        ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_tehnical_services']
-        ws[f'M{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'N{row_num}'] = report['itog_fire_alarm']
-        ws[f'O{row_num}'] = report['summ_mounth']
-        ws[f'P{row_num}'] = report['kts_instance'].primechanie
+        ws[f'K{row_num}'] = report['itog_rent_gsm']
+        ws[f'L{row_num}'] = report['itog_telemetria']
+        ws[f'M{row_num}'] = report['itog_nabludenie']
+        ws[f'N{row_num}'] = report['reagirovanie']
+        ws[f'O{row_num}'] = report['itog_tehnical_services']
+        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'Q{row_num}'] = report['itog_fire_alarm']
+        ws[f'R{row_num}'] = report['summ_mounth']
+        ws[f'S{row_num}'] = report['kts_instance'].primechanie
+        ws[f'T{row_num}'] = report['kts_instance'].date_otkluchenia
         row_num += 1
 
     ws[f'D{row_num}'] = 'Итого'
-    # ws[f'I{row_num + 1}'] = report['summ_telemetria']
-    # ws[f'H{row_num + 1}'] = report['summ_rent_gsm']
-    # ws[f'J{row_num}'] = report['summ_tariff_per_mounth']
-    ws[f'K{row_num}'] = report['summ_reagirovanie']
-    ws[f'L{row_num}'] = report['summ_tehnical_services']
-    ws[f'M{row_num}'] = report['summ_sms_uvedomlenie']
-    ws[f'N{row_num}'] = report['summ_fire_alarm']
-    ws[f'O{row_num}'] = report['itog_summ_mounth']
+    ws[f'K{row_num}'] = report['summ_rent_gsm']
+    ws[f'L{row_num}'] = report['summ_telemetria']
+    ws[f'M{row_num}'] = report['summ_nabludenie']
+    ws[f'N{row_num}'] = report['summ_reagirovanie']
+    ws[f'O{row_num}'] = report['summ_tehnical_services']
+    ws[f'P{row_num}'] = report['summ_sms_uvedomlenie']
+    ws[f'Q{row_num}'] = report['summ_fire_alarm']
+    ws[f'R{row_num}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 2}'] = 'Итого охраняется:'
-    ws[f'G{row_num + 2}'] = report['akm_fiz_count']
+    ws[f'G{row_num + 2}'] = report['partners_kolvo_object']
     # ws[f'C{row_num+8}'] = 'ТОО "КузетТехноСервис"'
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
@@ -2359,7 +2472,7 @@ def akm_download_ur(request):
     ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
     ws[f'I{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
-    ws[f'D{row_num + 5}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'D{row_num + 5}'] = 'Исполнитель: бухгалтер'
     ws[f'I{row_num + 5}'] = '___________________'
     ws[f'O{row_num + 5}'] = 'Пак И.C.'
 
@@ -2390,11 +2503,12 @@ def reports_partners_rmg(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=4)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=4).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=4, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=4, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=4).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=4, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=4, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -2553,6 +2667,7 @@ def rmg_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=False)
     rmg_fiz_count = partners_object.objects.filter(company_name_id=4, urik=False).aggregate(Count('id'))
@@ -2704,7 +2819,7 @@ def rmg_download_fiz(request):
     ws = wb.active
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
-    row_num = 6
+    row_num = 11
     for report in reports:
         ws[f'A{row_num}'] = report['kts_instance'].object_number
         ws[f'B{row_num}'] = report['kts_instance'].gsm_number
@@ -2776,6 +2891,7 @@ def rmg_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=True)
     rmg_fiz_count = partners_object.objects.filter(company_name_id=4, urik=True).aggregate(Count('id'))
@@ -3007,11 +3123,12 @@ def reports_partners_kazkuzet(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=3)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=3).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=3, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=3, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=3).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=3, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=3, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -3180,6 +3297,10 @@ def kazkuzet_download_fiz(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=3, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -3187,6 +3308,7 @@ def kazkuzet_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=3, urik=False)
     kazkuzet = partners_object.objects.filter(company_name_id=3, urik=False).aggregate(Count('id'))
@@ -3322,6 +3444,9 @@ def kazkuzet_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -3351,6 +3476,10 @@ def kazkuzet_download_fiz(request):
     template_path = os.path.join(settings.MEDIA_ROOT, 'kazkuzet_download_fiz.xlsx')
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
+
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
@@ -3387,15 +3516,15 @@ def kazkuzet_download_fiz(request):
     # ws[f'P{row_num+1}'] = report['summ_fire_alarm']
     ws[f'N{row_num}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 2}'] = 'Итого охраняется:'
-    ws[f'G{row_num + 2}'] = report['kazkuzet']
+    ws[f'G{row_num + 2}'] = report['partners_kolvo_object']
     # ws[f'C{row_num+8}'] = 'ТОО "КузетТехноСервис"'
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
     ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
-    ws[f'J{row_num + 3}'] = report['itog_summ_mounth']
+    ws[f'I{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
-    ws[f'D{row_num + 5}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'D{row_num + 5}'] = 'Исполнитель: бухгалтер'
     ws[f'J{row_num + 5}'] = '___________________'
     ws[f'M{row_num + 5}'] = 'Пак И.C.'
 
@@ -3416,6 +3545,10 @@ def kazkuzet_download_ur(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=3, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -3423,6 +3556,7 @@ def kazkuzet_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=3, urik=True)
     kazkuzet = partners_object.objects.filter(company_name_id=3, urik=True).aggregate(Count('id'))
@@ -3558,6 +3692,9 @@ def kazkuzet_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -3587,6 +3724,11 @@ def kazkuzet_download_ur(request):
     template_path = os.path.join(settings.MEDIA_ROOT, 'kazkuzet_download_ur.xlsx')
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
+
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
@@ -3620,15 +3762,15 @@ def kazkuzet_download_ur(request):
     ws[f'N{row_num}'] = report['summ_sms_uvedomlenie']
     ws[f'O{row_num}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 2}'] = 'Итого охраняется:'
-    ws[f'G{row_num + 2}'] = report['kazkuzet']
+    ws[f'G{row_num + 2}'] = report['partners_kolvo_object']
     # ws[f'C{row_num+8}'] = 'ТОО "КузетТехноСервис"'
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
     ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
-    ws[f'J{row_num + 3}'] = report['itog_summ_mounth']
+    ws[f'I{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
-    ws[f'D{row_num + 5}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'D{row_num + 5}'] = 'Исполнитель: бухгалтер'
     ws[f'J{row_num + 5}'] = '___________________'
     ws[f'M{row_num + 5}'] = 'Пак И.C.'
 
@@ -3659,11 +3801,12 @@ def reports_partners_sgs(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=5)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=5).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=5, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=5, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=5).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=5, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=5, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -3832,6 +3975,10 @@ def sgs_download_fiz(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=5, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -3839,6 +3986,7 @@ def sgs_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=5, urik=False)
     sgs = partners_object.objects.filter(company_name_id=5, urik=False).aggregate(Count('id'))
@@ -3974,6 +4122,9 @@ def sgs_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -4004,6 +4155,11 @@ def sgs_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -4029,7 +4185,7 @@ def sgs_download_fiz(request):
         ws[f'O{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'B{row_num+2}'] = 'Итого'
+    ws[f'B{row_num+1}'] = 'Итого'
     # ws[f'I{row_num + 1}'] = report['summ_telemetria']
     # ws[f'H{row_num + 1}'] = report['summ_rent_gsm']
     # ws[f'J{row_num}'] = report['summ_tariff_per_mounth']
@@ -4037,9 +4193,9 @@ def sgs_download_fiz(request):
     # ws[f'L{row_num}'] = report['summ_tehnical_services']
     # ws[f'M{row_num}'] = report['summ_sms_uvedomlenie']
     # ws[f'P{row_num+1}'] = report['summ_fire_alarm']
-    ws[f'K{row_num+2}'] = report['itog_summ_mounth']
+    ws[f'K{row_num+1}'] = report['itog_summ_mounth']
     ws[f'B{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     # ws[f'C{row_num+8}'] = 'ТОО "КузетТехноСервис"'
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
@@ -4049,7 +4205,7 @@ def sgs_download_fiz(request):
     ws[f'B{row_num + 6}'] = '(В том числе НДС 12%)'
     ws[f'B{row_num + 7}'] = 'Бухглалтер ТОО "System of Global Safety" '
     ws[f'H{row_num + 7}'] = '_________________________'
-    ws[f'B{row_num + 8}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'B{row_num + 8}'] = 'Исполнитель: бухгалтер'
     ws[f'H{row_num + 8}'] = '___________________'
     ws[f'K{row_num + 8}'] = 'Пак И.C.'
 
@@ -4069,6 +4225,10 @@ def sgs_download_ur(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=5, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -4076,6 +4236,7 @@ def sgs_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=5, urik=True)
     sgs = partners_object.objects.filter(company_name_id=5, urik=True).aggregate(Count('id'))
@@ -4211,6 +4372,9 @@ def sgs_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -4240,6 +4404,11 @@ def sgs_download_ur(request):
     template_path = os.path.join(settings.MEDIA_ROOT, 'sgs_download_fiz.xlsx')
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
+
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
@@ -4276,7 +4445,7 @@ def sgs_download_ur(request):
     # ws[f'P{row_num+1}'] = report['summ_fire_alarm']
     ws[f'K{row_num+2}'] = report['itog_summ_mounth']
     ws[f'B{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'C{row_num + 3}'] = report['sgs']
+    ws[f'C{row_num + 3}'] = report['partners_kolvo_object']
     # ws[f'C{row_num+8}'] = 'ТОО "КузетТехноСервис"'
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
@@ -4286,7 +4455,7 @@ def sgs_download_ur(request):
     ws[f'B{row_num + 6}'] = '(В том числе НДС 12%)'
     ws[f'B{row_num + 7}'] = 'Бухглалтер ТОО "System of Global Safety" '
     ws[f'H{row_num + 7}'] = '_________________________'
-    ws[f'B{row_num + 8}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'B{row_num + 8}'] = 'Исполнитель: бухгалтер'
     ws[f'H{row_num + 8}'] = '_________________________'
     ws[f'K{row_num + 8}'] = 'Пак И.C.'
 
@@ -4318,11 +4487,12 @@ def reports_partners_ipkim(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=6)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=6).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=6, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=6, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=6).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=6, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=6, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -4493,6 +4663,10 @@ def ipkim_download_fiz(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=6, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -4500,6 +4674,7 @@ def ipkim_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=6, urik=False)
     sgs = partners_object.objects.filter(company_name_id=6, urik=False).aggregate(Count('id'))
@@ -4635,6 +4810,9 @@ def ipkim_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -4665,6 +4843,11 @@ def ipkim_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физицеским лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -4689,11 +4872,11 @@ def ipkim_download_fiz(request):
     ws[f'C{row_num+1}'] = 'Итого'
     ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
     ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
@@ -4722,6 +4905,7 @@ def ipkim_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=6, urik=True)
     sgs = partners_object.objects.filter(company_name_id=6, urik=True).aggregate(Count('id'))
@@ -4915,7 +5099,7 @@ def ipkim_download_ur(request):
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
     ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
@@ -4943,11 +5127,12 @@ def reports_partners_kuzets(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=7)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=7).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=7, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=7, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=7).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=7, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=7, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -5122,6 +5307,10 @@ def kuzets_download_fiz(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=7, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -5129,6 +5318,7 @@ def kuzets_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=7, urik=False)
     sgs = partners_object.objects.filter(company_name_id=7, urik=False).aggregate(Count('id'))
@@ -5266,6 +5456,9 @@ def kuzets_download_fiz(request):
         summ_senim = summ_reagirovanie + summ_tehnical_services
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -5298,6 +5491,11 @@ def kuzets_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -5319,17 +5517,23 @@ def kuzets_download_fiz(request):
         row_num += 1
 
     ws[f'C{row_num+3}'] = 'Итого'
-    ws[f'M{row_num+3}'] = report['itog_summ_mounth']
+    ws[f'G{row_num + 3}'] = report['summ_rent_gsm']
+    ws[f'H{row_num + 3}'] = report['summ_nabludenie']
+    ws[f'I{row_num + 3}'] = report['summ_reagirovanie']
+    ws[f'J{row_num + 3}'] = report['summ_tehnical_services']
+    ws[f'K{row_num + 3}'] = report['summ_telemetria']
+    ws[f'L{row_num + 3}'] = report['summ_sms_uvedomlenie']
+    ws[f'M{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 7}'] = 'Итого охраняется:'
-    ws[f'F{row_num + 7}'] = report['sgs']
+    ws[f'D{row_num + 7}'] = report['sgs']
     ws[f'C{row_num + 8}'] = 'ТОО "КузетТехноСервис"'
     ws[f'D{row_num + 8}'] = report['summ_senim']
     ws[f'C{row_num + 9}'] = 'ТОО "КузетТехноСервис"'
     ws[f'D{row_num + 9}'] = report['summ_kts']
     ws[f'C{row_num + 10}'] = 'Итого к оплате за май 2024г..:'
-    ws[f'I{row_num + 10}'] = report['itog_summ_mounth']
+    ws[f'D{row_num + 10}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 11}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 12}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'C{row_num + 12}'] = 'Исполнитель: бухгалтер'
     ws[f'D{row_num + 12}'] = '_________________'
     ws[f'E{row_num + 12}'] = 'Пак И.C.'
 
@@ -5351,6 +5555,10 @@ def kuzets_download_ur(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=7, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -5358,6 +5566,7 @@ def kuzets_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=7, urik=True)
     sgs = partners_object.objects.filter(company_name_id=7, urik=True).aggregate(Count('id'))
@@ -5496,6 +5705,9 @@ def kuzets_download_ur(request):
         summ_all_company = summ_kts + summ_senim
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -5529,6 +5741,11 @@ def kuzets_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -5552,17 +5769,23 @@ def kuzets_download_ur(request):
         row_num += 1
 
     ws[f'C{row_num+4}'] = 'Итого'
-    ws[f'O{row_num+4}'] = report['itog_summ_mounth']
+    ws[f'I{row_num+4}'] = report['summ_telemetria']
+    ws[f'J{row_num+4}'] = report['summ_rent_gsm']
+    ws[f'K{row_num+4}'] = report['summ_nabludenie']
+    ws[f'L{row_num+4}'] = report['summ_reagirovanie']
+    ws[f'M{row_num+4}'] = report['summ_tehnical_services']
+    ws[f'N{row_num+4}'] = report['summ_sms_uvedomlenie']
+    ws[f'O{row_num+4}'] = report['summ_all_company']
     ws[f'C{row_num + 7}'] = 'Итого охраняется:'
-    ws[f'E{row_num + 7}'] = report['sgs']
+    ws[f'D{row_num + 7}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 8}'] = 'ТОО "КузетТехноСервис"'
     ws[f'D{row_num + 8}'] = report['summ_senim']
     ws[f'C{row_num + 9}'] = 'ТОО "КузетТехноСервис"'
     ws[f'D{row_num + 9}'] = report['summ_kts']
     ws[f'C{row_num + 10}'] = 'Итого к оплате за май 2024г..:'
-    # ws[f'D{row_num + 10}'] = report['summ_all_company']
+    ws[f'D{row_num + 10}'] = report['summ_all_company']
     ws[f'C{row_num + 11}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 12}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'C{row_num + 12}'] = 'Исполнитель: бухгалтер'
     ws[f'D{row_num + 12}'] = '_________________'
     ws[f'E{row_num + 12}'] = 'Пак И.C.'
 
@@ -5591,11 +5814,12 @@ def reports_partners_samohvalov(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=8)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=8).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=8, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=8, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=8).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=8, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=8, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -5770,12 +5994,18 @@ def samohvalov_download_fiz(request):
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
 
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=8, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
+
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=8, urik=False)
     sgs = partners_object.objects.filter(company_name_id=8, urik=False).aggregate(Count('id'))
@@ -5917,6 +6147,9 @@ def samohvalov_download_fiz(request):
         summ_senim = summ_reagirovanie + summ_tehnical_services
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -5949,6 +6182,11 @@ def samohvalov_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -5968,14 +6206,14 @@ def samohvalov_download_fiz(request):
         ws[f'N{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'C{row_num+2}'] = 'Итого'
-    ws[f'M{row_num+2}'] = report['itog_summ_mounth']
+    ws[f'C{row_num+1}'] = 'Итого'
+    ws[f'M{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = 'Итого охраняется:'
-    ws[f'F{row_num + 5}'] = report['sgs']
+    ws[f'E{row_num + 5}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 6}'] = 'Итого к оплате за май 2024г..:'
     ws[f'E{row_num + 6}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 7}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 8}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'C{row_num + 8}'] = 'Исполнитель: бухгалтер'
     ws[f'D{row_num + 8}'] = '_________________'
     ws[f'E{row_num + 8}'] = 'Пак И.C.'
 
@@ -6004,10 +6242,16 @@ def samohvalov_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=8, urik=True)
     sgs = partners_object.objects.filter(company_name_id=8, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=8, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -6147,6 +6391,9 @@ def samohvalov_download_ur(request):
         summ_senim = summ_reagirovanie + summ_tehnical_services
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -6179,6 +6426,12 @@ def samohvalov_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[
+            f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -6201,11 +6454,11 @@ def samohvalov_download_ur(request):
     ws[f'C{row_num+2}'] = 'Итого'
     ws[f'M{row_num+2}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = 'Итого охраняется:'
-    ws[f'F{row_num + 5}'] = report['sgs']
+    ws[f'D{row_num + 5}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 6}'] = 'Итого к оплате за май 2024г..:'
     ws[f'E{row_num + 6}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 7}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 8}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'C{row_num + 8}'] = 'Исполнитель: бухгалтер'
     ws[f'D{row_num + 8}'] = '_________________'
     ws[f'E{row_num + 8}'] = 'Пак И.C.'
 
@@ -6238,11 +6491,12 @@ def reports_partners_sobsecutity(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=9)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=9).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=9, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=9, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=9).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=9, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=9, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -6421,10 +6675,16 @@ def sobsecutity_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=9, urik=False)
     sgs = partners_object.objects.filter(company_name_id=9, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=9, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -6556,6 +6816,9 @@ def sobsecutity_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -6586,6 +6849,11 @@ def sobsecutity_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -6606,16 +6874,16 @@ def sobsecutity_download_fiz(request):
         ws[f'O{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
-    ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
-    ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
-    ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num}'] = 'Итого'
+    ws[f'N{row_num}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 2}'] = 'Итого охраняется:'
+    ws[f'D{row_num + 2}'] = report['sgs']
+    ws[f'C{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'D{row_num + 3}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 4}'] = '(В том числе НДС 12%)'
+    ws[f'C{row_num + 5}'] = 'Исполнитель: бухгалтер'
+    ws[f'E{row_num + 5}'] = '_________________'
+    ws[f'G{row_num + 5}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -6642,10 +6910,17 @@ def sobsecutity_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=9, urik=True)
     sgs = partners_object.objects.filter(company_name_id=9, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=9, urik=True).exclude(
+        date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -6777,6 +7052,9 @@ def sobsecutity_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -6807,6 +7085,11 @@ def sobsecutity_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -6827,16 +7110,16 @@ def sobsecutity_download_ur(request):
         ws[f'O{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'C{row_num}'] = 'Итого'
+    ws[f'Q{row_num}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['sgs']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -6862,11 +7145,12 @@ def reports_partners_egida(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=15)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=15).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=15, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=15, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=15).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=15, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=15, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -7048,10 +7332,16 @@ def egida_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=15, urik=False)
     sgs = partners_object.objects.filter(company_name_id=15, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=15, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -7188,6 +7478,9 @@ def egida_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -7218,6 +7511,11 @@ def egida_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -7232,25 +7530,20 @@ def egida_download_fiz(request):
         ws[f'I{row_num}'] = report['num_days']
         ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
         ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        ws[f'L{row_num}'] = report['summ_mounth']
+        ws[f'M{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'L{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -7276,10 +7569,16 @@ def egida_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=15, urik=True)
     sgs = partners_object.objects.filter(company_name_id=15, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=15, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -7369,10 +7668,12 @@ def egida_download_ur(request):
                 reagirovanie = kts_instance.tariff_per_mounth
             else:
                 reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
-                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                    reagirovanie)
         else:
             reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
-            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
 
         if kts_instance.sms_uvedomlenie:
             if kts_instance.urik:
@@ -7414,6 +7715,9 @@ def egida_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -7444,6 +7748,11 @@ def egida_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -7458,25 +7767,20 @@ def egida_download_ur(request):
         ws[f'I{row_num}'] = report['num_days']
         ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
         ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        ws[f'L{row_num}'] = report['summ_mounth']
+        ws[f'M{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'L{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'I{row_num + 6}'] = '_________________'
-    ws[f'F{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -7508,11 +7812,12 @@ def reports_partners_eyewatch(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=10)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=10).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=10, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=10, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=10).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=10, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=10, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -7694,10 +7999,16 @@ def eyewatch_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=10, urik=False)
     sgs = partners_object.objects.filter(company_name_id=10, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=10, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -7834,6 +8145,9 @@ def eyewatch_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -7864,6 +8178,10 @@ def eyewatch_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -7888,15 +8206,15 @@ def eyewatch_download_fiz(request):
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'Q{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['sgs']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '__________________________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -7922,10 +8240,16 @@ def eyewatch_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=10, urik=True)
     sgs = partners_object.objects.filter(company_name_id=10, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=10, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -8060,6 +8384,9 @@ def eyewatch_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+                        'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -8090,6 +8417,11 @@ def eyewatch_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -8113,16 +8445,16 @@ def eyewatch_download_ur(request):
         ws[f'R{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'C{row_num}'] = 'Итого'
+    ws[f'Q{row_num}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '__________________________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -8150,11 +8482,12 @@ def reports_partners_iviscom(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=11)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=11).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=11, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=11, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=11).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=11, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=11, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -8336,10 +8669,16 @@ def iviscom_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=11, urik=False)
     sgs = partners_object.objects.filter(company_name_id=11, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=11, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -8476,6 +8815,9 @@ def iviscom_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -8506,6 +8848,11 @@ def iviscom_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -8529,16 +8876,16 @@ def iviscom_download_fiz(request):
         ws[f'R{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 1}'] = 'Итого'
+    ws[f'N{row_num + 1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '__________________________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -8566,10 +8913,17 @@ def iviscom_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=11, urik=True)
     sgs = partners_object.objects.filter(company_name_id=11, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=11, urik=True).exclude(
+        date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -8704,6 +9058,9 @@ def iviscom_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -8734,6 +9091,11 @@ def iviscom_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -8760,13 +9122,13 @@ def iviscom_download_ur(request):
     ws[f'C{row_num+1}'] = 'Итого'
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '__________________________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -8794,11 +9156,12 @@ def reports_partners_eurasian(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=12)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=12).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=12, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=12, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=12).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=12, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=12, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -8980,10 +9343,16 @@ def eurasian_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=12, urik=False)
     sgs = partners_object.objects.filter(company_name_id=12, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=12, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -9120,6 +9489,9 @@ def eurasian_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -9150,6 +9522,11 @@ def eurasian_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -9173,16 +9550,16 @@ def eurasian_download_fiz(request):
         ws[f'R{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 1}'] = 'Итого'
+    ws[f'Q{row_num + 1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '__________________________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -9210,10 +9587,16 @@ def eurasian_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=12, urik=True)
     sgs = partners_object.objects.filter(company_name_id=12, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=12, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -9348,6 +9731,9 @@ def eurasian_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -9378,6 +9764,11 @@ def eurasian_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -9402,15 +9793,15 @@ def eurasian_download_ur(request):
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'Q{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '__________________________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -9439,11 +9830,12 @@ def reports_partners_bmkz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=13)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=13).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=13, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=13, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=13).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=13, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=13, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -9625,6 +10017,7 @@ def bmkz_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=13, urik=False)
     sgs = partners_object.objects.filter(company_name_id=13, urik=False).aggregate(Count('id'))
@@ -9825,7 +10218,7 @@ def bmkz_download_fiz(request):
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     # ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
     ws[f'H{row_num + 6}'] = '_________________'
     ws[f'K{row_num + 6}'] = 'Пак И.C.'
 
@@ -9853,10 +10246,16 @@ def bmkz_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=13, urik=True)
     sgs = partners_object.objects.filter(company_name_id=13, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=13, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -9991,6 +10390,9 @@ def bmkz_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -10021,8 +10423,13 @@ def bmkz_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{6}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
-    row_num = 10
+    row_num = 9
     for report in reports:
         ws[f'A{row_num}'] = report['kts_instance'].object_number
         ws[f'B{row_num}'] = report['kts_instance'].gsm_number
@@ -10037,23 +10444,21 @@ def bmkz_download_ur(request):
         ws[f'K{row_num}'] = report['reagirovanie']
         ws[f'L{row_num}'] = report['itog_telemetria']
         ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
         ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
         ws[f'Q{row_num}'] = report['summ_mounth']
         ws[f'R{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'Q{row_num+1}'] = report['itog_summ_mounth']
-    ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
-    ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
-    ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num}'] = 'Итого'
+    ws[f'Q{row_num}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 2}'] = 'Итого охраняется:'
+    ws[f'D{row_num + 2}'] = report['sgs']
+    ws[f'C{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'D{row_num + 3}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 4}'] = '(В том числе НДС 12%)'
+    ws[f'C{row_num + 5}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 5}'] = '_________________'
+    ws[f'E{row_num + 5}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -10084,11 +10489,12 @@ def reports_partners_monolit(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=14)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=14).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=14, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=14, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=14).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=14, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=14, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -10270,10 +10676,17 @@ def monolit_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=14, urik=False)
     sgs = partners_object.objects.filter(company_name_id=14, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=14, urik=False).exclude(
+        date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -10340,7 +10753,8 @@ def monolit_download_fiz(request):
         if kts_instance.tehnical_services:
             if kts_instance.urik:
                 itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_ur / num_days_mounth) * num_days
-                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(itog_tehnical_services) > 0.5 else math.floor(
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                    itog_tehnical_services) > 0.5 else math.floor(
                     itog_tehnical_services)
             else:
                 itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_mounth) * num_days
@@ -10410,6 +10824,9 @@ def monolit_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -10440,6 +10857,12 @@ def monolit_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[
+            f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -10448,38 +10871,37 @@ def monolit_download_fiz(request):
         ws[f'C{row_num}'] = report['kts_instance'].name_object
         ws[f'D{row_num}'] = report['kts_instance'].adres
         ws[f'E{row_num}'] = report['kts_instance'].type_object
-        ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
-        ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
-        ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
-        ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        # ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
+        ws[f'F{row_num}'] = report['kts_instance'].hours_mounth
+        ws[f'G{row_num}'] = report['kts_instance'].date_podkluchenia
+        ws[f'H{row_num}'] = report['num_days']
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['reagirovanie']
+        # ws[f'K{row_num}'] = report['itog_telemetria']
+        ws[f'K{row_num}'] = report['itog_rent_gsm']
+        ws[f'L{row_num}'] = report['itog_tehnical_services']
+        ws[f'M{row_num}'] = report['itog_fire_alarm']
+        ws[f'N{row_num}'] = report['summ_mounth']
+        ws[f'O{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
-    ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 1}'] = 'Итого'
+    ws[f'N{row_num + 1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
     output.seek(0)
 
     response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename=TOO "Monolit Security" Fiziki {now.date()}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename=TOO "Monolite Security" Fiziki {now.date()}.xlsx'
 
     return response
 
@@ -10498,10 +10920,16 @@ def monolit_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=14, urik=True)
     sgs = partners_object.objects.filter(company_name_id=14, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=14, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -10636,6 +11064,9 @@ def monolit_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -10665,6 +11096,11 @@ def monolit_download_ur(request):
     template_path = os.path.join(settings.MEDIA_ROOT, 'monolit_download_fiz.xlsx')
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
+    
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
@@ -10674,31 +11110,30 @@ def monolit_download_ur(request):
         ws[f'C{row_num}'] = report['kts_instance'].name_object
         ws[f'D{row_num}'] = report['kts_instance'].adres
         ws[f'E{row_num}'] = report['kts_instance'].type_object
-        ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
-        ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
-        ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
-        ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        # ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
+        ws[f'F{row_num}'] = report['kts_instance'].hours_mounth
+        ws[f'G{row_num}'] = report['kts_instance'].date_podkluchenia
+        ws[f'H{row_num}'] = report['num_days']
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['reagirovanie']
+        # ws[f'K{row_num}'] = report['itog_telemetria']
+        ws[f'K{row_num}'] = report['itog_rent_gsm']
+        ws[f'L{row_num}'] = report['itog_tehnical_services']
+        ws[f'M{row_num}'] = report['itog_fire_alarm']
+        ws[f'N{row_num}'] = report['summ_mounth']
+        ws[f'O{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -10727,6 +11162,7 @@ def reports_kolvo(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
 
     companies = rekvizity.objects.all()
@@ -11333,11 +11769,12 @@ def reports_partners_techmart(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=16)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=16).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=16, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=16, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=16).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=16, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=16, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -11519,238 +11956,16 @@ def techmart_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=16, urik=False)
     sgs = partners_object.objects.filter(company_name_id=16, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
-    reports = []
-    summ_telemetria = 0
-    summ_rent_gsm = 0
-    summ_nabludenie = 0
-    summ_reagirovanie = 0
-    summ_tehnical_services = 0
-    summ_sms_uvedomlenie = 0
-    itog_summ_mounth = 0
-    summ_fire_alarm = 0
-    summ_tariff_per_mounth = 0
-
-    for kts_instance in partners_object_podkl:
-        tarif_nabludenia = None
-        all_object_number = str(kts_instance.object_number) + "\\" + str(kts_instance.gsm_number)
-
-        if kts_instance.date_otkluchenia:
-            if isinstance(start_of_month, datetime):
-                start_of_month = start_of_month.date()
-            if isinstance(end_of_month, datetime):
-                end_of_month = end_of_month.date()
-
-            if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
-                num_days = (kts_instance.date_otkluchenia - start_of_month).days
-            elif (kts_instance.date_otkluchenia >= start_of_month) and (
-                    kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
-                num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
-            elif kts_instance.date_otkluchenia > start_of_month:
-                num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
-            elif kts_instance.date_otkluchenia < start_of_month:
-                num_days = num_days_mounth
-            else:
-                num_days = (kts_instance.date_otkluchenia - start_of_month).days
-        else:
-            if kts_instance.date_podkluchenia:
-                if kts_instance.date_podkluchenia > start_of_month:
-                    num_days = (end_of_month - kts_instance.date_podkluchenia).days + 1
-                else:
-                    num_days = num_days_mounth
-            else:
-                num_days = num_days_mounth
-
-        if kts_instance.telemetria:
-            itog_telemetria = int((kts_instance.company_name.telemetria / num_days_mounth) * num_days)
-        else:
-            itog_telemetria = 0
-
-        if kts_instance.rent_gsm:
-            if kts_instance.urik:
-                itog_rent_gsm = int((kts_instance.company_name.arenda_ur / num_days_mounth) * num_days)
-            else:
-                itog_rent_gsm = int((kts_instance.company_name.arenda_fiz / num_days_mounth) * num_days)
-        else:
-            itog_rent_gsm = 0
-
-        if kts_instance.nabludenie:
-            if kts_instance.urik:
-                itog_nabludenie = int((kts_instance.company_name.nabludenie_ur / num_days_mounth) * num_days)
-            else:
-                itog_nabludenie = int((kts_instance.company_name.nabludenie_fiz / num_days_mounth) * num_days)
-        else:
-            itog_nabludenie = 0
-
-        if kts_instance.tehnical_services:
-            if kts_instance.urik:
-                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_ur / num_days_mounth) * num_days
-                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(itog_tehnical_services) > 0.5 else math.floor(
-                    itog_tehnical_services)
-            else:
-                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_mounth) * num_days
-                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
-                    itog_tehnical_services) > 0.5 else math.floor(
-                    itog_tehnical_services)
-        else:
-            itog_tehnical_services = 0
-
-        if kts_instance.fire_alarm:
-            if kts_instance.urik:
-                itog_fire_alarm = int((kts_instance.company_name.pozharka_ur / num_days_mounth) * num_days)
-            else:
-                itog_fire_alarm = int((kts_instance.company_name.pozharka_fiz / num_days_mounth) * num_days)
-        else:
-            itog_fire_alarm = 0
-
-        if kts_instance.urik:
-            if kts_instance.tariff_per_mounth > 30:
-                reagirovanie = kts_instance.tariff_per_mounth
-            else:
-                reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
-                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
-                    reagirovanie)
-        else:
-            reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
-            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
-                reagirovanie)
-
-        if kts_instance.sms_uvedomlenie:
-            if kts_instance.urik:
-                if kts_instance.sms_number:
-                    itog_sms_uvedomlenie = int(
-                        (kts_instance.company_name.sms_ur * kts_instance.sms_number) / num_days_mounth * num_days)
-                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
-                        itog_sms_uvedomlenie) > 0.5 else math.floor(
-                        itog_sms_uvedomlenie)
-                else:
-                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur) / num_days_mounth * num_days)
-                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
-                        itog_sms_uvedomlenie) > 0.5 else math.floor(
-                        itog_sms_uvedomlenie)
-            else:
-                if kts_instance.sms_number:
-                    itog_sms_uvedomlenie = int(
-                        (kts_instance.company_name.sms * kts_instance.sms_number) / num_days_mounth * num_days)
-                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
-                        itog_sms_uvedomlenie) > 0.5 else math.floor(
-                        itog_sms_uvedomlenie)
-                else:
-                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms) / num_days_mounth * num_days)
-                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
-                        itog_sms_uvedomlenie) > 0.5 else math.floor(
-                        itog_sms_uvedomlenie)
-        else:
-            itog_sms_uvedomlenie = 0
-
-        summ_mounth = itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm
-        summ_telemetria += itog_telemetria
-        summ_rent_gsm += itog_rent_gsm
-        summ_nabludenie += itog_nabludenie
-        summ_reagirovanie += reagirovanie
-        summ_tehnical_services += itog_tehnical_services
-        summ_sms_uvedomlenie += itog_sms_uvedomlenie
-        summ_fire_alarm += itog_fire_alarm
-        summ_tariff_per_mounth += kts_instance.tariff_per_mounth
-        itog_summ_mounth += summ_mounth
-
-        reports.append({
-            'kts_instance': kts_instance,
-            'tarif_nabludenia': tarif_nabludenia,
-            'num_days': num_days,
-            'num_days_mounth': num_days_mounth,
-            'itog_telemetria': itog_telemetria,
-            'itog_rent_gsm': itog_rent_gsm,
-            'itog_nabludenie': itog_nabludenie,
-            'itog_tehnical_services': itog_tehnical_services,
-            'itog_sms_uvedomlenie': itog_sms_uvedomlenie,
-            'itog_fire_alarm': itog_fire_alarm,
-            'reagirovanie': reagirovanie,
-            'summ_mounth': summ_mounth,
-            'summ_telemetria': summ_telemetria,
-            'summ_rent_gsm': summ_rent_gsm,
-            'summ_nabludenie': summ_nabludenie,
-            'summ_reagirovanie': summ_reagirovanie,
-            'summ_tehnical_services': summ_tehnical_services,
-            'summ_sms_uvedomlenie': summ_sms_uvedomlenie,
-            'summ_fire_alarm': summ_fire_alarm,
-            'itog_summ_mounth': itog_summ_mounth,
-            'summ_tariff_per_mounth': summ_tariff_per_mounth,
-            'all_object_number': all_object_number,
-            'sgs': sgs,
-        })
-
-    # Загрузка шаблона Excel и инициализация row_num
-    template_path = os.path.join(settings.MEDIA_ROOT, 'techmart_download_fiz.xlsx')
-    wb = openpyxl.load_workbook(template_path)
-    ws = wb.active
-
-    # Start filling in the data from row 2 (assuming row 1 is the header)
-    row_num = 10
-    for report in reports:
-        ws[f'A{row_num}'] = report['kts_instance'].object_number
-        ws[f'B{row_num}'] = report['kts_instance'].gsm_number
-        ws[f'C{row_num}'] = report['kts_instance'].name_object
-        ws[f'D{row_num}'] = report['kts_instance'].adres
-        ws[f'E{row_num}'] = report['kts_instance'].type_object
-        ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
-        ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
-        ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
-        ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
-        row_num += 1
-
-    ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
-    ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
-    ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
-    ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
-
-    output = BytesIO()
-    wb.save(output)
-    output.seek(0)
-
-    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename=TOO "Tech_Mart" Fiziki {now.date()}.xlsx'
-
-    return response
-
-
-@login_required
-def techmart_download_ur(request):
-    now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
-
-    if request.method == 'POST':
-        start_date = request.POST.get('start_date')
-        end_date = request.POST.get('end_date')
-        if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-
-    partners_object_podkl = partners_object.objects.filter(company_name_id=16, urik=True)
-    sgs = partners_object.objects.filter(company_name_id=16, urik=True).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=16, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -11885,6 +12100,9 @@ def techmart_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -11915,6 +12133,12 @@ def techmart_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[
+            f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -11929,25 +12153,263 @@ def techmart_download_ur(request):
         ws[f'I{row_num}'] = report['num_days']
         ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
         ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        ws[f'L{row_num}'] = report['itog_rent_gsm']
+        ws[f'M{row_num}'] = report['itog_tehnical_services']
+        ws[f'N{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'O{row_num}'] = report['summ_mounth']
+        ws[f'P{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=TOO "Tech_Mart" Fiziki {now.date()}.xlsx'
+
+    return response
+
+
+@login_required
+def techmart_download_ur(request):
+    now = timezone.now()
+    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
+                            tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        if start_date and end_date:
+            start_of_month = parse_date(start_date)
+            end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
+
+    partners_object_podkl = partners_object.objects.filter(company_name_id=16, urik=True)
+    sgs = partners_object.objects.filter(company_name_id=16, urik=True).aggregate(Count('id'))
+    sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=16, urik=True).exclude(
+        date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
+
+    reports = []
+    summ_telemetria = 0
+    summ_rent_gsm = 0
+    summ_nabludenie = 0
+    summ_reagirovanie = 0
+    summ_tehnical_services = 0
+    summ_sms_uvedomlenie = 0
+    itog_summ_mounth = 0
+    summ_fire_alarm = 0
+    summ_tariff_per_mounth = 0
+
+    for kts_instance in partners_object_podkl:
+        tarif_nabludenia = None
+        all_object_number = str(kts_instance.object_number) + "\\" + str(kts_instance.gsm_number)
+
+        if kts_instance.date_otkluchenia:
+            if isinstance(start_of_month, datetime):
+                start_of_month = start_of_month.date()
+            if isinstance(end_of_month, datetime):
+                end_of_month = end_of_month.date()
+
+            if (kts_instance.date_otkluchenia > start_of_month) and (kts_instance.date_podkluchenia < start_of_month):
+                num_days = (kts_instance.date_otkluchenia - start_of_month).days
+            elif (kts_instance.date_otkluchenia >= start_of_month) and (
+                    kts_instance.date_podkluchenia > kts_instance.date_otkluchenia):
+                num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
+            elif kts_instance.date_otkluchenia > start_of_month:
+                num_days = num_days_mounth - (kts_instance.date_podkluchenia - kts_instance.date_otkluchenia).days
+            elif kts_instance.date_otkluchenia < start_of_month:
+                num_days = num_days_mounth
+            else:
+                num_days = (kts_instance.date_otkluchenia - start_of_month).days
+        else:
+            if kts_instance.date_podkluchenia:
+                if kts_instance.date_podkluchenia > start_of_month:
+                    num_days = (end_of_month - kts_instance.date_podkluchenia).days + 1
+                else:
+                    num_days = num_days_mounth
+            else:
+                num_days = num_days_mounth
+
+        if kts_instance.telemetria:
+            itog_telemetria = int((kts_instance.company_name.telemetria / num_days_mounth) * num_days)
+        else:
+            itog_telemetria = 0
+
+        if kts_instance.rent_gsm:
+            if kts_instance.urik:
+                itog_rent_gsm = int((kts_instance.company_name.arenda_ur / num_days_mounth) * num_days)
+            else:
+                itog_rent_gsm = int((kts_instance.company_name.arenda_fiz / num_days_mounth) * num_days)
+        else:
+            itog_rent_gsm = 0
+
+        if kts_instance.nabludenie:
+            if kts_instance.urik:
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_ur / num_days_mounth) * num_days)
+            else:
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_fiz / num_days_mounth) * num_days)
+        else:
+            itog_nabludenie = 0
+
+        if kts_instance.tehnical_services:
+            if kts_instance.urik:
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_ur / num_days_mounth) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(itog_tehnical_services) > 0.5 else math.floor(
+                    itog_tehnical_services)
+            else:
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_mounth) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                    itog_tehnical_services) > 0.5 else math.floor(
+                    itog_tehnical_services)
+        else:
+            itog_tehnical_services = 0
+
+        if kts_instance.fire_alarm:
+            if kts_instance.urik:
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_ur / num_days_mounth) * num_days)
+            else:
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_fiz / num_days_mounth) * num_days)
+        else:
+            itog_fire_alarm = 0
+
+        if kts_instance.urik:
+            if kts_instance.tariff_per_mounth > 30:
+                reagirovanie = kts_instance.tariff_per_mounth
+            else:
+                reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+        else:
+            reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+
+        if kts_instance.sms_uvedomlenie:
+            if kts_instance.urik:
+                if kts_instance.sms_number:
+                    itog_sms_uvedomlenie = int(
+                        (kts_instance.company_name.sms_ur * kts_instance.sms_number) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+            else:
+                if kts_instance.sms_number:
+                    itog_sms_uvedomlenie = int(
+                        (kts_instance.company_name.sms * kts_instance.sms_number) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+        else:
+            itog_sms_uvedomlenie = 0
+
+        summ_mounth = itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm
+        summ_telemetria += itog_telemetria
+        summ_rent_gsm += itog_rent_gsm
+        summ_nabludenie += itog_nabludenie
+        summ_reagirovanie += reagirovanie
+        summ_tehnical_services += itog_tehnical_services
+        summ_sms_uvedomlenie += itog_sms_uvedomlenie
+        summ_fire_alarm += itog_fire_alarm
+        summ_tariff_per_mounth += kts_instance.tariff_per_mounth
+        itog_summ_mounth += summ_mounth
+
+        reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
+            'kts_instance': kts_instance,
+            'tarif_nabludenia': tarif_nabludenia,
+            'num_days': num_days,
+            'num_days_mounth': num_days_mounth,
+            'itog_telemetria': itog_telemetria,
+            'itog_rent_gsm': itog_rent_gsm,
+            'itog_nabludenie': itog_nabludenie,
+            'itog_tehnical_services': itog_tehnical_services,
+            'itog_sms_uvedomlenie': itog_sms_uvedomlenie,
+            'itog_fire_alarm': itog_fire_alarm,
+            'reagirovanie': reagirovanie,
+            'summ_mounth': summ_mounth,
+            'summ_telemetria': summ_telemetria,
+            'summ_rent_gsm': summ_rent_gsm,
+            'summ_nabludenie': summ_nabludenie,
+            'summ_reagirovanie': summ_reagirovanie,
+            'summ_tehnical_services': summ_tehnical_services,
+            'summ_sms_uvedomlenie': summ_sms_uvedomlenie,
+            'summ_fire_alarm': summ_fire_alarm,
+            'itog_summ_mounth': itog_summ_mounth,
+            'summ_tariff_per_mounth': summ_tariff_per_mounth,
+            'all_object_number': all_object_number,
+            'sgs': sgs,
+        })
+
+    # Загрузка шаблона Excel и инициализация row_num
+    template_path = os.path.join(settings.MEDIA_ROOT, 'techmart_download_ur.xlsx')
+    wb = openpyxl.load_workbook(template_path)
+    ws = wb.active
+
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[
+            f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
+    # Start filling in the data from row 2 (assuming row 1 is the header)
+    row_num = 10
+    for report in reports:
+        ws[f'A{row_num}'] = report['kts_instance'].object_number
+        ws[f'B{row_num}'] = report['kts_instance'].gsm_number
+        ws[f'C{row_num}'] = report['kts_instance'].name_object
+        ws[f'D{row_num}'] = report['kts_instance'].adres
+        ws[f'E{row_num}'] = report['kts_instance'].type_object
+        ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
+        ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
+        ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
+        ws[f'I{row_num}'] = report['num_days']
+        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'K{row_num}'] = report['reagirovanie']
+        ws[f'L{row_num}'] = report['itog_rent_gsm']
+        ws[f'M{row_num}'] = report['itog_tehnical_services']
+        ws[f'N{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'O{row_num}'] = report['summ_mounth']
+        ws[f'P{row_num}'] = report['kts_instance'].primechanie
+        row_num += 1
+
+    ws[f'C{row_num+1}'] = 'Итого'
+    ws[f'O{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 3}'] = 'Итого охраняется:'
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
+    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -11979,11 +12441,13 @@ def reports_partners_twojoy(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=17)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=17).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=17, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=17, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=17).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=17, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=17, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+
 
     reports = []
     summ_telemetria = 0
@@ -12166,10 +12630,17 @@ def twojoy_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=17, urik=False)
     sgs = partners_object.objects.filter(company_name_id=17, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=17, urik=False).exclude(
+        date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -12306,6 +12777,9 @@ def twojoy_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -12336,6 +12810,11 @@ def twojoy_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -12347,28 +12826,25 @@ def twojoy_download_fiz(request):
         ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
         ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
         ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
-        ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['itog_rent_gsm']
+        ws[f'K{row_num}'] = report['itog_fire_alarm']
+        ws[f'L{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'M{row_num}'] = report['num_days']
+        ws[f'N{row_num}'] = report['summ_mounth']
+        ws[f'O{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -12394,10 +12870,18 @@ def twojoy_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
+
+    print(num_days_mounth)
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=17, urik=True)
     sgs = partners_object.objects.filter(company_name_id=17, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=17, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -12487,10 +12971,12 @@ def twojoy_download_ur(request):
                 reagirovanie = kts_instance.tariff_per_mounth
             else:
                 reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
-                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                    reagirovanie)
         else:
             reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
-            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
 
         if kts_instance.sms_uvedomlenie:
             if kts_instance.urik:
@@ -12532,6 +13018,9 @@ def twojoy_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -12562,6 +13051,11 @@ def twojoy_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -12573,35 +13067,32 @@ def twojoy_download_ur(request):
         ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
         ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
         ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
-        ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['itog_rent_gsm']
+        ws[f'K{row_num}'] = report['itog_fire_alarm']
+        ws[f'L{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'M{row_num}'] = report['num_days']
+        ws[f'N{row_num}'] = report['summ_mounth']
+        ws[f'O{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
     output.seek(0)
 
     response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename=TOO "2JOY" Uriki {now.date()}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename=TOO "2joy" Uriki {now.date()}.xlsx'
 
     return response
 
@@ -12624,11 +13115,12 @@ def reports_partners_medin(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=18)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=18).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=18, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=18, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=18).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=18, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=18, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -12811,10 +13303,16 @@ def medin_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=18, urik=False)
     sgs = partners_object.objects.filter(company_name_id=18, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=18, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -12951,6 +13449,9 @@ def medin_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -12981,6 +13482,11 @@ def medin_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -12992,8 +13498,8 @@ def medin_download_fiz(request):
         ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
         ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
         ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['num_days']
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
         ws[f'K{row_num}'] = report['summ_mounth']
         ws[f'L{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
@@ -13001,13 +13507,13 @@ def medin_download_fiz(request):
     ws[f'C{row_num+1}'] = 'Итого'
     ws[f'K{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.'
 
     output = BytesIO()
     wb.save(output)
@@ -13034,10 +13540,16 @@ def medin_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=18, urik=True)
     sgs = partners_object.objects.filter(company_name_id=18, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=18, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -13127,10 +13639,12 @@ def medin_download_ur(request):
                 reagirovanie = kts_instance.tariff_per_mounth
             else:
                 reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
-                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                    reagirovanie)
         else:
             reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
-            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
 
         if kts_instance.sms_uvedomlenie:
             if kts_instance.urik:
@@ -13172,6 +13686,9 @@ def medin_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -13202,6 +13719,11 @@ def medin_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -13213,8 +13735,8 @@ def medin_download_ur(request):
         ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
         ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
         ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['num_days']
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
         ws[f'K{row_num}'] = report['summ_mounth']
         ws[f'L{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
@@ -13222,13 +13744,13 @@ def medin_download_ur(request):
     ws[f'C{row_num+1}'] = 'Итого'
     ws[f'K{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.'
 
     output = BytesIO()
     wb.save(output)
@@ -13257,11 +13779,12 @@ def reports_partners_zhakitov(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=19)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=19).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=19, urik=True).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=19, urik=False).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=19).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=19, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=19, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -13442,10 +13965,16 @@ def zhakitov_download_fiz(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=19, urik=False)
     sgs = partners_object.objects.filter(company_name_id=19, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=19, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -13582,6 +14111,9 @@ def zhakitov_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -13612,6 +14144,11 @@ def zhakitov_download_fiz(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -13623,28 +14160,26 @@ def zhakitov_download_fiz(request):
         ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
         ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
         ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
-        ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['itog_rent_gsm']
+        ws[f'K{row_num}'] = report['num_days']
+        ws[f'L{row_num}'] = report['reagirovanie']
+        ws[f'M{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'N{row_num}'] = report['itog_rent_gsm']
+        ws[f'O{row_num}'] = report['summ_mounth']
+        ws[f'P{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
@@ -13670,10 +14205,16 @@ def zhakitov_download_ur(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=19, urik=True)
     sgs = partners_object.objects.filter(company_name_id=19, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=19, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -13763,10 +14304,12 @@ def zhakitov_download_ur(request):
                 reagirovanie = kts_instance.tariff_per_mounth
             else:
                 reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
-                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                    reagirovanie)
         else:
             reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
-            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(reagirovanie)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
 
         if kts_instance.sms_uvedomlenie:
             if kts_instance.urik:
@@ -13808,6 +14351,9 @@ def zhakitov_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -13838,6 +14384,11 @@ def zhakitov_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10
     for report in reports:
@@ -13849,35 +14400,33 @@ def zhakitov_download_ur(request):
         ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
         ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
         ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
-        ws[f'I{row_num}'] = report['num_days']
-        ws[f'J{row_num}'] = report['kts_instance'].tariff_per_mounth
-        ws[f'K{row_num}'] = report['reagirovanie']
-        ws[f'L{row_num}'] = report['itog_telemetria']
-        ws[f'M{row_num}'] = report['itog_rent_gsm']
-        ws[f'N{row_num}'] = report['itog_tehnical_services']
-        ws[f'O{row_num}'] = report['itog_fire_alarm']
-        ws[f'P{row_num}'] = report['itog_sms_uvedomlenie']
-        ws[f'Q{row_num}'] = report['summ_mounth']
-        ws[f'R{row_num}'] = report['kts_instance'].primechanie
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['itog_rent_gsm']
+        ws[f'K{row_num}'] = report['num_days']
+        ws[f'L{row_num}'] = report['reagirovanie']
+        ws[f'M{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'N{row_num}'] = report['itog_rent_gsm']
+        ws[f'O{row_num}'] = report['summ_mounth']
+        ws[f'P{row_num}'] = report['kts_instance'].primechanie
         row_num += 1
 
     ws[f'C{row_num+1}'] = 'Итого'
-    ws[f'N{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
-    ws[f'D{row_num + 3}'] = report['sgs']
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
     ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
-    ws[f'C{row_num + 6}'] = 'Исполнитель: гл.бухгалтер'
-    ws[f'H{row_num + 6}'] = '_________________'
-    ws[f'K{row_num + 6}'] = 'Пак И.C.'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
 
     output = BytesIO()
     wb.save(output)
     output.seek(0)
 
     response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename=TOO "Zhakitov" Uriki {now.date()}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename=TOO "Zhakitov" Urik {now.date()}.xlsx'
 
     return response
 
@@ -13973,39 +14522,165 @@ def get_card_from_asuekc(card_id):
     except Cards.DoesNotExist:
         return None
 
+bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 
-def send_telegram_message(technician, task):
-    card = get_card_from_third_db(task.client_object_id)
-    bot = telegram.Bot(token=settings.TELEGRAM_BOT_TOKEN)
-    zones = get_zones_from_third_db(task.client_object_id)
-    message = f"Новая заявка для {technician.username}:\n"
-    message += " \n"
-    message += f"Наименование клиента: { card.objectname }\n"
-    message += " \n"
-    message += f"Номер модуля: { card.unitnumber }\n"
-    message += " \n"
-    message += f"Адрес: { card.info }\n"
-    message += " \n"
-    message += f"Телефон: { card.phones }\n"
-    message += " \n"
-    message += f"Причина: {task.reason}\n"
-    message += " \n"
-    message += f"Примечание к заявке: {task.note}\n"
-
-    if zones.exists():
-        message += "Зоны клиента:\n"
-        for zone in zones:
-            message += f"{zone.sectionid.sectionname}, {zone.zonenumber}, {zone.info}\n"
-            message += " \n"
-    else:
-        message += "Зоны не найдены.\n"
+# Обработчик inline-кнопок
+def button_handler(update, context):
+    query = update.callback_query
+    task_id = query.data.split('_')[-1]  # Получаем task_id из callback_data
 
     try:
-        bot.send_message(chat_id=technician.userprofile.telegram_id, text=message)
-        print("Сообщение успешно отправлено")
+        task = TechnicalTask.objects.get(pk=task_id)
+
+        # Получаем зоны клиента по заявке
+        zones = get_zones_from_third_db(task.client_object_id)
+
+        # Формируем сообщение с зонами
+        if zones.exists():
+            message = "Зоны клиента:\n"
+            for zone in zones:
+                message += f"Раздел: {zone.sectionid.sectionname}, Зона: {zone.zonenumber} - {zone.info}\n"
+                message += f"\n"
+        else:
+            message = "Зоны не найдены."
+
+        # Отправляем сообщение с зонами
+        query.edit_message_text(text=message)
+
+    except Exception as e:
+        print(f"Ошибка при обработке запроса: {e}")
+        query.edit_message_text(text="Произошла ошибка при получении зон.")
+
+
+# Функция для отправки сообщения с кнопками
+def send_telegram_message(technician, task):
+    card = get_card_from_third_db(task.client_object_id)
+    bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+
+    message = f"Новая заявка для {technician.username}:\n"
+    message += f"Наименование клиента: {card.objectname}\n"
+    message += f"Номер модуля: {card.unitnumber}\n"
+    message += f"Адрес: {card.info}\n"
+    message += f"Телефон: {card.phones}\n"
+    message += f"Причина: {task.reason}\n"
+    message += f"Примечание к заявке: {task.note}\n"
+
+    # Формируем inline-кнопку для заявки
+    keyboard = [
+        [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task.id}")],
+        [InlineKeyboardButton(text="Вывести тревоги", callback_data=f"module_task_{task.id}")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Отправляем сообщение с кнопкой
+    try:
+        bot.send_message(
+            chat_id=technician.userprofile.telegram_id,
+            text=message,
+            reply_markup=reply_markup
+        )
+        print("Сообщение и кнопка успешно отправлены")
     except Exception as e:
         print(f"Ошибка при отправке сообщения в Telegram: {e}")
 
+
+@csrf_exempt
+def telegram_webhook(request):
+    try:
+        # Чтение тела запроса и преобразование его в словарь
+        data = json.loads(request.body.decode('utf-8'))
+
+        # Создаём объект update из словаря данных
+        update = Update.de_json(data, bot)
+
+        # Создаём диспетчер для обработки запросов
+        dispatcher = Dispatcher(bot, None, workers=0)
+
+        # Добавляем обработчик для inline-кнопок
+        dispatcher.add_handler(CallbackQueryHandler(button_handler, pattern='^select_task_'))
+        dispatcher.add_handler(CallbackQueryHandler(module_button_handler, pattern='^module_task_'))
+
+        # Обрабатываем обновление
+        dispatcher.process_update(update)
+
+        return JsonResponse({'status': 'ok'})
+    except Exception as e:
+        print(f"Ошибка в webhook: {e}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+def module_button_handler(update, context):
+    query = update.callback_query
+    task_id = query.data.split('_')[-1]  # Получаем task_id из callback_data
+
+    try:
+        # Получаем объект заявки из базы данных
+        task = TechnicalTask.objects.get(pk=task_id)
+
+        # Получаем информацию о клиенте (модуле) через client_object_id
+        card = get_card_from_third_db(task.client_object_id)
+
+        # Если объект найден, извлекаем номер модуля (unitnumber)
+        if card and card.unitnumber:
+            module_number = card.unitnumber
+            # Выполняем хранимую процедуру с номером модуля
+            result = execute_stored_procedure(module_number)
+
+            # Формируем сообщение для отправки в Telegram
+            if result:
+                message = f"Результаты для модуля {module_number}:\n"
+                for row in result:
+                    message += f"{row}\n"
+            else:
+                message = f"Ошибка при выполнении запроса для модуля {module_number}."
+        else:
+            message = "Модуль не найден для данного клиента."
+
+        # Отправляем сообщение с результатами выполнения процедуры
+        query.edit_message_text(text=message)
+
+    except Exception as e:
+        print(f"Ошибка при обработке запроса: {e}")
+        query.edit_message_text(text="Произошла ошибка при получении данных.")
+
+
+import pyodbc
+
+def execute_stored_procedure(module_number):
+    result = []
+    try:
+        # Устанавливаем соединение с использованием ODBC Driver 17 for SQL Server
+        conn = pyodbc.connect(
+            'DRIVER={ODBC Driver 17 for SQL Server};'
+            'SERVER=192.168.1.101;'
+            'DATABASE=GBASE;'
+            'UID=vlad_asukts;'
+            'PWD=KtsPCN@2024!$_Lol;'
+            'PORT=1433'
+        )
+        cursor = conn.cursor()
+
+        # Выполняем хранимую процедуру напрямую
+        cursor.execute("""
+            SET NOCOUNT ON;
+            DECLARE @D datetime;
+            DECLARE @I int;
+            DECLARE @M int;
+            SET @D = '2024-09-17 00:00:00';  -- Укажите точную дату
+            SET @M = 8299;
+            SET @I = 0;
+            EXECUTE [sp_GSM2MSG_MODUL] @D, @I, @M;
+        """)
+
+        # Получаем результаты
+        while cursor.nextset():
+            result = cursor.fetchall()
+            print(f"Результаты: {result}")
+        return result
+
+    except Exception as e:
+        print(f"Ошибка при выполнении хранимой процедуры: {e}")
+        return None
 
 
 def TechniciansAPIView(request):

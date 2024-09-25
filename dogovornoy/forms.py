@@ -45,7 +45,7 @@ class AddKlientDogForm(forms.ModelForm):
             'chasi_po_dog': forms.NumberInput(
                 attrs={'required': 'True', 'min': '0', 'class': 'form-control', 'max': '10000000'}),
             'dop_uslugi': forms.NumberInput(
-                attrs={'min': '0', 'class': 'form-control', 'max': '10000000'}),
+                attrs={'min': '0', 'class': 'form-control', 'max': '10000000000'}),
             'abon_plata': forms.NumberInput(
                 attrs={'required': 'True', 'min': '0', 'class': 'form-control', 'max': '10000000'}),
             'object_number': forms.NumberInput(

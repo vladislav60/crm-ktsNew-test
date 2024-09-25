@@ -103,9 +103,9 @@ DATABASES = {
     'third_db': {
         'ENGINE': 'mssql',
         'NAME': 'GBASE',
-        'USER': 'vlad',
-        'PASSWORD': 'KtsPCN$2024!$_Lol',
-        'HOST': '192.168.1.20',
+        'USER': 'vlad_asukts',
+        'PASSWORD': 'KtsPCN@2024!$_Lol',
+        'HOST': '192.168.1.101',
         'PORT': '1433',
 
         'OPTIONS': {

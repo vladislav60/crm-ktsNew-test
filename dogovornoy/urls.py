@@ -156,7 +156,8 @@ urlpatterns = [
     path('task/complete/<int:pk>/', CompleteTaskView.as_view(), name='complete_task'),
     path('copy_client/<int:pk>/', CopyClientView.as_view(), name='copy_client'),
     path('create_technical_task/', CreateTechnicalTaskView.as_view(), name='create_technical_task'),
-    path('api_technicians/', TechniciansAPIView, name='api_technicians'),  # Уберите .as_view()
-    path('api_task_reasons/', TaskReasonsAPIView, name='api_task_reasons'),  # Уберите .as_view()
+    path('api_technicians/', TechniciansAPIView, name='api_technicians'),
+    path('api_task_reasons/', TaskReasonsAPIView, name='api_task_reasons'),
+    path('telegram_webhook/', telegram_webhook, name='telegram_webhook'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

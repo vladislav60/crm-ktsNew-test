@@ -356,7 +356,79 @@
                                 {% endif %}
                             </div>
 
+                            {% if kartochka.urik %}
 
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">ИИК</label>
+                                {% if kartochka.iik %}
+                                    <input type="text" class="form-control" value="{{ kartochka.iik }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">БИК</label>
+                                {% if kartochka.bik %}
+                                    <input type="text" class="form-control" value="{{ kartochka.bik }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-4">
+                                <label for="inputNanme4" class="form-label">БАНК</label>
+                                {% if kartochka.bank %}
+                                    <input type="text" class="form-control" value="{{ kartochka.bank }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Имя директора сокращенное</label>
+                                {% if kartochka.fio_direktor_sokr %}
+                                    <input type="text" class="form-control" value="{{ kartochka.fio_direktor_sokr }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Имя директора полное</label>
+                                {% if kartochka.fio_direktor_polnoe %}
+                                    <input type="text" class="form-control" value="{{ kartochka.fio_direktor_polnoe }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Должность директора</label>
+                                {% if kartochka.dolznost %}
+                                    <input type="text" class="form-control" value="{{ kartochka.dolznost }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Учередительные документы</label>
+                                {% if kartochka.ucereditel_doc %}
+                                    <input type="text" class="form-control" value="{{ kartochka.ucereditel_doc }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            {% endif %}
                             <div class="col-10">
                                 <table class="table table-sm dop_uslugi_t">
                                     <thead>

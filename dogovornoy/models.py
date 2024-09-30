@@ -45,6 +45,14 @@ class kts(models.Model):
     photo = models.ImageField(upload_to="photos/%Y/%m/%d/", verbose_name="Фото УДВ", blank=True, null=True)
     prochee = models.TextField(blank=True, null=True, verbose_name="Прочее")
     exclude_from_report = models.BooleanField(default=False, verbose_name="Не учитывать в отчете")
+    iik = models.CharField(max_length=255, blank=True, null=True, verbose_name="ИИК")
+    bik = models.CharField(max_length=255, blank=True, null=True, verbose_name="БИК")
+    bank = models.CharField(max_length=255, blank=True, null=True, verbose_name="БАНК")
+    rezhim_raboti = models.CharField(max_length=255, blank=True, null=True, verbose_name="Режим работы")
+    fio_direktor_sokr = models.CharField(max_length=255, blank=True, null=True, verbose_name="Имя директора сокращенное")
+    fio_direktor_polnoe = models.CharField(max_length=255, blank=True, null=True, verbose_name="Имя директора полное")
+    dolznost = models.CharField(max_length=255, blank=True, null=True, verbose_name="Должность директора")
+    ucereditel_doc = models.CharField(max_length=255, blank=True, null=True, verbose_name="Учередительные документы")
 
     def get_absolute_url(self):
         return reverse('kartochka_klienta', kwargs={'klient_id': self.pk})

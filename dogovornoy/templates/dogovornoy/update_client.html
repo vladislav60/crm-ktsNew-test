@@ -288,7 +288,72 @@
                             <div class="form-error">{{photo.errors}}</div>
                         </div>
 
+
                         <div class="col-md-4">
+                            <label for="{{ form.iik.id_for_label }}" class="form-label">
+                                {{ form.iik.label }}
+                            </label>
+                            {{ form.iik }}
+                            <div class="form-error">{{iik.errors}}</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.bik.id_for_label }}" class="form-label">
+                                {{ form.bik.label }}
+                            </label>
+                            {{ form.bik }}
+                            <div class="form-error">{{bik.errors}}</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.bank.id_for_label }}" class="form-label">
+                                {{ form.bank.label }}
+                            </label>
+                            {{ form.bank }}
+                            <div class="form-error">{{bank.errors}}</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="{{ form.rezhim_raboti.id_for_label }}" class="form-label">
+                                {{ form.rezhim_raboti.label }}
+                            </label>
+                            {{ form.rezhim_raboti }}
+                            <div class="form-error">{{rezhim_raboti.errors}}</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="{{ form.fio_direktor_polnoe.id_for_label }}" class="form-label">
+                                {{ form.fio_direktor_polnoe.label }}
+                            </label>
+                            {{ form.fio_direktor_polnoe }}
+                            <div class="form-error">{{fio_direktor_polnoe.errors}}</div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="{{ form.fio_direktor_sokr.id_for_label }}" class="form-label">
+                                {{ form.fio_direktor_sokr.label }}
+                            </label>
+                            {{ form.fio_direktor_sokr }}
+                            <div class="form-error">{{fio_direktor_sokr.errors}}</div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="{{ form.dolznost.id_for_label }}" class="form-label">
+                                {{ form.dolznost.label }}
+                            </label>
+                            {{ form.dolznost }}
+                            <div class="form-error">{{dolznost.errors}}</div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label for="{{ form.ucereditel_doc.id_for_label }}" class="form-label">
+                                {{ form.ucereditel_doc.label }}
+                            </label>
+                            {{ form.ucereditel_doc }}
+                            <div class="form-error">{{ucereditel_doc.errors}}</div>
+                        </div>
+
+                        <div class="col-md-12">
                           <legend class="col-form-label col-sm-4 pt-1">{{ form.exclude_from_report.label }}</legend>
                           <div class="col-md-1 form-switch">
 
@@ -296,6 +361,7 @@
 
                           </div>
                         </div>
+
 
                         <div class="d-grid gap-2 mt-3">
                             <button type="submit" class="btn btn-success rounded-pill" >Изменить</button>

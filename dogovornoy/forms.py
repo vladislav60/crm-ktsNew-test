@@ -17,7 +17,7 @@ class AddKlientDogForm(forms.ModelForm):
                   'vid_sign', 'urik', 'chasi_po_dog', 'dop_uslugi', 'abon_plata',
                   'object_number', 'peredatchik_number', 'stoimost_rpo', 'date_podkluchenia', 'date_otklulchenia',
                   'gruppa_reagirovania', 'email', 'date_izmenenia',
-                  'vid_rpo', 'primechanie', 'prochee', 'agentskie', 'photo', 'exclude_from_report']
+                  'vid_rpo', 'primechanie', 'prochee', 'agentskie', 'photo', 'exclude_from_report', 'iik', 'bik', 'bank', 'rezhim_raboti', 'fio_direktor_sokr', 'fio_direktor_polnoe',  'dolznost', 'ucereditel_doc']
         widgets = {
             'udv_number': forms.TextInput(attrs={'class': 'form-control'}),
             'date_udv': forms.TextInput(attrs={'class': 'form-control'}),
@@ -65,6 +65,14 @@ class AddKlientDogForm(forms.ModelForm):
             'service_name': forms.TextInput(attrs={'class': 'form-control'}),
             'price': forms.TextInput(attrs={'class': 'form-control'}),
             'exclude_from_report': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'iik': forms.TextInput(attrs={'class': 'form-control'}),
+            'bik': forms.TextInput(attrs={'class': 'form-control'}),
+            'bank': forms.TextInput(attrs={'class': 'form-control'}),
+            'rezhim_raboti': forms.TextInput(attrs={'class': 'form-control'}),
+            'fio_direktor_sokr': forms.TextInput(attrs={'class': 'form-control'}),
+            'fio_direktor_polnoe': forms.TextInput(attrs={'class': 'form-control'}),
+            'dolznost': forms.TextInput(attrs={'class': 'form-control'}),
+            'ucereditel_doc': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 

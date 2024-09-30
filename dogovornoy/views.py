@@ -149,7 +149,7 @@ def create_dogovor(request, klient_id):
         currency_additional = ('тиын', 'тиына', 'тиынов')
         itog_oplata_propis = get_string_by_number(itog_oplata, currency_main, currency_additional)
         time_reag_propis = get_string_by_number(passport_info.time_reag, currency_main, currency_additional)
-        oplata_itog1 = itog_oplata_propis.split(' тенге 00 тиынов')
+        oplata_itog1 = itog_oplata_propis.split('тенге 00 тиынов')
         time_reag_itog1 = time_reag_propis.split(' тенге 00 тиынов')
         time_reag_nebol_propis = get_string_by_number(passport_info.time_reag_nebol, currency_main, currency_additional)
         time_reag_nebol_itog1 = time_reag_nebol_propis.split(' тенге 00 тиынов')
@@ -202,6 +202,14 @@ def create_dogovor(request, klient_id):
             'doljnost': rekvizity_test.doljnost,
             'ucheriditel_name_polnoe': rekvizity_test.ucheriditel_name_polnoe,
             'ucheriditel_name_sokr': rekvizity_test.ucheriditel_name_sokr,
+            'iik': passport_info.iik,
+            'bik': passport_info.bik,
+            'bank': passport_info.bank,
+            'rezhim_raboti': passport_info.rezhim_raboti,
+            'fio_direktor_sokr': passport_info.fio_direktor_sokr,
+            'fio_direktor_polnoe': passport_info.fio_direktor_polnoe,
+            'dolznost_klient': passport_info.dolznost,
+            'ucereditel_doc': passport_info.ucereditel_doc,
         }
         doc.render(context)
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
@@ -1222,6 +1230,7 @@ def reports_partners(request):
     end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
     current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1229,6 +1238,10 @@ def reports_partners(request):
         if start_date and end_date:
             start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
             end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
+
+
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=1)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=1).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -2471,14 +2484,17 @@ def reports_partners_rmg(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=4)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=4).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -3090,15 +3106,18 @@ def reports_partners_kazkuzet(request):
     now = timezone.now()
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=3)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=3).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -3769,14 +3788,17 @@ def reports_partners_sgs(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=5)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=5).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -4455,14 +4477,17 @@ def reports_partners_ipkim(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=6)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=6).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -5095,14 +5120,17 @@ def reports_partners_kuzets(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=7)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=7).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -5782,14 +5810,17 @@ def reports_partners_samohvalov(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=8)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=8).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -6459,14 +6490,17 @@ def reports_partners_sobsecutity(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=9)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=9).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -7113,14 +7147,17 @@ def reports_partners_egida(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=15)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=15).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -7780,14 +7817,17 @@ def reports_partners_eyewatch(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=10)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=10).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -8450,14 +8490,17 @@ def reports_partners_iviscom(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=11)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=11).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -9124,14 +9167,17 @@ def reports_partners_eurasian(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=12)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=12).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -9798,14 +9844,17 @@ def reports_partners_bmkz(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=13)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=13).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -10457,14 +10506,17 @@ def reports_partners_monolit(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=14)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=14).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -11737,14 +11789,17 @@ def reports_partners_techmart(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=16)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=16).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -12409,14 +12464,17 @@ def reports_partners_twojoy(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=17)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=17).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -13083,14 +13141,17 @@ def reports_partners_medin(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=18)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=18).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
@@ -13747,14 +13808,17 @@ def reports_partners_zhakitov(request):
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
                             tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    current_month = get_current_month_russian()
+    num_days = num_days_mounth
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+            num_days = num_days_mounth
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=19)
     partners_kolvo_object = partners_object.objects.filter(company_name_id=19).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))

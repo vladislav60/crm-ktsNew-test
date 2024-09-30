@@ -78,14 +78,15 @@
                 <thead>
                 <tr>
                     <th scope="col">id</th>
+                    <th scope="col">Компания</th>
                     <th scope="col">№ дог.</th>
                     <th scope="col">№ объекта</th>
                     <th scope="col">Наименование</th>
                     <th scope="col">Тип объекта</th>
                     <th scope="col">Адрес</th>
                     <th scope="col">Телефон</th>
-                    <th scope="col">Итого</th>
-                    <th scope="col">ИИН/БИН</th>
+                    <th scope="col">Дата подключения</th>
+                    <th scope="col">Дата отк</th>
                     <th scope="col"></th>
                     <th scope="col"></th>
                 </tr>
@@ -100,14 +101,23 @@
                     {% endif %}
 
                     <td>{{k.id}}</td>
+                    <td>{{k.company_name}}</td>
                     <td>{{k.dogovor_number}}</td>
                     <td>{{k.object_number}}</td>
                     <td>{{k.klient_name}}</td>
                     <td>{{k.name_object}}</td>
                     <td>{{k.adres}}</td>
                     <td>{{k.telephone}}</td>
-                    <td>{{k.abon_plata}}</td>
-                    <td>{{k.iin_bin}}</td>
+                    {% if k.date_podkluchenia %}
+                        <td>{{k.date_podkluchenia}}</td>
+                    {% else %}
+                        <td>-</td>
+                    {% endif %}
+                    {% if k.date_otklulchenia %}
+                        <td>{{k.date_otklulchenia}}</td>
+                        {% else %}
+                        <td>-</td>
+                    {% endif %}
                     <td><a href="{{ k.get_absolute_url }}">
                         <button type="button" class="btn btn-secondary">
                             <i class="bi bi-folder-symlink-fill"></i>

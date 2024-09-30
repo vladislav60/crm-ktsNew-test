@@ -132,7 +132,7 @@ def create_dogovor(request, klient_id):
             else:
                 short_names_klient = split_names_klient_[0].title()
         elif (passport_info.mat_otv != '0') and (passport_info.urik == True) and (
-                (vid_sign1.name_sign == 'ОТС') or (vid_sign1.name_sign == 'ОС')):
+                (vid_sign1.name_sign == 'ОТС') or (vid_sign1.name_sign == 'ОС') or (vid_sign1.name_sign == 'ОТПС')):
             doc = DocxTemplate(os.path.abspath('media/dogovor2.docx'))
             short_names_klient = ""
         else:

@@ -148,6 +148,7 @@ class partners_object(models.Model):
     urik = models.BooleanField(default=False, null=True, verbose_name="Юридическое лицо")
     company_name = models.ForeignKey('partners_rekvizity', verbose_name="Партнеры", on_delete=models.PROTECT)
     date_otkluchenia = models.DateField(null=True, blank=True, verbose_name="Дата отключения")
+    prochee = models.TextField(blank=True, null=True, verbose_name="Прочее")
 
     def get_absolute_url(self):
         return reverse('kartochka_partner', kwargs={'partner_klient_id': self.pk})

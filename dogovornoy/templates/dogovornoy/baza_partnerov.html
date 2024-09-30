@@ -72,8 +72,10 @@
                     <th scope="col-4">Наименование</th>
                     <th scope="col-4">Адрес</th>
                     <th scope="col-2">Тип объекта</th>
-                    <th scope="col-2">Дата подлкючения</th>
+                    <th scope="col-2">Дата подк</th>
+                    <th scope="col-2">Дата откл</th>
                     <th scope="col-1">Часы в месяц</th>
+                    <th scope="col"></th>
                     <th scope="col"></th>
                     <th scope="col"></th>
                     <th scope="col"></th>
@@ -81,13 +83,29 @@
                 </thead>
                 <tbody>
                 {% for k in klienty_partners %}
+
+                    {% if k.date_otkluchenia %}
+                        <tr class="otklycheniy">
+                            {% else %}
+                        <tr>
+                    {% endif %}
+
                     <td>{{k.company_name}}</td>
                     <td>{{k.object_number}}</td>
                     <td>{{k.gsm_number}}</td>
                     <td>{{k.name_object}}</td>
                     <td>{{k.adres}}</td>
                     <td>{{k.type_object}}</td>
-                    <td>{{k.date_podkluchenia}}</td>
+                    {% if k.date_podkluchenia %}
+                        <td>{{k.date_podkluchenia}}</td>
+                    {% else %}
+                        <td>-</td>
+                    {% endif %}
+                    {% if k.date_otkluchenia %}
+                        <td>{{k.date_otkluchenia}}</td>
+                        {% else %}
+                        <td>-</td>
+                    {% endif %}
                     <td>{{k.hours_mounth}}</td>
                     <td><a href="{{ k.get_absolute_url }}">
                         <button type="button" class="btn btn-secondary">
@@ -104,13 +122,42 @@
                             <i class="bi bi-trash-fill"></i>
                         </button>
                     </a></td>
-{#                    <td>#}
-{#                        <a href="{% url 'create_dogovor' k.pk %}">#}
-{#                            <button type="button" class="btn btn-secondary">#}
-{#                                <i class="bi bi-newspaper"></i>#}
-{#                            </button>#}
-{#                        </a>#}
-{#                    </td>#}
+
+                    <td><a href="{% url 'delete_client_partners' k.pk %}">
+                        <button type="button" class="btn btn-secondary">
+                            <i class="bi bi-trash-fill"></i>
+                        </button>
+                    </a></td>
+
+
+                    <td>
+                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#copyClientModal-{{ k.pk }}">
+                            <i class="bi bi-files"></i>
+                        </button>
+                    </td>
+
+                    <!-- Модальное окно -->
+                    <div class="modal fade" id="copyClientModal-{{ k.pk }}" tabindex="-1" aria-labelledby="copyClientModalLabel-{{ k.pk }}" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="copyClientModalLabel-{{ k.pk }}">Копирование клиента</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                                </div>
+                                <div class="modal-body">
+                                    Вы действительно хотите скопировать этого клиента {{ k.name_object }}?
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <a href="{% url 'copy_client_partner' k.pk %}">
+                                        <button type="button" class="btn btn-primary">Копировать</button>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </tr>
                 {% endfor %}
 

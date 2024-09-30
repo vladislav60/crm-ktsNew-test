@@ -732,7 +732,50 @@ class CopyClientView(View):
         )
 
         # Перенаправляем на страницу базы договоров после успешного копирования
-        return redirect('baza_dogovorov')
+        return redirect('update_client', klient_id=new_client.pk)
+
+
+
+class CopyClientViewPartner(View):
+    def get(self, request, pk):
+        # Находим оригинального клиента
+        original_client = get_object_or_404(partners_object, pk=pk)
+
+        # Проверяем, есть ли у оригинального клиента обязательные поля, которые нужно скопировать корректно
+        if not original_client.company_name:
+            # Устанавливаем значение по умолчанию или перенаправляем с сообщением об ошибке
+            return redirect('error_page')
+
+        # Копируем все данные, кроме ID, и сохраняем нового клиента
+        new_client = partners_object.objects.create(
+            object_number=original_client.object_number,
+            gsm_number=original_client.gsm_number,
+            name_object=original_client.name_object,
+            adres=original_client.adres,
+            type_object=original_client.type_object,
+            vid_sign=original_client.vid_sign,
+            hours_mounth=original_client.hours_mounth,
+            date_podkluchenia=original_client.date_podkluchenia,
+            tariff_per_mounth=original_client.tariff_per_mounth,
+            tehnical_services=original_client.tehnical_services,
+            rent_gsm=original_client.rent_gsm,
+            fire_alarm=original_client.fire_alarm,
+            telemetria=original_client.telemetria,
+            nabludenie=original_client.nabludenie,
+            sms_uvedomlenie=original_client.sms_uvedomlenie,
+            sms_number=original_client.sms_number,
+            kolvo_day=original_client.kolvo_day,
+            primechanie=original_client.primechanie,
+            ekipazh=original_client.ekipazh,
+            urik=original_client.urik,
+            company_name=original_client.company_name,
+            date_otkluchenia=original_client.date_otkluchenia,
+            prochee=original_client.prochee
+        )
+
+        # Перенаправляем на страницу нового клиента
+        return redirect('update_client_partner', partner_klient_id=new_client.pk)
+
 
 
 @method_decorator(login_required, name='dispatch')
@@ -11179,9 +11222,7 @@ def reports_kolvo(request):
     start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc)
     end_of_month = timezone.datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc)
     next_start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    print(next_start_of_month)
     next_end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    print(next_end_of_month)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -11276,46 +11317,45 @@ def reports_kolvo(request):
 
 
         # экипажи физические лица
-        gruppa_reagirovania_911_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia = None,
-                                                    urik=False, gruppa_reagirovania='911', exclude_from_report=False).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_911_fiz = kts.objects.filter(company_name_id=company.id, urik=False,
+                                                         gruppa_reagirovania='911', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_bravo21_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                     urik=False, gruppa_reagirovania='Браво-21', exclude_from_report=False).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_bravo21_fiz = kts.objects.filter(company_name_id=company.id, urik=False, gruppa_reagirovania='Браво-21', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_sms_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        urik=False, gruppa_reagirovania='СМС', exclude_from_report=False).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_sms_fiz = kts.objects.filter(company_name_id=company.id, 
+                                                        urik=False, gruppa_reagirovania='СМС', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_asker_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=False, gruppa_reagirovania='Эскер', exclude_from_report=False).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_asker_fiz = kts.objects.filter(company_name_id=company.id, 
+                                                         urik=False, gruppa_reagirovania='Эскер', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_zardem_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=False, gruppa_reagirovania='Жардем', exclude_from_report=False).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_zardem_fiz = kts.objects.filter(company_name_id=company.id, 
+                                                         urik=False, gruppa_reagirovania='Жардем', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_kuguar_fiz = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                            urik=False, gruppa_reagirovania='Кугуар').aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_kuguar_fiz = kts.objects.filter(company_name_id=company.id, 
+                                                            urik=False, gruppa_reagirovania='Кугуар').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
 
         kolvo_ekipazh_fiz = int(kts_fiz_podkl_end - (gruppa_reagirovania_911_fiz + gruppa_reagirovania_bravo21_fiz + gruppa_reagirovania_sms_fiz +
                              gruppa_reagirovania_asker_fiz + gruppa_reagirovania_zardem_fiz + gruppa_reagirovania_kuguar_fiz))
 
         # экипажи юридические лица
-        gruppa_reagirovania_911_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=True, gruppa_reagirovania='911').aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_911_ur = kts.objects.filter(company_name_id=company.id, 
+                                                         urik=True, gruppa_reagirovania='911').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_bravo21_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                    urik=True, gruppa_reagirovania='Браво-21').aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_bravo21_ur = kts.objects.filter(company_name_id=company.id, 
+                                                    urik=True, gruppa_reagirovania='Браво-21').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_sms_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                         urik=True, gruppa_reagirovania='СМС').aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_sms_ur = kts.objects.filter(company_name_id=company.id, 
+                                                         urik=True, gruppa_reagirovania='СМС').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_asker_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        urik=True, gruppa_reagirovania='Эскер').aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_asker_ur = kts.objects.filter(company_name_id=company.id, 
+                                                        urik=True, gruppa_reagirovania='Эскер').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_zardem_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                        urik=True, gruppa_reagirovania='Жардем').aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_zardem_ur = kts.objects.filter(company_name_id=company.id, 
+                                                        urik=True, gruppa_reagirovania='Жардем').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
-        gruppa_reagirovania_kuguar_ur = kts.objects.filter(company_name_id=company.id, date_otklulchenia=None,
-                                                           urik=True, gruppa_reagirovania='Кугуар').aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_kuguar_ur = kts.objects.filter(company_name_id=company.id, 
+                                                           urik=True, gruppa_reagirovania='Кугуар').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
 
 
         kolvo_ekipazh_ur = int(kts_count_podkl_end - (gruppa_reagirovania_911_ur + gruppa_reagirovania_bravo21_ur + gruppa_reagirovania_sms_ur

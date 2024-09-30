@@ -10,6 +10,11 @@
 
                         <h5 class="card-title">Карточка партнеров</h5>
 
+                        <a href="{% url 'baza_partnerov' %}" style="font-size: 20px; margin-bottom: 20px;right: 42px; top: 30px; display:block; position: absolute;">
+                            <i class="bi bi-arrow-left"></i>
+                            <span>Вернуться в базу</span>
+                        </a>
+
                         <form class="row g-3">
 
                         <div class="col-12">
@@ -104,6 +109,15 @@
                             <label for="inputPrimechanie" class="form-label">Примечание:</label>
                             {% if kartochka_partner.primechanie %}
                                     <input type="text" class="form-control" value="{{ kartochka_partner.primechanie }}" disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                        </div>
+
+                        <div class="col-12">
+                            <label for="inputProchee" class="form-label">Прочее:</label>
+                            {% if kartochka_partner.prochee %}
+                                    <input type="text" class="form-control" value="{{ kartochka_partner.prochee }}" disabled>
                                 {% else %}
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
@@ -215,9 +229,9 @@
                                 {% endif %}
                         </div>
 
-                        <div class="back-link">
-                            <a href="{% url 'baza_partnerov' %}">Назад к списку
-                                <i class="bi bi-arrow-right"></i>
+                        <div class="d-grid gap-2 mt-3">
+                            <a href="{% url 'update_client_partner' kartochka_partner.pk %}" class="btn btn-success rounded-pill">
+                                Изменить клиента
                             </a>
                         </div>
                     </form>

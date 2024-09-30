@@ -121,6 +121,15 @@
                                 <div class="form-error">{{ primechanie.errors }}</div>
                             </div>
 
+
+                            <div class="col-md-12">
+                                <label for="{{ form.prochee.id_for_label }}" class="form-label">
+                                    {{ form.prochee.label }}<i class="colred"> <i class="colred"> *</i></i>
+                                </label>
+                                {{ form.prochee }}
+                                <div class="form-error">{{ prochee.errors }}</div>
+                            </div>
+
                             <div class="col-md-4">
                                 <label for="{{ form.tariff_per_mounth.id_for_label }}" class="form-label">
                                     {{ form.tariff_per_mounth.label }}<i class="colred"> <i class="colred"> *</i></i>

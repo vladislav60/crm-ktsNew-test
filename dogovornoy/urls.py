@@ -155,6 +155,7 @@ urlpatterns = [
     path('task/accept/<int:pk>/', AcceptTaskView.as_view(), name='accept_task'),
     path('task/complete/<int:pk>/', CompleteTaskView.as_view(), name='complete_task'),
     path('copy_client/<int:pk>/', CopyClientView.as_view(), name='copy_client'),
+    path('copy_client_partner/<int:pk>/', CopyClientViewPartner.as_view(), name='copy_client_partner'),
     path('create_technical_task/', CreateTechnicalTaskView.as_view(), name='create_technical_task'),
     path('api_technicians/', TechniciansAPIView, name='api_technicians'),
     path('api_task_reasons/', TaskReasonsAPIView, name='api_task_reasons'),

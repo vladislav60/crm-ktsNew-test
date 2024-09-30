@@ -82,8 +82,7 @@ class AddKlientDogFormPartner(forms.ModelForm):
         fields = [
             'object_number', 'gsm_number', 'name_object', 'adres', 'type_object', 'vid_sign', 'hours_mounth',
             'date_podkluchenia', 'date_otkluchenia', 'tariff_per_mounth', 'tehnical_services', 'rent_gsm', 'fire_alarm', 'telemetria',
-            'nabludenie', 'sms_uvedomlenie', 'kolvo_day', 'primechanie', 'ekipazh', 'urik', 'company_name', 'sms_number',
-        ]
+            'nabludenie', 'sms_uvedomlenie', 'kolvo_day', 'primechanie', 'ekipazh', 'urik', 'company_name', 'sms_number', 'prochee']
         widgets = {
             'company_name': forms.Select(attrs={'class': 'form-control'}),
             'object_number': forms.TextInput(attrs={'class': 'form-control'}),
@@ -107,6 +106,7 @@ class AddKlientDogFormPartner(forms.ModelForm):
             'primechanie': forms.Textarea(attrs={'class': 'form-control'}),
             'ekipazh': forms.Select(attrs={'class': 'form-control'}),
             'urik': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'prochee': forms.Textarea(attrs={'class': 'form-control'}),
         }
 
 

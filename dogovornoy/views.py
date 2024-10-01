@@ -14605,30 +14605,31 @@ bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 
 # Обработчик inline-кнопок
 def button_handler(update, context):
+    print("Обработчик кнопок сработал")  # Вывод в консоль
     query = update.callback_query
     task_id = query.data.split('_')[-1]  # Получаем task_id из callback_data
+    print(f"Получен task_id: {task_id}")  # Проверяем, что task_id получен
 
     try:
         task = TechnicalTask.objects.get(pk=task_id)
+        print(f"Заявка найдена: {task}")  # Убедись, что заявка найдена
 
         # Получаем зоны клиента по заявке
         zones = get_zones_from_third_db(task.client_object_id)
+        print(f"Найденные зоны: {zones}")  # Проверяем, что зоны найдены
 
         # Формируем сообщение с зонами
         if zones.exists():
             message = "Зоны клиента:\n"
             for zone in zones:
                 message += f"Раздел: {zone.sectionid.sectionname}, Зона: {zone.zonenumber} - {zone.info}\n"
-                message += f"\n"
         else:
             message = "Зоны не найдены."
-
-        # Отправляем сообщение с зонами
         query.edit_message_text(text=message)
 
     except Exception as e:
         print(f"Ошибка при обработке запроса: {e}")
-        query.edit_message_text(text="Произошла ошибка при получении зон.")
+        query.edit_message_text(text=f"Произошла ошибка при получении зон: {e}")
 
 
 # Функция для отправки сообщения с кнопками
@@ -14666,22 +14667,14 @@ def send_telegram_message(technician, task):
 @csrf_exempt
 def telegram_webhook(request):
     try:
-        # Чтение тела запроса и преобразование его в словарь
         data = json.loads(request.body.decode('utf-8'))
+        print(f"Получены данные от Telegram: {data}")  # Отладка данных запроса
 
-        # Создаём объект update из словаря данных
         update = Update.de_json(data, bot)
-
-        # Создаём диспетчер для обработки запросов
         dispatcher = Dispatcher(bot, None, workers=0)
+        dispatcher.add_handler(CallbackQueryHandler(button_handler))
 
-        # Добавляем обработчик для inline-кнопок
-        dispatcher.add_handler(CallbackQueryHandler(button_handler, pattern='^select_task_'))
-        dispatcher.add_handler(CallbackQueryHandler(module_button_handler, pattern='^module_task_'))
-
-        # Обрабатываем обновление
         dispatcher.process_update(update)
-
         return JsonResponse({'status': 'ok'})
     except Exception as e:
         print(f"Ошибка в webhook: {e}")
@@ -14723,40 +14716,33 @@ def module_button_handler(update, context):
         query.edit_message_text(text="Произошла ошибка при получении данных.")
 
 
-import pyodbc
-
 def execute_stored_procedure(module_number):
-    result = []
     try:
-        # Устанавливаем соединение с использованием ODBC Driver 17 for SQL Server
-        conn = pyodbc.connect(
-            'DRIVER={ODBC Driver 17 for SQL Server};'
-            'SERVER=192.168.1.101;'
-            'DATABASE=GBASE;'
-            'UID=vlad_asukts;'
-            'PWD=KtsPCN@2024!$_Lol;'
-            'PORT=1433'
-        )
-        cursor = conn.cursor()
+        # Открываем соединение с базой данных 'third_db'
+        with connections['third_db'].cursor() as cursor:
+            # Определяем переменные
+            date_now = timezone.now() - timezone.timedelta(hours=1)  # Дата от текущего времени минус 1 час
+            date_minus_3_days = date_now - timezone.timedelta(days=3)
 
-        # Выполняем хранимую процедуру напрямую
-        cursor.execute("""
-            SET NOCOUNT ON;
-            DECLARE @D datetime;
-            DECLARE @I int;
-            DECLARE @M int;
-            SET @D = '2024-09-17 00:00:00';  -- Укажите точную дату
-            SET @M = 8299;
-            SET @I = 0;
-            EXECUTE [sp_GSM2MSG_MODUL] @D, @I, @M;
-        """)
+            # Отладочная информация
+            print(f"Выполнение хранимой процедуры с параметрами: дата - {date_minus_3_days}, модуль - {module_number}")
 
-        # Получаем результаты
-        while cursor.nextset():
+            # Выполняем хранимую процедуру
+            cursor.execute("""
+                DECLARE @D datetime;
+                DECLARE @I int;
+                DECLARE @M int;
+                SET @D = %s;
+                SET @M = %s;
+                SET @I = 0;
+                EXECUTE [sp_GSM2MSG_MODUL] @D, @I, @M;
+            """, [date_minus_3_days, module_number])
+
+            # Получаем результаты
             result = cursor.fetchall()
-            print(f"Результаты: {result}")
-        return result
-
+            print(f"Результат выполнения процедуры для модуля {module_number}: {result}")
+            print(f"Дата {date_minus_3_days}:")
+            return result
     except Exception as e:
         print(f"Ошибка при выполнении хранимой процедуры: {e}")
         return None

@@ -192,5 +192,13 @@ class TaskFormDog(forms.ModelForm):
 
 
 
+class TechnicalTaskFilterForm(forms.Form):
+    client_object_id = forms.CharField(required=False, label='ID клиента')
+    technician = forms.ModelChoiceField(queryset=User.objects.filter(userprofile__department="Техник"), required=False, label='Техник')
+    start_date = forms.DateField(widget=forms.TextInput(attrs={'type': 'date'}), required=False, label='Дата от')
+    end_date = forms.DateField(widget=forms.TextInput(attrs={'type': 'date'}), required=False, label='Дата до')
+
+
+
 
 

@@ -2271,7 +2271,7 @@ def akm_download_fiz(request):
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'D{row_num + 3}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'J{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Исполнитель: бухгалтер'
@@ -2500,7 +2500,7 @@ def akm_download_ur(request):
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'D{row_num + 3}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'I{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Исполнитель: бухгалтер'
@@ -2707,6 +2707,11 @@ def rmg_download_fiz(request):
     rmg_fiz_count = partners_object.objects.filter(company_name_id=4, urik=False).aggregate(Count('id'))
     rmg_fiz_count = rmg_fiz_count['id__count']
 
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=4, urik=False).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
+
     reports = []
     summ_telemetria = 0
     summ_rent_gsm = 0
@@ -2823,6 +2828,9 @@ def rmg_download_fiz(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -2851,6 +2859,11 @@ def rmg_download_fiz(request):
     template_path = os.path.join(settings.MEDIA_ROOT, 'rmg_download_fiz.xlsx')
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
+
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{8}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 11
@@ -2891,7 +2904,7 @@ def rmg_download_fiz(request):
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'D{row_num + 3}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'E{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'E{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Сверку проверили:'
@@ -2930,6 +2943,11 @@ def rmg_download_ur(request):
     partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=True)
     rmg_fiz_count = partners_object.objects.filter(company_name_id=4, urik=True).aggregate(Count('id'))
     rmg_fiz_count = rmg_fiz_count['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=4, urik=True).exclude(date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
     summ_telemetria = 0
@@ -3047,6 +3065,9 @@ def rmg_download_ur(request):
         itog_summ_mounth += summ_mounth
 
         reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
             'kts_instance': kts_instance,
             'tarif_nabludenia': tarif_nabludenia,
             'num_days': num_days,
@@ -3076,8 +3097,14 @@ def rmg_download_ur(request):
     wb = openpyxl.load_workbook(template_path)
     ws = wb.active
 
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[
+            f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
     # Start filling in the data from row 2 (assuming row 1 is the header)
-    row_num = 6
+    row_num = 10
     for report in reports:
         ws[f'A{row_num}'] = report['kts_instance'].object_number
         ws[f'B{row_num}'] = report['kts_instance'].gsm_number
@@ -3115,10 +3142,10 @@ def rmg_download_ur(request):
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'B{row_num + 3}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'E{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'E{row_num + 4}'] = '(В том числе НДС 12%)'
-    ws[f'D{row_num + 5}'] = 'Сверку проверили:'
+    ws[f'C{row_num + 5}'] = 'Сверку проверили:'
     ws[f'C{row_num + 6}'] = 'ТОО "Кузет-Сенiм"'
     ws[f'E{row_num + 6}'] = '___________________/'
     ws[f'G{row_num + 6}'] = 'Пак И.C.'
@@ -3558,7 +3585,7 @@ def kazkuzet_download_fiz(request):
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'D{row_num + 3}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'I{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Исполнитель: бухгалтер'
@@ -3804,7 +3831,7 @@ def kazkuzet_download_ur(request):
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'D{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'D{row_num + 3}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'I{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'D{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'D{row_num + 5}'] = 'Исполнитель: бухгалтер'
@@ -14601,35 +14628,81 @@ def get_card_from_asuekc(card_id):
     except Cards.DoesNotExist:
         return None
 
+
 bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 
-# Обработчик inline-кнопок
+
 def button_handler(update, context):
-    print("Обработчик кнопок сработал")  # Вывод в консоль
     query = update.callback_query
-    task_id = query.data.split('_')[-1]  # Получаем task_id из callback_data
-    print(f"Получен task_id: {task_id}")  # Проверяем, что task_id получен
+    data = query.data.split('_')  # Разделяем callback_data
+
+    if len(data) < 2:
+        query.edit_message_text(text="Ошибка: Некорректные данные.")
+        return
+
+    action = data[0]
+    task_id = data[-1]  # Получаем task_id
 
     try:
         task = TechnicalTask.objects.get(pk=task_id)
-        print(f"Заявка найдена: {task}")  # Убедись, что заявка найдена
 
-        # Получаем зоны клиента по заявке
-        zones = get_zones_from_third_db(task.client_object_id)
-        print(f"Найденные зоны: {zones}")  # Проверяем, что зоны найдены
+        if action == "select":
+            # Получаем зоны клиента по заявке
+            zones = get_zones_from_third_db(task.client_object_id)
 
-        # Формируем сообщение с зонами
-        if zones.exists():
-            message = "Зоны клиента:\n"
-            for zone in zones:
-                message += f"Раздел: {zone.sectionid.sectionname}, Зона: {zone.zonenumber} - {zone.info}\n"
-        else:
-            message = "Зоны не найдены."
-        query.edit_message_text(text=message)
+            # Формируем сообщение с зонами
+            if zones.exists():
+                message = "Зоны клиента:\n"
+                for zone in zones:
+                    message += f"Раздел: {zone.sectionid.sectionname}, Зона: {zone.zonenumber} - {zone.info}\n"
+            else:
+                message = "Зоны не найдены."
+
+            # Добавляем кнопки для "Показать заявку" и "Вывести тревоги"
+            keyboard = [
+                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
+                [InlineKeyboardButton(text="Вывести тревоги", callback_data=f"task_module_{task_id}")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            query.edit_message_text(text=message, reply_markup=reply_markup)
+
+        elif action == "task" and data[1] == "show":
+            # Вызываем функцию для повторной отправки заявки в Telegram
+            send_telegram_message(task.technician, task)
+
+            # После отправки сообщения можно обновить inline-кнопки для возврата к зонам и тревогам
+            keyboard = [
+                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                [InlineKeyboardButton(text="Вывести тревоги", callback_data=f"task_module_{task_id}")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            query.edit_message_text(text="Заявка была повторно отправлена.", reply_markup=reply_markup)
+
+        elif action == "task" and data[1] == "module":
+            # Логика для отображения тревог
+            alarms = execute_stored_procedure(task.client_object_id)
+
+            if alarms:
+                message = "Тревоги клиента:\n"
+                for alarm in alarms:
+                    message += f"{alarm}\n"
+            else:
+                message = "Тревоги не найдены."
+
+            # Добавляем кнопки для возврата
+            keyboard = [
+                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
+                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+
+            query.edit_message_text(text=message, reply_markup=reply_markup)
 
     except Exception as e:
         print(f"Ошибка при обработке запроса: {e}")
-        query.edit_message_text(text=f"Произошла ошибка при получении зон: {e}")
+        query.edit_message_text(text=f"Произошла ошибка при получении данных: {e}")
 
 
 # Функция для отправки сообщения с кнопками
@@ -14760,7 +14833,61 @@ def TaskReasonsAPIView(request):
     return JsonResponse(data, safe=False)
 
 
+class TechnicalTaskListView(ListView):
+    model = TechnicalTask
+    template_name = 'dogovornoy/technical_task_list.html'
+    context_object_name = 'tasks'
+    paginate_by = 25
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        form = self.get_filter_form()
+
+        # Фильтр по ID клиента
+        client_object_id = form.cleaned_data.get('client_object_id')
+        if client_object_id:
+            queryset = queryset.filter(client_object_id=client_object_id)
+
+        # Фильтр по технику
+        technician = form.cleaned_data.get('technician')
+        if technician:
+            queryset = queryset.filter(technician=technician)
+
+        # Фильтр по диапазону дат
+        start_date = form.cleaned_data.get('start_date')
+        end_date = form.cleaned_data.get('end_date')
+        if start_date and end_date:
+            queryset = queryset.filter(sent_time__range=[start_date, end_date])
+
+        return queryset
+
+    def get_filter_form(self):
+        form = TechnicalTaskFilterForm(self.request.GET)
+        if form.is_valid():
+            return form
+        return TechnicalTaskFilterForm()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        queryset = self.get_queryset()
+        paginator = Paginator(queryset, self.paginate_by)
+
+        # Получение номера страницы
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        # Копируем параметры запроса для использования в пагинации
+        params = self.request.GET.copy()
+        if 'page' in params:
+            del params['page']
+        pagination_url = self.request.path + '?' + urlencode(params)
+
+        # Добавляем объекты пагинации в контекст
+        context['tasks'] = page_obj
+        context['pagination_url'] = pagination_url
+        context['filter_form'] = self.get_filter_form()
+        return context
 
 
 

@@ -160,5 +160,6 @@ urlpatterns = [
     path('api_technicians/', TechniciansAPIView, name='api_technicians'),
     path('api_task_reasons/', TaskReasonsAPIView, name='api_task_reasons'),
     path('telegram_webhook/', telegram_webhook, name='telegram_webhook'),
+    path('technical_task_list/', TechnicalTaskListView.as_view(), name='technical_task_list'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

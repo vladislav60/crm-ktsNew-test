@@ -1,0 +1,114 @@
+{% extends 'dogovornoy/base.html' %}
+
+{% block content %}
+<h1>Все технические задачи</h1>
+
+<div class="col-lg-8">
+    <div class="card">
+        <div class="card-body">
+    <!-- Форма поиска и фильтров -->
+<form method="get" class="form-inline mb-3">
+    <div class="form-group">
+        <label for="id_client_object_id">ID клиента</label>
+        {{ filter_form.client_object_id }}
+    </div>
+    <p></p>
+    <div class="form-group">
+        <label for="id_technician">Техник</label>
+        {{ filter_form.technician }}
+    </div>
+    <p></p>
+    <div class="form-group">
+        <label for="id_start_date">Дата от</label>
+        {{ filter_form.start_date }}
+    </div>
+    <div class="form-group">
+        <label for="id_end_date">Дата до</label>
+        {{ filter_form.end_date }}
+    </div>
+    <p></p>
+    <button type="submit" class="btn btn-primary">Применить фильтр</button>
+</form>
+        </div>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Техник</th>
+            <th>Отправитель</th>
+            <th>Клиент</th>
+            <th>Причина</th>
+            <th>Дата отправки</th>
+            <th>Статус</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for task in tasks %}
+        <tr>
+            <td>{{ task.id }}</td>
+            <td>{{ task.technician.username }}</td>
+            <td>{{ task.sender.username }}</td>
+            <td>{{ task.client_object_id }}</td>
+            <td>{{ task.reason }}</td>
+            <td>{{ task.sent_time }}</td>
+            <td>
+                {% if task.completion_time %}
+                    Завершено
+                {% else %}
+                    В процессе
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div>
+
+        <!-- Pagination with icons -->
+                <ul class="pagination ml">
+                    {% if tasks.has_previous %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ pagination_url }}&page={{ tasks.previous_page_number }}" aria-label="Previous">
+                          <span aria-hidden="true">&laquo;</span>
+                        </a>
+
+                      </li>
+                    {% endif %}
+
+                    {% if tasks.paginator.num_pages > 1 %}
+                        {% if tasks.number > 3 %}
+                            <li class="page-item active"><a class="page-link" href="?page=1">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">...</a></li>
+                        {% endif %}
+
+                        {% for page_num in tasks.paginator.page_range %}
+                            {% if page_num > tasks.number|add:'-9' and page_num < tasks.number|add:'9' %}
+                                {% if page_num == tasks.number %}
+                                    <li class="page-item active"><a class="page-link" >{{ page_num }}</a></li>
+                                {% else %}
+                                    <li class="page-item"><a class="page-link" href="{{ pagination_url }}&page={{ page_num }}">{{ page_num }}</a></li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if tasks.number < tasks.paginator.num_pages|add:'-9' %}
+                            <li class="page-item"><a class="page-link" href="#">...</a></li>
+                            <li class="page-item active"><a class="page-link" href="{{ pagination_url }}&page={{ tasks.paginator.num_pages }}">{{ tasks.paginator.num_pages }}</a></li>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if tasks.has_next %}
+                      <li class="page-item">
+                        <a class="page-link" href="{{ pagination_url }}&page={{ tasks.next_page_number }}" aria-label="Next">
+                          <span aria-hidden="true">&raquo;</span>
+                        </a>
+                      </li>
+                    {% endif %}
+                </ul>
+              </nav><!-- End Pagination with icons -->
+        </div>
+{% endblock %}

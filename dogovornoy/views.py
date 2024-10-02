@@ -14891,6 +14891,46 @@ class TechnicalTaskListView(ListView):
 
 
 
+from django.db.models import CharField, F, ExpressionWrapper, Value
+
+class DisconnectedObjectsView(ListView):
+    template_name = 'dogovornoy/disconnected_objects.html'
+    context_object_name = 'disconnected_objects'
+    paginate_by = 100  # Настройка пагинации
+
+    def get_queryset(self):
+        now = timezone.now()
+        first_day_of_prev_month = (now.replace(day=1) - timedelta(days=1)).replace(day=1)
+        last_day_of_prev_month = now.replace(day=1) - timedelta(days=1)
+
+        # Отключенные объекты ваших клиентов
+        client_disconnected = kts.objects.filter(
+            date_otklulchenia__gte=first_day_of_prev_month,
+            date_otklulchenia__lte=last_day_of_prev_month
+        ).annotate(client_type=ExpressionWrapper(Value('Наш клиент'), output_field=CharField()))
+
+        # Отключенные объекты клиентов партнеров
+        partner_disconnected = partners_object.objects.filter(
+            date_otkluchenia__gte=first_day_of_prev_month,
+            date_otkluchenia__lte=last_day_of_prev_month
+        ).annotate(client_type=ExpressionWrapper(Value('Клиент партнера'), output_field=CharField()))
+
+        # Объединяем результаты в один список
+        disconnected_objects = list(client_disconnected) + list(partner_disconnected)
+
+        return disconnected_objects
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        paginator = self.get_paginator(self.get_queryset(), self.paginate_by)
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context['disconnected_objects'] = page_obj
+        return context
+
+
+
 
 
 

@@ -195,7 +195,7 @@ class partners_rekvizity(models.Model):
 
 
 class Task(models.Model):
-    client = models.ForeignKey('kts', on_delete=models.CASCADE, verbose_name="id клиента из ктс")
+    client = models.ForeignKey('kts', on_delete=models.CASCADE, verbose_name="id клиента из ктс", blank=True)
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Отправить сотруднику")  # Using Django's default user model
     description = models.TextField(verbose_name="Примечание")
     created_at = models.DateTimeField(auto_now_add=True)

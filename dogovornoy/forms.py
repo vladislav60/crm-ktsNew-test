@@ -151,24 +151,14 @@ class AdditionalServiceForm(forms.ModelForm):
 class TaskForm(forms.ModelForm):
     class Meta:
         model = Task
-        fields = ['client', 'assigned_to', 'description']
+        fields = ['assigned_to', 'description']
         labels = {
             'client': 'Номер объекта клиента',
         }
         widgets = {
-            'client': forms.Select(attrs={'data-placeholder': 'Выберите клиента', 'class': 'form-control'}),
             'assigned_to': forms.Select(attrs={'data-placeholder': 'Выберите сотрудника', 'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control'}),
         }
-
-    def __init__(self, *args, **kwargs):
-        super(TaskForm, self).__init__(*args, **kwargs)
-        self.fields['client'].queryset = kts.objects.all()
-        self.fields['client'].label_from_instance = self.label_from_instance
-
-    def label_from_instance(self, obj):
-        # Форматируем вывод для списка клиентов
-        return f"{obj.object_number} - {obj.dogovor_number} - {obj.klient_name} - {obj.name_object}"
 
 
 class TaskFormDog(forms.ModelForm):

@@ -1632,7 +1632,7 @@ def reports_partners_download_urik(request):
     ws[f'D{row_num+8}'] = report['summ_kts']
     ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
     ws[f'F{row_num+6}'] = report['partners_kolvo_object']
-    ws[f'C{row_num+10}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num+10}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'J{row_num+10}'] = report['summ_all_company']
     ws[f'C{row_num+11}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num+12}'] = 'Исполнитель: бухгалтер'
@@ -1852,7 +1852,7 @@ def sgs_plus_download_fiz(request):
     ws[f'F{row_num+4}'] = report['summ_kts']
     ws[f'C{row_num+5}'] = 'ТОО "КузетСенiм"'
     ws[f'G{row_num+3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num+7}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num+7}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'H{row_num+7}'] = report['summ_all_company']
     ws[f'C{row_num+8}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num+9}'] = 'Исполнитель: бухгалтер'
@@ -4267,7 +4267,7 @@ def sgs_download_fiz(request):
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'B{row_num + 5}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'B{row_num + 5}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'F{row_num + 5}'] = report['itog_summ_mounth']
     ws[f'B{row_num + 6}'] = '(В том числе НДС 12%)'
     ws[f'B{row_num + 7}'] = 'Бухглалтер ТОО "System of Global Safety" '
@@ -4517,7 +4517,7 @@ def sgs_download_ur(request):
     # ws[f'D{row_num+9}'] = report['summ_senim']
     # ws[f'D{row_num+8}'] = report['summ_kts']
     # ws[f'C{row_num+9}'] = 'ТОО "КузетСенiм"'
-    ws[f'B{row_num + 5}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'B{row_num + 5}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'F{row_num + 5}'] = report['itog_summ_mounth']
     ws[f'B{row_num + 6}'] = '(В том числе НДС 12%)'
     ws[f'B{row_num + 7}'] = 'Бухглалтер ТОО "System of Global Safety" '
@@ -4943,7 +4943,7 @@ def ipkim_download_fiz(request):
     ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -5166,7 +5166,7 @@ def ipkim_download_ur(request):
     ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['sgs']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -5603,7 +5603,7 @@ def kuzets_download_fiz(request):
     ws[f'D{row_num + 8}'] = report['summ_senim']
     ws[f'C{row_num + 9}'] = 'ТОО "КузетТехноСервис"'
     ws[f'D{row_num + 9}'] = report['summ_kts']
-    ws[f'C{row_num + 10}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 10}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 10}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 11}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 12}'] = 'Исполнитель: бухгалтер'
@@ -5855,7 +5855,7 @@ def kuzets_download_ur(request):
     ws[f'D{row_num + 8}'] = report['summ_senim']
     ws[f'C{row_num + 9}'] = 'ТОО "КузетТехноСервис"'
     ws[f'D{row_num + 9}'] = report['summ_kts']
-    ws[f'C{row_num + 10}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 10}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 10}'] = report['summ_all_company']
     ws[f'C{row_num + 11}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 12}'] = 'Исполнитель: бухгалтер'
@@ -6286,7 +6286,7 @@ def samohvalov_download_fiz(request):
     ws[f'M{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = 'Итого охраняется:'
     ws[f'E{row_num + 5}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 6}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 6}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'E{row_num + 6}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 7}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 8}'] = 'Исполнитель: бухгалтер'
@@ -6531,7 +6531,7 @@ def samohvalov_download_ur(request):
     ws[f'M{row_num+2}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = 'Итого охраняется:'
     ws[f'D{row_num + 5}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 6}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 6}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'E{row_num + 6}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 7}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 8}'] = 'Исполнитель: бухгалтер'
@@ -6957,7 +6957,7 @@ def sobsecutity_download_fiz(request):
     ws[f'N{row_num}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 2}'] = 'Итого охраняется:'
     ws[f'D{row_num + 2}'] = report['sgs']
-    ws[f'C{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 3}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 5}'] = 'Исполнитель: бухгалтер'
@@ -7193,7 +7193,7 @@ def sobsecutity_download_ur(request):
     ws[f'Q{row_num}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['sgs']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -7620,7 +7620,7 @@ def egida_download_fiz(request):
     ws[f'L{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -7857,7 +7857,7 @@ def egida_download_ur(request):
     ws[f'L{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -8294,7 +8294,7 @@ def eyewatch_download_fiz(request):
     ws[f'Q{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['sgs']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -8534,7 +8534,7 @@ def eyewatch_download_ur(request):
     ws[f'Q{row_num}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -8968,7 +8968,7 @@ def iviscom_download_fiz(request):
     ws[f'N{row_num + 1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -9211,7 +9211,7 @@ def iviscom_download_ur(request):
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -9645,7 +9645,7 @@ def eurasian_download_fiz(request):
     ws[f'Q{row_num + 1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -9887,7 +9887,7 @@ def eurasian_download_ur(request):
     ws[f'Q{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -10309,7 +10309,7 @@ def bmkz_download_fiz(request):
     # ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     # ws[f'D{row_num + 3}'] = report['sgs']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     # ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -10547,7 +10547,7 @@ def bmkz_download_ur(request):
     ws[f'Q{row_num}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 2}'] = 'Итого охраняется:'
     ws[f'D{row_num + 2}'] = report['sgs']
-    ws[f'C{row_num + 3}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 3}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 3}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 4}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 5}'] = 'Исполнитель: бухгалтер'
@@ -10986,7 +10986,7 @@ def monolit_download_fiz(request):
     ws[f'N{row_num + 1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -11225,7 +11225,7 @@ def monolit_download_ur(request):
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -12261,7 +12261,7 @@ def techmart_download_fiz(request):
     ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -12501,7 +12501,7 @@ def techmart_download_ur(request):
     ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -12939,7 +12939,7 @@ def twojoy_download_fiz(request):
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -13180,7 +13180,7 @@ def twojoy_download_ur(request):
     ws[f'N{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -13611,7 +13611,7 @@ def medin_download_fiz(request):
     ws[f'K{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -13848,7 +13848,7 @@ def medin_download_ur(request):
     ws[f'K{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -14280,7 +14280,7 @@ def zhakitov_download_fiz(request):
     ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -14520,7 +14520,7 @@ def zhakitov_download_ur(request):
     ws[f'O{row_num+1}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 3}'] = 'Итого охраняется:'
     ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
-    ws[f'C{row_num + 4}'] = 'Итого к оплате за май 2024г..:'
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
     ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
     ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
     ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
@@ -14541,7 +14541,6 @@ class CreateTaskView(CreateView):
     model = Task
     form_class = TaskForm
     clients = kts.objects.all()
-    # print(clients)
     template_name = 'dogovornoy/create_task.html'
     success_url = reverse_lazy('task_list')
 

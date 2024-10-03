@@ -14931,6 +14931,113 @@ class DisconnectedObjectsView(ListView):
 
 
 
+def export_disconnected_objects(request):
+    # Получаем текущий месяц
+    now_time = timezone.now()
+    first_day_of_prev_month = (now_time.replace(day=1) - timedelta(days=1)).replace(day=1)
+    last_day_of_prev_month = now_time.replace(day=1) - timedelta(days=1)
+
+    # Отключенные объекты ваших клиентов
+    client_disconnected = kts.objects.filter(
+        date_otklulchenia__gte=first_day_of_prev_month,
+        date_otklulchenia__lte=last_day_of_prev_month
+    ).annotate(client_type=Value('Наш клиент', output_field=CharField()))
+
+    # Отключенные объекты клиентов партнеров
+    partner_disconnected = partners_object.objects.filter(
+        date_otkluchenia__gte=first_day_of_prev_month,
+        date_otkluchenia__lte=last_day_of_prev_month
+    ).annotate(client_type=Value('Клиент партнера', output_field=CharField()))
+
+    # Объединяем результаты
+    disconnected_objects = list(client_disconnected)
+
+    # Создаем Excel файл
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Отключенные объекты'
+
+    # Заголовки для столбцов
+    headers = ['Компания', 'Номер договора', 'Номер объекта', 'Наименование клиента', 'Адрес', 'Дата подключения', 'Дата отключения', 'База']
+    ws.append(headers)
+
+
+    # Заполнение данными
+    for obj in disconnected_objects:
+        # Проверяем, является ли поле объектом модели и преобразуем его в строку
+        company_name = str(obj.company_name) if obj.company_name else ''
+        dogovor_number = str(getattr(obj, 'dogovor_number', ''))
+        object_number = str(obj.object_number) if obj.object_number else ''
+        klient_name = str(getattr(obj, 'klient_name', obj.name_object)) if obj.name_object else ''
+        adres = str(obj.adres) if obj.adres else ''
+        date_podkluchenia = str(obj.date_podkluchenia) if obj.date_podkluchenia else ''
+        date_otkluchenia_str = str(obj.date_otklulchenia)
+        client_type = str(obj.client_type) if obj.client_type else ''
+
+        row = [company_name, dogovor_number, object_number, klient_name, adres, date_podkluchenia, date_otkluchenia_str,
+               client_type]
+        ws.append(row)
+
+    # Генерация ответа для скачивания файла
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=disconnected_objects.xlsx'
+    wb.save(response)
+
+    return response
+
+
+
+def export_disconnected_objects_partners(request):
+    # Получаем текущий месяц
+    now_time = timezone.now()
+    first_day_of_prev_month = (now_time.replace(day=1) - timedelta(days=1)).replace(day=1)
+    last_day_of_prev_month = now_time.replace(day=1) - timedelta(days=1)
+
+    # Отключенные объекты ваших клиентов
+    client_disconnected = kts.objects.filter(
+        date_otklulchenia__gte=first_day_of_prev_month,
+        date_otklulchenia__lte=last_day_of_prev_month
+    ).annotate(client_type=Value('Наш клиент', output_field=CharField()))
+
+    # Отключенные объекты клиентов партнеров
+    partner_disconnected = partners_object.objects.filter(
+        date_otkluchenia__gte=first_day_of_prev_month,
+        date_otkluchenia__lte=last_day_of_prev_month
+    ).annotate(client_type=Value('Клиент партнера', output_field=CharField()))
+
+    # Создаем Excel файл
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Отключенные объекты'
+
+    # Заголовки для столбцов
+    headers = ['Компания', 'Номер объекта', 'Наименование клиента', 'Адрес', 'Дата подключения', 'Дата отключения', 'База']
+    ws.append(headers)
+
+
+    # Заполнение данными
+    for obj in partner_disconnected:
+        company_name = str(obj.company_name) if obj.company_name else ''
+        object_number = str(obj.object_number) if obj.object_number else ''
+        klient_name = str(getattr(obj, 'klient_name', obj.name_object)) if obj.name_object else ''
+        adres = str(obj.adres) if obj.adres else ''
+        date_podkluchenia = str(obj.date_podkluchenia) if obj.date_podkluchenia else ''
+        date_otkluchenia_str = str(obj.date_otkluchenia)
+        client_type = str(obj.client_type) if obj.client_type else ''
+
+        row = [company_name, object_number, klient_name, adres, date_podkluchenia, date_otkluchenia_str,
+               client_type]
+        ws.append(row)
+
+    # Генерация ответа для скачивания файла
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=disconnected_objects_partners.xlsx'
+    wb.save(response)
+
+    return response
+
+
+
 
 
 

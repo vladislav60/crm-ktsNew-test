@@ -3,17 +3,25 @@
 {% block content %}
 <h1>Отключенные объекты за прошлый месяц</h1>
 
+    <div class="mb-3">
+        <a href="{% url 'export_disconnected_objects' %}" class="btn btn-primary">Экспорт в Excel наши объекты</a>
+    </div>
+
+    <div class="mb-3">
+        <a href="{% url 'export_disconnected_objects_partners' %}" class="btn btn-primary">Экспорт в Excel объекты партнеров</a>
+    </div>
+
 <table class="table table-striped">
     <thead>
         <tr>
             <th>Компания</th>
-            <th>Номер объекта</th>
             <th>Номер договора</th>
+            <th>Номер объекта</th>
             <th>Наименование клиента</th>
             <th>Адрес</th>
             <th>Дата подключения</th>
             <th>Дата отключения</th>
-            <th>Тип клиента</th>
+            <th>База</th>
         </tr>
     </thead>
     <tbody>
@@ -22,7 +30,12 @@
             <td>{{ obj.company_name }}</td>
             <td>{{ obj.dogovor_number }}</td>
             <td>{{ obj.object_number }}</td>
-            <td>{{ obj.name_object }}</td>
+            {% if obj.klient_name %}
+            <td>{{ obj.klient_name }}</td>
+                {% else %}
+                <td>{{ obj.name_object }}</td>
+            {% endif %}
+
             <td>{{ obj.adres }}</td>
             <td>{{ obj.date_podkluchenia }}</td>
             {% if obj.date_otkluchenia %}

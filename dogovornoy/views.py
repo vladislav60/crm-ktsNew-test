@@ -14957,7 +14957,7 @@ def export_disconnected_objects(request):
     ws.title = 'Отключенные объекты'
 
     # Заголовки для столбцов
-    headers = ['Компания', 'Номер договора', 'Номер объекта', 'Наименование клиента', 'Адрес', 'Дата подключения', 'Дата отключения', 'База']
+    headers = ['Компания', 'Номер договора', 'Номер объекта', 'Наименование клиента', 'Адрес', 'Дата подключения', 'Дата отключения', 'Примечание','База']
     ws.append(headers)
 
 
@@ -14971,10 +14971,11 @@ def export_disconnected_objects(request):
         adres = str(obj.adres) if obj.adres else ''
         date_podkluchenia = str(obj.date_podkluchenia) if obj.date_podkluchenia else ''
         date_otkluchenia_str = str(obj.date_otklulchenia)
+        primechanie = str(obj.primechanie) if obj.primechanie else '-'
         client_type = str(obj.client_type) if obj.client_type else ''
 
         row = [company_name, dogovor_number, object_number, klient_name, adres, date_podkluchenia, date_otkluchenia_str,
-               client_type]
+               primechanie, client_type]
         ws.append(row)
 
     # Генерация ответа для скачивания файла
@@ -15010,7 +15011,7 @@ def export_disconnected_objects_partners(request):
     ws.title = 'Отключенные объекты'
 
     # Заголовки для столбцов
-    headers = ['Компания', 'Номер объекта', 'Наименование клиента', 'Адрес', 'Дата подключения', 'Дата отключения', 'База']
+    headers = ['Компания', 'Номер объекта', 'Наименование клиента', 'Адрес', 'Дата подключения', 'Дата отключения', 'Примечание','База']
     ws.append(headers)
 
 
@@ -15022,10 +15023,11 @@ def export_disconnected_objects_partners(request):
         adres = str(obj.adres) if obj.adres else ''
         date_podkluchenia = str(obj.date_podkluchenia) if obj.date_podkluchenia else ''
         date_otkluchenia_str = str(obj.date_otkluchenia)
+        primechanie = str(obj.primechanie) if obj.primechanie else '-'
         client_type = str(obj.client_type) if obj.client_type else ''
 
         row = [company_name, object_number, klient_name, adres, date_podkluchenia, date_otkluchenia_str,
-               client_type]
+               primechanie, client_type]
         ws.append(row)
 
     # Генерация ответа для скачивания файла

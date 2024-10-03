@@ -21,6 +21,7 @@
             <th>Адрес</th>
             <th>Дата подключения</th>
             <th>Дата отключения</th>
+            <th>Примечание</th>
             <th>База</th>
         </tr>
     </thead>
@@ -43,6 +44,7 @@
                 {% else %}
                 <td>{{ obj.date_otklulchenia }}</td>
             {% endif %}
+            <td>{{ obj.primechanie }}</td>
             <td>{{ obj.client_type }}</td>
         </tr>
         {% endfor %}

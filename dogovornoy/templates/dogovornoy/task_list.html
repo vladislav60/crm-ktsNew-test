@@ -24,7 +24,7 @@
         <tr>
             <td>{{ task.description }}</td>
             <td style="font-weight: bold">{{ task.client.object_number }} -  {{ task.client.dogovor_number }} - {{ task.client.klient_name }} - {{ task.client.name_object }}</td>
-            <td>{{ task.assigned_to }}</td>
+            <td>{{ task.created_by }}</td>
             <td>{{ task.created_at }}</td>
             <td>
                 {% if task.completed_at %}

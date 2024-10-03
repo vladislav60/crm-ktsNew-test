@@ -163,12 +163,13 @@
                     <li class="message-item">
                         <a href="#">
                             {% if user_profile.avatar %}
-                            <img src="{{ user_profile.avatar.url }}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>
+{#                            <img src="{{ userprofile.avatar.url }}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>#}
+                                <img src="{% static 'dogovornoy/avatars/default_avatar.jpg' %}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>
                              {% else %}
                              <img src="{% static 'dogovornoy/avatars/default_avatar.jpg' %}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>
                         {% endif  %}
                             <div>
-                                <h4>{{ task.assigned_to.username }}</h4>
+                                <h4>{{ task.created_by.username }}</h4>
                                 <p><strong>Задача: </strong>{{ task.description }}</p>
                                 <p>{{ task.created_at }}</p>
                             </div>

@@ -14554,7 +14554,7 @@ class TaskListView(ListView):
     model = Task
     context_object_name = 'tasks'
     template_name = 'task_list.html'
-    paginate_by = 10  # Опционально, если нужна пагинация
+    paginate_by = 50  # Опционально, если нужна пагинация
 
     def get_queryset(self):
         # Используйте select_related для оптимизации загрузки связанных данных

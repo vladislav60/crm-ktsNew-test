@@ -195,13 +195,14 @@ class partners_rekvizity(models.Model):
 
 
 class Task(models.Model):
-    client = models.ForeignKey('kts', on_delete=models.CASCADE, verbose_name="id клиента из ктс", blank=True)
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Отправить сотруднику")  # Using Django's default user model
+    client = models.ForeignKey('kts', on_delete=models.CASCADE, verbose_name="id клиента из ктс", null=True, blank=True)
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Отправить сотруднику", related_name='assigned_tasks')
     description = models.TextField(verbose_name="Примечание")
     created_at = models.DateTimeField(auto_now_add=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     completion_note = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Создано пользователем", related_name='created_tasks')
 
     def __str__(self):
         return self.description

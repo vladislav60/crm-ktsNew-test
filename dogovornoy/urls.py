@@ -164,5 +164,6 @@ urlpatterns = [
     path('disconnected-objects/', DisconnectedObjectsView.as_view(), name='disconnected_objects'),
     path('disconnected-objects/export/', export_disconnected_objects, name='export_disconnected_objects'),
     path('export_disconnected_objects_partners/export/', export_disconnected_objects_partners, name='export_disconnected_objects_partners'),
+    path('archive_tasks/', ArchiveTaskListView.as_view(), name='archive_task_list'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

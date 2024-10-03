@@ -14545,7 +14545,7 @@ class CreateTaskView(CreateView):
     success_url = reverse_lazy('task_list')
 
     def form_valid(self, form):
-        # Здесь можно добавить дополнительную логику обработки данных формы, если это необходимо
+        form.instance.created_by = self.request.user
         return super().form_valid(form)
 
 
@@ -15036,6 +15036,22 @@ def export_disconnected_objects_partners(request):
     wb.save(response)
 
     return response
+
+
+
+class ArchiveTaskListView(ListView):
+    model = Task
+    template_name = 'dogovornoy/archive_task_list.html'  # Указываем шаблон для архива заявок
+    context_object_name = 'tasks'
+    paginate_by = 10  # Пагинация, если требуется
+
+    def get_queryset(self):
+        user_id = self.request.user.id
+        # Фильтруем завершенные заявки, связанные с пользователем
+        return Task.objects.filter(
+            Q(assigned_to_id=user_id) | Q(created_by_id=user_id),  # Фильтруем по id пользователя
+            completed_at__isnull=False  # Только завершенные заявки
+        ).order_by('-completed_at')
 
 
 

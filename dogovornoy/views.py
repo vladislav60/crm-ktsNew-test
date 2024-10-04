@@ -234,17 +234,14 @@ class AddClient(FormView):
 
 
 @method_decorator(login_required, name='dispatch')
-class AddClientPartner(FormView):
+class AddClientPartner(CreateView):
     template_name = 'dogovornoy/add_client_partner.html'
     form_class = AddKlientDogFormPartner
-    success_url = '/baza_partnerov/'
-
-    def form_valid(self, form):
-        form.save()
-        return super().form_valid(form)
+    success_url = reverse_lazy('baza_partnerov')
 
     def form_invalid(self, form):
-        return self.render_to_response(self.get_context_data(form=form, menu=menu, title='Новый клиент партнеров'))
+        return self.render_to_response(self.get_context_data(form=form))
+
 
 
 @login_required

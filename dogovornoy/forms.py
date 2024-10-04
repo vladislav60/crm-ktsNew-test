@@ -81,8 +81,8 @@ class AddKlientDogFormPartner(forms.ModelForm):
         model = partners_object
         fields = [
             'object_number', 'gsm_number', 'name_object', 'adres', 'type_object', 'vid_sign', 'hours_mounth',
-            'date_podkluchenia', 'date_otkluchenia', 'tariff_per_mounth', 'tehnical_services', 'rent_gsm', 'fire_alarm', 'telemetria',
-            'nabludenie', 'sms_uvedomlenie', 'kolvo_day', 'primechanie', 'ekipazh', 'urik', 'company_name', 'sms_number', 'prochee']
+            'date_podkluchenia', 'tariff_per_mounth', 'tehnical_services', 'rent_gsm', 'fire_alarm', 'telemetria',
+            'nabludenie', 'sms_uvedomlenie', 'sms_number', 'kolvo_day', 'primechanie', 'ekipazh', 'urik', 'company_name', 'date_otkluchenia', 'prochee']
         widgets = {
             'company_name': forms.Select(attrs={'class': 'form-control'}),
             'object_number': forms.TextInput(attrs={'class': 'form-control'}),
@@ -93,19 +93,19 @@ class AddKlientDogFormPartner(forms.ModelForm):
             'vid_sign': forms.Select(attrs={'class': 'form-select'}),
             'hours_mounth': forms.NumberInput(attrs={'class': 'form-control'}),
             'date_podkluchenia': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
-            'date_otkluchenia': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'tariff_per_mounth': forms.NumberInput(attrs={'class': 'form-control'}),
+            'sms_uvedomlenie': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'sms_number': forms.NumberInput(attrs={'class': 'form-control'}),
             'tehnical_services': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'rent_gsm': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'fire_alarm': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'telemetria': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'nabludenie': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'sms_uvedomlenie': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'kolvo_day': forms.NumberInput(attrs={'class': 'form-control'}),
             'primechanie': forms.Textarea(attrs={'class': 'form-control'}),
             'ekipazh': forms.Select(attrs={'class': 'form-control'}),
             'urik': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'date_otkluchenia': forms.DateInput(format='%Y-%m-%d', attrs={'class': 'form-control', 'type': 'date'}),
             'prochee': forms.Textarea(attrs={'class': 'form-control'}),
         }
 

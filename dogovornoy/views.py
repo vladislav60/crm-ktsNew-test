@@ -968,25 +968,19 @@ def reports(request):
     for company in companies:
         kts_company_name = kts.objects.filter(company_name_id=company.id).distinct()
 
-        kts_otkl = kts.objects.filter(
-            Q(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
-              date_otklulchenia__lte=end_of_month, exclude_from_report=False) |
-            Q(company_name_id=company.id, additional_services__date_unsubscribe__gte=start_of_month,
-              additional_services__date_unsubscribe__lte=end_of_month, exclude_from_report=False)
-        ).distinct()
+        kts_otkl = kts.objects.filter(company_name_id=company.id, date_otklulchenia__gte=start_of_month,
+              date_otklulchenia__lte=end_of_month, exclude_from_report=False).distinct()
 
-        kts_podkl = kts.objects.filter(
-            Q(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
-              date_podkluchenia__lte=end_of_month, exclude_from_report=False) |
-            Q(company_name_id=company.id, additional_services__date_added__gte=start_of_month,
-              additional_services__date_added__lte=end_of_month, exclude_from_report=False)
-        ).distinct()
+        kts_podkl = kts.objects.filter(company_name_id=company.id, date_podkluchenia__gte=start_of_month,
+              date_podkluchenia__lte=end_of_month, exclude_from_report=False).distinct()
 
         kts_izmenenie = kts.objects.filter(
             Q(company_name_id=company.id, date_izmenenia__gte=start_of_month,
               date_izmenenia__lte=end_of_month, exclude_from_report=False) |
             Q(company_name_id=company.id, additional_services__date_added__gte=start_of_month,
-              additional_services__date_added__lte=end_of_month, exclude_from_report=False)
+              additional_services__date_added__lte=end_of_month, exclude_from_report=False) |
+            Q(company_name_id=company.id, additional_services__date_unsubscribe__gte=start_of_month,
+              additional_services__date_unsubscribe__lte=end_of_month, exclude_from_report=False)
         ).distinct()
 
         kts_abon_summa_otkl = kts_otkl.aggregate(Sum('abon_plata'))
@@ -994,7 +988,7 @@ def reports(request):
         kts_fiz_otkl = kts_otkl.filter(urik=False).aggregate(Count('id'))
 
         kts_abon_summa_podkl = kts_podkl.aggregate(Sum('abon_plata'))
-        kts_count_podkl = kts_podkl.aggregate(Count('id'))
+        kts_count_podkl = kts_podkl.exclude(additional_services__date_added__lte=end_of_month).aggregate(Count('id'))
         kts_fiz_podkl = kts_podkl.filter(urik=False).aggregate(Count('id'))
 
         kts_abon_summa_izmenenia = kts_izmenenie.aggregate(Sum('abon_plata'))
@@ -1038,10 +1032,10 @@ def reports(request):
             if additional_services_cost:
                 if kts_instance.date_podkluchenia.month != start_of_month.month:
                     kts_instance.abon_plata = additional_services_cost
-                    kts_abon_summa_podkl['abon_plata__sum'] = (kts_abon_summa_podkl['abon_plata__sum'] or 0) + additional_services_cost
+                    kts_abon_summa_izmenenia['abon_plata__sum'] = (kts_abon_summa_izmenenia['abon_plata__sum'] or 0) + additional_services_cost
                 else:
                     kts_instance.abon_plata += additional_services_cost
-                    kts_abon_summa_podkl['abon_plata__sum'] = (kts_abon_summa_podkl['abon_plata__sum'] or 0) + additional_services_cost
+                    kts_abon_summa_izmenenia['abon_plata__sum'] = (kts_abon_summa_izmenenia['abon_plata__sum'] or 0) + additional_services_cost
 
 
         reports.append({

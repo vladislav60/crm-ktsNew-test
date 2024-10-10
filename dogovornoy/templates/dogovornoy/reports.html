@@ -215,7 +215,6 @@
                         <th scope="col">№ объекта</th>
                         <th scope="col">№ ЦМТ/GSM</th>
                         <th scope="col">Стоимость РПО</th>
-                        <th scope="col">Дата отключения</th>
                         <th scope="col">Дата изменения</th>
                         <th scope="col">Группа реагирования</th>
                         <th scope="col">Примечание</th>
@@ -243,11 +242,6 @@
                         <td>{{ kts.object_number }}</td>
                         <td>{{ kts.peredatchik_number }}</td>
                         <td>{{ kts.stoimost_rpo }}</td>
-                        {% if kts.date_otkluchenia %}
-                            <td>{{ kts.date_otklulchenia }}</td>
-                            {% else %}
-                            <td></td>
-                        {% endif %}
                         <td>{{ kts.date_izmenenia }}</td>
                         <td>{{ kts.gruppa_reagirovania }}</td>
                         <td>{{ kts.primechanie }}</td>
@@ -263,8 +257,8 @@
                         <td></td>
                         <td></td>
                         <td></td>
-                        <td>Итого</td>
-                        <td>{{ con.kts_abon_summa_izmenenia.abon_plata__sum }}</td>
+                        <td></td>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>

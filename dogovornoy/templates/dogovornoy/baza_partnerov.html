@@ -112,23 +112,34 @@
                             <i class="bi bi-folder-symlink-fill"></i>
                         </button>
                     </a></td>
-                    <td><a href="{% url 'update_client_partner' k.pk %}">
-                        <button type="button" class="btn btn-secondary">
-                            <i class="bi bi-pencil-fill"></i>
-                        </button>
-                    </a></td>
-                    <td><a href="{% url 'delete_client_partners' k.pk %}">
-                        <button type="button" class="btn btn-secondary">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
-                    </a></td>
+
+                    {% if user_profile.department == 'Договорной отдел' %}
+                        <td><a href="{% url 'update_client_partner' k.pk %}">
+                            <button type="button" class="btn btn-secondary">
+                                <i class="bi bi-pencil-fill"></i>
+                            </button>
+                        </a></td>
+                    {% endif %}
 
 
-                    <td>
-                        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#copyClientModal-{{ k.pk }}">
-                            <i class="bi bi-files"></i>
-                        </button>
-                    </td>
+                    {% if user_profile.department == 'Договорной отдел' %}
+                        <td><a href="{% url 'delete_client_partners' k.pk %}">
+                            <button type="button" class="btn btn-secondary">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </a></td>
+                    {% endif %}
+
+
+
+                    {% if user_profile.department == 'Договорной отдел' %}
+                        <td>
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#copyClientModal-{{ k.pk }}">
+                                <i class="bi bi-files"></i>
+                            </button>
+                        </td>
+                    {% endif %}
+
 
                     <!-- Модальное окно -->
                     <div class="modal fade" id="copyClientModal-{{ k.pk }}" tabindex="-1" aria-labelledby="copyClientModalLabel-{{ k.pk }}" aria-hidden="true">

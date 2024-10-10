@@ -4,4 +4,7 @@ from accounts.models import UserProfile
 from .models import *
 
 # Register your models here.
-admin.site.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):  # Изменил на ModelAdmin
+    list_display = ('user', 'department')  # Исправил дублирование department
+
+admin.site.register(UserProfile, UserProfileAdmin)

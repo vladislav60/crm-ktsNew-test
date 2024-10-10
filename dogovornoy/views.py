@@ -49,6 +49,7 @@ import openpyxl
 from openpyxl.utils import get_column_letter
 from .forms import *
 from .models import *
+from django.db.models import CharField, F, ExpressionWrapper, Value
 
 # from .utils import *
 
@@ -14905,9 +14906,6 @@ class TechnicalTaskListView(ListView):
         context['filter_form'] = self.get_filter_form()
         return context
 
-
-
-from django.db.models import CharField, F, ExpressionWrapper, Value
 
 class DisconnectedObjectsView(ListView):
     template_name = 'dogovornoy/disconnected_objects.html'

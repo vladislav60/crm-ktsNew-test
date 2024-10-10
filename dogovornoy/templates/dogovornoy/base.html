@@ -207,7 +207,7 @@
                              <img src="{% static 'dogovornoy/avatars/default_avatar.jpg' %}" alt="Profile" style="height: 80px;border-radius: 51%!important;" rounded-circle>
                         {% endif  %}
                         <h6>{{ user.username }}</h6>
-                        <span>Отдел</span>
+                        <span>{{ user_profile.department }}</span>
                     </li>
                     <li>
                         <hr class="dropdown-divider">
@@ -265,13 +265,17 @@
 
     <ul class="sidebar-nav" id="sidebar-nav">
 
+        {% if user_profile.department == 'Директор' or user_profile.department == 'Админ'%}
         <li class="nav-item">
             <a class="nav-link " href="{% url 'home' %}">
                 <i class="bi bi-grid"></i>
                 <span>Главная</span>
             </a>
         </li><!-- End Главная Nav -->
+        {% endif %}
 
+
+        {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' or user_profile.department == 'Директор' %}
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
                 <i class="bi bi-menu-button-wide"></i><span>Договорной</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -289,18 +293,21 @@
                     </a>
                 </li>
 
+                {% if user_profile.department == 'Договорной отдел' %}
+                    <li>
+                        <a href="{% url 'add_client' %}">
+                            <i class="bi bi-circle"></i><span>Новый клиент</span>
+                        </a>
+                    </li>
+                {% endif %}
 
-                <li>
-                    <a href="{% url 'add_client' %}">
-                        <i class="bi bi-circle"></i><span>Новый клиент</span>
-                    </a>
-                </li>
-
+                {% if user_profile.department == 'Договорной отдел' %}
                 <li>
                     <a href="{% url 'add_client_partner' %}">
                         <i class="bi bi-circle"></i><span>Новый клиент партнеров</span>
                     </a>
                 </li>
+                {% endif %}
 
                 <li>
                     <a href="{% url 'reports_dog' %}">
@@ -458,7 +465,10 @@
 {#                </li>#}
             </ul>
         </li><!-- End Договорной Nav -->
+        {% endif %}
 
+
+        {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' or user_profile.department == 'Технический отдел' or user_profile.department == 'Пульт' or user_profile.department == 'Директор'%}
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#ekc-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
                 <i class="bi bi-shield-shaded"></i><span>ЕКЦ</span>
@@ -484,18 +494,26 @@
                 </li>
             </ul>
         </li><!-- End Главная Nav -->
+        {% endif %}
 
 
-
+        {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' or user_profile.department == 'Пульт' or user_profile.department == 'Технический отдел' or user_profile.department == 'Директор'%}
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#pult-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
-                <i class="bi bi-server"></i><span>Пульт Raptor</span>
+                <i class="bi bi-server"></i><span>Пульт</span>
                 <i class="bi bi-chevron-down ms-auto"></i>
             </a>
             <ul id="pult-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+
+                <li>
+                    <a href="{% url 'baza_dogovorov' %}">
+                        <i class="bi bi-circle"></i><span>База договоров</span>
+                    </a>
+                </li>
+
                 <li>
                     <a href="{% url 'card_list' %}">
-                        <i class="bi bi-circle"></i><span>База объектов</span>
+                        <i class="bi bi-circle"></i><span>База Raptor</span>
                     </a>
                 </li>
 
@@ -519,6 +537,7 @@
 
             </ul>
         </li><!-- End Главная Nav -->
+        {% endif %}
 
 
         <li class="nav-item">
@@ -542,8 +561,48 @@
             </ul>
         </li><!-- End Главная Nav -->
 
+        {% if user_profile.department == 'Бухгалтерия' or user_profile.department == 'Админ'  or user_profile.department == 'Директор' %}
+        <li class="nav-item">
+                <a class="nav-link collapsed" data-bs-target="#buhgalteria-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
+                    <i class="bi bi-cash-coin"></i><span>Бухгалтерия</span>
+                    <i class="bi bi-chevron-down ms-auto"></i>
+                </a>
+                <ul id="buhgalteria-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                    <li>
+                        <a href="{% url 'baza_dogovorov' %}">
+                            <i class="bi bi-circle"></i><span>База договора</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{% url 'reports_dog' %}">
+                            <i class="bi bi-circle"></i><span>Отчет подкл/откл</span>
+                        </a>
+                    </li>
+
+                </ul>
+            </li><!-- End Главная Nav -->
+            {% endif %}
 
 
+            {% if user_profile.department == 'Офис-менеджер' or user_profile.department == 'Админ' %}
+                    <li class="nav-item">
+                            <a class="nav-link collapsed" data-bs-target="#office_manager-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
+                                <i class="bi bi-emoji-wink-fill"></i><span>Офис-менеджер</span>
+                                <i class="bi bi-chevron-down ms-auto"></i>
+                            </a>
+                            <ul id="office_manager-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                                <li>
+                                    <a href="{% url 'ekcbaza' %}">
+                                        <i class="bi bi-circle"></i><span>База ЕКЦ</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li><!-- End Главная Nav -->
+            {% endif %}
+
+
+        {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' %}
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
                 <i class="bi bi-arrow-down-circle"></i><span>Импорт в базу</span>
@@ -581,8 +640,9 @@
                 </li>
             </ul>
         </li><!-- End Главная Nav -->
+        {% endif %}
 
-
+        {% if user_profile.department == 'Админ' %}
         <li class="nav-heading">Сервисные</li>
 
         <li class="nav-item">
@@ -598,6 +658,7 @@
                 <span>Настройки</span>
             </a>
         </li><!-- End Настройки Page Nav -->
+        {% endif %}
 
     </ul>
 

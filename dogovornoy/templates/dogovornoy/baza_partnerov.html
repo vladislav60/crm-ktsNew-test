@@ -75,6 +75,7 @@
                     <th scope="col-2">Дата подк</th>
                     <th scope="col-2">Дата откл</th>
                     <th scope="col-1">Часы в месяц</th>
+                    <th scope="col-1">Экипаж</th>
                     <th scope="col"></th>
                     <th scope="col"></th>
                     <th scope="col"></th>
@@ -107,6 +108,7 @@
                         <td>-</td>
                     {% endif %}
                     <td>{{k.hours_mounth}}</td>
+                    <td>{{k.ekipazh}}</td>
                     <td><a href="{{ k.get_absolute_url }}">
                         <button type="button" class="btn btn-secondary">
                             <i class="bi bi-folder-symlink-fill"></i>

@@ -205,7 +205,7 @@ def create_dogovor(request, klient_id):
             'ucheriditel_name_sokr': rekvizity_test.ucheriditel_name_sokr,
             'iik': passport_info.iik,
             'bik': passport_info.bik,
-            'bank': passport_info.bank,
+            'bank_klient': passport_info.bank,
             'rezhim_raboti': passport_info.rezhim_raboti,
             'fio_direktor_sokr': passport_info.fio_direktor_sokr,
             'fio_direktor_polnoe': passport_info.fio_direktor_polnoe,

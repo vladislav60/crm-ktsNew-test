@@ -339,6 +339,14 @@
                         </div>
 
                             <div class="col-md-12">
+                            <label for="{{ form.urik_adress.id_for_label }}" class="form-label">
+                                {{ form.urik_adress.label }}
+                            </label>
+                            {{ form.urik_adress }}
+                            <div class="form-error">{{urik_adress.errors}}</div>
+                        </div>
+
+                            <div class="col-md-12">
                                 <label for="{{ form.photo.id_for_label }}" class="form-label">
                                     {{ form.photo.label }}
                                 </label>

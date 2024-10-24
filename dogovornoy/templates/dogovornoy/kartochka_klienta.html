@@ -178,7 +178,7 @@
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
                             </div>
-                            <div class="col-4">
+                            <div class="col-3">
                                 <label for="inputNanme4" class="form-label">Часы по договору</label>
 
                                 {% if kartochka.chasi_po_dog %}
@@ -188,7 +188,7 @@
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
                             </div>
-                            <div class="col-4">
+                            <div class="col-3">
                                 <label for="inputNanme4" class="form-label">Абон.плата</label>
 
                                 {% if kartochka.abon_plata %}
@@ -198,7 +198,17 @@
                                 {% endif %}
                             </div>
 
-                            <div class="col-4">
+                             <div class="col-3">
+                                <label for="inputNanme4" class="form-label">Итого</label>
+                                {% if itog_oplata %}
+                                    <input type="text" class="form-control" value="{{ itog_oplata }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-3">
                                 <label for="inputNanme4" class="form-label">Стоимость РПО</label>
 
                                 {% if kartochka.stoimost_rpo %}
@@ -243,16 +253,6 @@
                                 <label for="inputNanme4" class="form-label">Алсеко</label>
                                 {% if kartochka.dop_uslugi %}
                                     <input type="text" class="form-control" value="{{ kartochka.dop_uslugi }}" disabled>
-                                {% else %}
-                                    <input type="text" class="form-control" value=" " disabled>
-                                {% endif %}
-                            </div>
-
-                            <div class="col-4">
-                                <label for="inputNanme4" class="form-label">Итого</label>
-                                {% if itog_oplata %}
-                                    <input type="text" class="form-control" value="{{ itog_oplata }}"
-                                           disabled>
                                 {% else %}
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
@@ -422,6 +422,16 @@
                                 <label for="inputNanme4" class="form-label">Учередительные документы</label>
                                 {% if kartochka.ucereditel_doc %}
                                     <input type="text" class="form-control" value="{{ kartochka.ucereditel_doc }}"
+                                           disabled>
+                                {% else %}
+                                    <input type="text" class="form-control" value=" " disabled>
+                                {% endif %}
+                            </div>
+
+                                <div class="col-12">
+                                <label for="inputNanme4" class="form-label">Юридический адрес</label>
+                                {% if kartochka.urik_adress %}
+                                    <input type="text" class="form-control" value="{{ kartochka.urik_adress }}"
                                            disabled>
                                 {% else %}
                                     <input type="text" class="form-control" value=" " disabled>

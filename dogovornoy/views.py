@@ -15070,6 +15070,10 @@ class ArchiveTaskListView(ListView):
 
 
 
+# Склад передатчиков
+
+
+
 
 
 

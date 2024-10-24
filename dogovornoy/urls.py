@@ -165,5 +165,8 @@ urlpatterns = [
     path('disconnected-objects/export/', export_disconnected_objects, name='export_disconnected_objects'),
     path('export_disconnected_objects_partners/export/', export_disconnected_objects_partners, name='export_disconnected_objects_partners'),
     path('archive_tasks/', ArchiveTaskListView.as_view(), name='archive_task_list'),
+    # Склад передатчик
+    # path('baza_gsm/', views.BazaGSM.as_view(), name='baza_gsm'),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

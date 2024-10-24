@@ -17,7 +17,8 @@ class AddKlientDogForm(forms.ModelForm):
                   'vid_sign', 'urik', 'chasi_po_dog', 'dop_uslugi', 'abon_plata',
                   'object_number', 'peredatchik_number', 'stoimost_rpo', 'date_podkluchenia', 'date_otklulchenia',
                   'gruppa_reagirovania', 'email', 'date_izmenenia',
-                  'vid_rpo', 'primechanie', 'prochee', 'agentskie', 'photo', 'exclude_from_report', 'iik', 'bik', 'bank', 'rezhim_raboti', 'fio_direktor_sokr', 'fio_direktor_polnoe',  'dolznost', 'ucereditel_doc']
+                  'vid_rpo', 'primechanie', 'prochee', 'agentskie', 'photo', 'exclude_from_report', 'iik', 'bik', 'bank', 'rezhim_raboti', 'fio_direktor_sokr',
+                  'fio_direktor_polnoe',  'dolznost', 'ucereditel_doc', 'urik_adress']
         widgets = {
             'udv_number': forms.TextInput(attrs={'class': 'form-control'}),
             'date_udv': forms.TextInput(attrs={'class': 'form-control'}),
@@ -73,6 +74,7 @@ class AddKlientDogForm(forms.ModelForm):
             'fio_direktor_polnoe': forms.TextInput(attrs={'class': 'form-control'}),
             'dolznost': forms.TextInput(attrs={'class': 'form-control'}),
             'ucereditel_doc': forms.TextInput(attrs={'class': 'form-control'}),
+            'urik_adress': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 
@@ -82,7 +84,8 @@ class AddKlientDogFormPartner(forms.ModelForm):
         fields = [
             'object_number', 'gsm_number', 'name_object', 'adres', 'type_object', 'vid_sign', 'hours_mounth',
             'date_podkluchenia', 'tariff_per_mounth', 'tehnical_services', 'rent_gsm', 'fire_alarm', 'telemetria',
-            'nabludenie', 'sms_uvedomlenie', 'sms_number', 'kolvo_day', 'primechanie', 'ekipazh', 'urik', 'company_name', 'date_otkluchenia', 'prochee']
+            'nabludenie', 'sms_uvedomlenie', 'sms_number', 'kolvo_day', 'primechanie', 'ekipazh', 'urik', 'company_name',
+            'date_otkluchenia', 'prochee']
         widgets = {
             'company_name': forms.Select(attrs={'class': 'form-control'}),
             'object_number': forms.TextInput(attrs={'class': 'form-control'}),

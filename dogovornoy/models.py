@@ -53,6 +53,7 @@ class kts(models.Model):
     fio_direktor_polnoe = models.CharField(max_length=255, blank=True, null=True, verbose_name="Имя директора полное")
     dolznost = models.CharField(max_length=255, blank=True, null=True, verbose_name="Должность директора")
     ucereditel_doc = models.CharField(max_length=255, blank=True, null=True, verbose_name="Учередительные документы")
+    urik_adress = models.CharField(max_length=255, blank=True, null=True, verbose_name="Юридический адрес")
 
     def get_absolute_url(self):
         return reverse('kartochka_klienta', kwargs={'klient_id': self.pk})
@@ -245,10 +246,6 @@ class TechnicalTask(models.Model):
     def __str__(self):
         # При необходимости, получаем объект Cards через API или запрос к third_db
         return f'Task for client ID {self.client_object_id} by {self.technician.username}'
-
-
-
-
 
 
 

@@ -1277,10 +1277,26 @@ def reports_partners(request):
             num_days = num_days_mounth
 
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=1).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=1).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=1, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=1, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(
+        company_name_id=1
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    )
+    partners_kolvo_object = partners_object.objects.filter(
+        company_name_id=1
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(
+        company_name_id=1, urik=True
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(
+        company_name_id=1, urik=False
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
 
     print(end_of_month)
 
@@ -1430,7 +1446,7 @@ def reports_partners_download_urik(request):
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=1, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=1, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -1441,7 +1457,12 @@ def reports_partners_download_urik(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=1, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+
+    partners_object_podkl = partners_object.objects.filter(
+        company_name_id=1, urik=True
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    )
 
     reports = []
     summ_telemetria = 0
@@ -1662,7 +1683,14 @@ def sgs_plus_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=1, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+
+    partners_object_podkl = partners_object.objects.filter(
+        company_name_id=1, urik=False
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    )
+
+
 
     reports = []
     summ_telemetria = 0
@@ -1877,10 +1905,26 @@ def reports_partners_akm(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=2).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=2).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=2, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=2, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(
+        company_name_id=2
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    )
+    partners_kolvo_object = partners_object.objects.filter(
+        company_name_id=2
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(
+        company_name_id=2, urik=True
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(
+        company_name_id=2, urik=False
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -2061,7 +2105,7 @@ def akm_download_fiz(request):
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -2072,9 +2116,8 @@ def akm_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=2, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    akm_fiz_count = partners_object.objects.filter(company_name_id=2, urik=False).aggregate(Count('id'))
-    akm_fiz_count = akm_fiz_count['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=2, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    akm_fiz_count = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -2289,7 +2332,7 @@ def akm_download_ur(request):
     num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -2300,9 +2343,8 @@ def akm_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=2, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    akm_fiz_count = partners_object.objects.filter(company_name_id=2, urik=True).aggregate(Count('id'))
-    akm_fiz_count = akm_fiz_count['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=2, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    akm_fiz_count = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -2532,10 +2574,10 @@ def reports_partners_rmg(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=4).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=4).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=4, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=4, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=4).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=4).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=4, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=4, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -2696,13 +2738,12 @@ def rmg_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    rmg_fiz_count = partners_object.objects.filter(company_name_id=4, urik=False).aggregate(Count('id'))
-    rmg_fiz_count = rmg_fiz_count['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    rmg_fiz_count = partners_object_podkl['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=4, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=4, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -2933,13 +2974,12 @@ def rmg_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    rmg_fiz_count = partners_object.objects.filter(company_name_id=4, urik=True).aggregate(Count('id'))
-    rmg_fiz_count = rmg_fiz_count['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    rmg_fiz_count = partners_object_podkl['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=4, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=4, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -3182,10 +3222,26 @@ def reports_partners_kazkuzet(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=3).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=3).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=3, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=3, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(
+        company_name_id=3
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    )
+    partners_kolvo_object = partners_object.objects.filter(
+        company_name_id=3
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(
+        company_name_id=3, urik=True
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(
+        company_name_id=3, urik=False
+    ).exclude(
+        Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
+    ).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -3356,7 +3412,7 @@ def kazkuzet_download_fiz(request):
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=3, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=3, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -3367,9 +3423,8 @@ def kazkuzet_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=3, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    kazkuzet = partners_object.objects.filter(company_name_id=3, urik=False).aggregate(Count('id'))
-    kazkuzet = kazkuzet['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=3, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    kazkuzet = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -3604,7 +3659,7 @@ def kazkuzet_download_ur(request):
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=3, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=3, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -3615,9 +3670,8 @@ def kazkuzet_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=3, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    kazkuzet = partners_object.objects.filter(company_name_id=3, urik=True).aggregate(Count('id'))
-    kazkuzet = kazkuzet['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=3, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    kazkuzet = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -3863,10 +3917,10 @@ def reports_partners_sgs(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=5).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=5).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=5, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=5, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=5).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=5).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=5, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=5, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -4037,7 +4091,7 @@ def sgs_download_fiz(request):
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=5, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=5, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -4048,9 +4102,8 @@ def sgs_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=5, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=5, urik=False).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=5, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -4287,7 +4340,7 @@ def sgs_download_ur(request):
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=5, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=5, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -4298,9 +4351,8 @@ def sgs_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=5, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=5, urik=True).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=5, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -4552,10 +4604,10 @@ def reports_partners_ipkim(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=6).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=6).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=6, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=6, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=6).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=6).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=6, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=6, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -4728,7 +4780,7 @@ def ipkim_download_fiz(request):
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=6, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=6, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -4739,9 +4791,8 @@ def ipkim_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=6, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=6, urik=False).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=6, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -4963,7 +5014,7 @@ def ipkim_download_ur(request):
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=6, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=6, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -4974,9 +5025,8 @@ def ipkim_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=6, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=6, urik=True).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=6, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -5207,10 +5257,10 @@ def reports_partners_kuzets(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=7).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=7).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=7, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=7, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=7).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=7).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=7, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=7, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -5387,7 +5437,7 @@ def kuzets_download_fiz(request):
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=7, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=7, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -5398,9 +5448,8 @@ def kuzets_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=7, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=7, urik=False).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=7, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -5635,7 +5684,7 @@ def kuzets_download_ur(request):
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=7, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=7, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -5646,9 +5695,8 @@ def kuzets_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=7, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=7, urik=True).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=7, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -5897,10 +5945,10 @@ def reports_partners_samohvalov(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=8).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=8).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=8, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=8, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=8).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=8).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=8, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=8, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -6077,7 +6125,7 @@ def samohvalov_download_fiz(request):
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=8, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=8, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     if request.method == 'POST':
@@ -6088,9 +6136,8 @@ def samohvalov_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=8, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=8, urik=False).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=8, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     reports = []
     summ_telemetria = 0
@@ -6325,13 +6372,12 @@ def samohvalov_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=8, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=8, urik=True).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=8, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=8, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=8, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -6577,10 +6623,10 @@ def reports_partners_sobsecutity(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=9).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=9).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=9, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=9, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=9).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=9).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=9, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=9, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -6761,13 +6807,12 @@ def sobsecutity_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=9, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=9, urik=False).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=9, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=9, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=9, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -6996,14 +7041,12 @@ def sobsecutity_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=9, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=9, urik=True).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=9, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=9, urik=True).exclude(
-        date_otkluchenia__lte=end_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=9, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -7234,10 +7277,10 @@ def reports_partners_egida(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=15).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=15).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=15, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=15, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=15).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=15).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=15, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=15, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -7421,13 +7464,12 @@ def egida_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=15, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=15, urik=False).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=15, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=15, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=15, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -7658,13 +7700,12 @@ def egida_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=15, urik=True).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=15, urik=True).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=15, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=15, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=15, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -7904,10 +7945,10 @@ def reports_partners_eyewatch(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=10).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=10).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=10, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=10, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=10).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=10).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=10, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=10, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -8091,13 +8132,12 @@ def eyewatch_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=10, urik=False).exclude(date_otkluchenia__lt=start_of_month)
-    sgs = partners_object.objects.filter(company_name_id=10, urik=False).aggregate(Count('id'))
-    sgs = sgs['id__count']
+    partners_object_podkl = partners_object.objects.filter(company_name_id=10, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object_podkl['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=10, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=10, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -8332,13 +8372,13 @@ def eyewatch_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=10, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=10, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=10, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=10, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=10, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -8577,10 +8617,10 @@ def reports_partners_iviscom(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=11).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=11).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=11, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=11, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=11).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=11).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=11, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=11, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -8764,13 +8804,13 @@ def iviscom_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=11, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=11, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=11, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=11, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=11, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -9008,7 +9048,7 @@ def iviscom_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=11, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=11, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=11, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
@@ -9254,10 +9294,10 @@ def reports_partners_eurasian(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=12).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=12).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=12, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=12, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=12).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=12).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=12, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=12, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -9441,13 +9481,13 @@ def eurasian_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=12, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=12, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=12, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=12, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=12, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -9685,13 +9725,13 @@ def eurasian_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=12, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=12, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=12, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=12, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=12, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -9931,10 +9971,10 @@ def reports_partners_bmkz(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=13).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=13).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=13, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=13, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=13).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=13).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=13, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=13, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -10123,7 +10163,7 @@ def bmkz_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=13, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=13, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=13, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
@@ -10360,13 +10400,13 @@ def bmkz_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=13, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=13, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=13, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=13, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=13, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -10606,10 +10646,10 @@ def reports_partners_monolit(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=14).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=14).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=14, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=14, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=14).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=14).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=14, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=14, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -10793,7 +10833,7 @@ def monolit_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=14, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=14, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=14, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
@@ -11037,13 +11077,13 @@ def monolit_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=14, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=14, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=14, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=14, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=14, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -11886,10 +11926,10 @@ def reports_partners_techmart(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=16).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=16).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=16, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=16, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=16).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=16).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=16, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=16, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -12073,13 +12113,13 @@ def techmart_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=16, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=16, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=16, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=16, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=16, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -12312,7 +12352,7 @@ def techmart_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=16, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=16, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=16, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
@@ -12561,10 +12601,10 @@ def reports_partners_twojoy(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=17).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=17).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=17, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=17, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=17).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=17).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=17, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=17, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
 
     reports = []
@@ -12750,7 +12790,7 @@ def twojoy_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=17, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=17, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=17, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
@@ -12992,13 +13032,13 @@ def twojoy_download_ur(request):
 
     print(num_days_mounth)
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=17, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=17, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=17, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=17, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=17, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -13238,10 +13278,10 @@ def reports_partners_medin(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=18).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=18).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=18, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=18, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=18).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=18).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=18, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=18, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -13426,13 +13466,13 @@ def medin_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=18, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=18, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=18, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=18, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=18, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -13663,13 +13703,13 @@ def medin_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=18, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=18, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=18, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=18, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=18, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -13905,10 +13945,10 @@ def reports_partners_zhakitov(request):
             num_days_mounth = (end_of_month - start_of_month).days + 1
             num_days = num_days_mounth
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=19).exclude(date_otkluchenia__lt=start_of_month)
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=19).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=19, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
-    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=19, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_object_podkl = partners_object.objects.filter(company_name_id=19).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=19).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=19, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=19, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
 
     reports = []
     summ_telemetria = 0
@@ -14091,13 +14131,13 @@ def zhakitov_download_fiz(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=19, urik=False).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=19, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=19, urik=False).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=19, urik=False).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=19, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []
@@ -14331,13 +14371,13 @@ def zhakitov_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    partners_object_podkl = partners_object.objects.filter(company_name_id=19, urik=True).exclude(date_otkluchenia__lt=start_of_month)
+    partners_object_podkl = partners_object.objects.filter(company_name_id=19, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=19, urik=True).aggregate(Count('id'))
     sgs = sgs['id__count']
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
-    partners_kolvo_object = partners_object.objects.filter(company_name_id=19, urik=True).exclude(date_otkluchenia__lt=start_of_month).aggregate(Count('id'))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=19, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
     partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
 
     reports = []

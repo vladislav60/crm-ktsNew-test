@@ -14619,7 +14619,7 @@ class CreateTechnicalTaskView(View):
         # Отправляем уведомление в Telegram (если нужно)
         send_telegram_message(technician, task)
 
-        return redirect('baza_dogovorov')  # Перенаправляем на страницу списка задач
+        return redirect('baza_partnerov')  # Перенаправляем на страницу списка задач
 
 
 def get_card_from_third_db(card_id):
@@ -14648,73 +14648,133 @@ def get_card_from_asuekc(card_id):
 
 bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 
+# Глобальная переменная для хранения последнего SN (можно заменить на БД или кэш)
+last_event_sn = {}
 
 def button_handler(update, context):
+    global last_event_sn
     query = update.callback_query
-    data = query.data.split('_')  # Разделяем callback_data
+    data = query.data.split('_')
 
     if len(data) < 2:
         query.edit_message_text(text="Ошибка: Некорректные данные.")
         return
 
     action = data[0]
-    task_id = data[-1]  # Получаем task_id
+    task_id = data[-1]
 
     try:
         task = TechnicalTask.objects.get(pk=task_id)
-
         if action == "select":
-            # Получаем зоны клиента по заявке
+            # Получаем зоны клиента
             zones = get_zones_from_third_db(task.client_object_id)
-
-            # Формируем сообщение с зонами
             if zones.exists():
                 message = "Зоны клиента:\n"
                 for zone in zones:
-                    message += f"Раздел: {zone.sectionid.sectionname}, Зона: {zone.zonenumber} - {zone.info}\n"
+                    message += f"Раздел: {zone.sectionid.sectionname}, Зона: {zone.zonenumber} - {zone.info}\n\n"
             else:
                 message = "Зоны не найдены."
 
-            # Добавляем кнопки для "Показать заявку" и "Вывести тревоги"
             keyboard = [
                 [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
-                [InlineKeyboardButton(text="Вывести тревоги", callback_data=f"task_module_{task_id}")]
+                [InlineKeyboardButton(text="Вывести события", callback_data=f"task_module_{task_id}")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
-
             query.edit_message_text(text=message, reply_markup=reply_markup)
 
         elif action == "task" and data[1] == "show":
-            # Вызываем функцию для повторной отправки заявки в Telegram
             send_telegram_message(task.technician, task)
-
-            # После отправки сообщения можно обновить inline-кнопки для возврата к зонам и тревогам
-            keyboard = [
-                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
-                [InlineKeyboardButton(text="Вывести тревоги", callback_data=f"task_module_{task_id}")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-
-            query.edit_message_text(text="Заявка была повторно отправлена.", reply_markup=reply_markup)
+            query.edit_message_text(text="Заявка была повторно отправлена.")
 
         elif action == "task" and data[1] == "module":
-            # Логика для отображения тревог
-            alarms = execute_stored_procedure(task.client_object_id)
+            # Отображение событий
+            card = get_card_from_third_db(task.client_object_id)
+            module_number = card.unitnumber
+            alarms = execute_stored_procedure(module_number)
 
             if alarms:
-                message = "Тревоги клиента:\n"
-                for alarm in alarms:
-                    message += f"{alarm}\n"
+                print(alarms)
+                message = f"Результаты для модуля {module_number}:\n\n"
+                for row in reversed(alarms):
+                    razdel = row[3] if row[3] else '-'
+                    zona_user = row[4] if row[4] else '-'
+                    event_str = row[6]
+                    date_event = row[8].strftime('%d-%m-%Y %H:%M:%S') if row[8] else 'Нет данных'
+                    gprs_quality = row[15]
+                    message += f"Раздел: {razdel}, Зона/Польз: {zona_user}, Событие: {event_str}, Дата: {date_event}, Качество: {gprs_quality}\n\n"
+                    last_event_sn[task_id] = alarms[0][1]
+                # Сохраняем последний SN из полученных данных
+                print(f"SN из последнего события + {last_event_sn[task_id]}")
             else:
-                message = "Тревоги не найдены."
+                message = "События не найдены."
 
-            # Добавляем кнопки для возврата
             keyboard = [
                 [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
-                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")]
+                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")]
+            ]
+
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            query.edit_message_text(text=message, reply_markup=reply_markup)
+
+        elif action == "update":
+            # Проверка на наличие сохраненного `SN` для обновления
+            card = get_card_from_third_db(task.client_object_id)
+            module_number = card.unitnumber
+            new_alarms = execute_stored_procedure_with_last_id(module_number, last_event_sn.get(task_id, None))
+
+            if new_alarms:
+                message = f"Обновленные события для модуля {module_number}:\n\n"
+                for row in new_alarms:
+                    razdel = row[3] if row[3] else '-'
+                    zona_user = row[4] if row[3] else '-'
+                    event_str = row[6]
+                    date_event = row[8].strftime('%d-%m-%Y %H:%M:%S') if row[8] else 'Нет данных'
+                    gprs_quality = row[15]
+                    message += f"Раздел: {razdel}, Зона/Польз: {zona_user}, Событие: {event_str}, Дата: {date_event}, Качество: {gprs_quality}\n\n"
+                    last_event_sn[task_id] = new_alarms[0][1]
+
+                # Обновляем последний SN для последующих обновлений
+                print(f"Обновленный last_event_sn = {last_event_sn[task_id]}")
+            else:
+                message = "Нет новых событий для модуля."
+
+            # Добавляем кнопки
+            keyboard = [
+                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
+                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
+            # Проверка перед редактированием сообщения
+            if query.message.text != message:
+                query.edit_message_text(text=message, reply_markup=reply_markup)
+            else:
+                print("Содержимое сообщения и разметка не изменились, обновление пропущено.")
+
+            keyboard = [
+                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
+                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")],
+                [InlineKeyboardButton(text="Прибыл на объект", callback_data=f"arrival_task_{task_id}")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            query.edit_message_text(text=message, reply_markup=reply_markup)
+
+        elif action == "arrival":
+            # Устанавливаем время прибытия на объект
+            task.arrival_time = timezone.now()
+            task.save()
+
+            message = f"Время прибытия на объект установлено: {task.arrival_time.strftime('%d-%m-%Y %H:%M:%S')}"
+            keyboard = [
+                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
+                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                [InlineKeyboardButton(text="Вывести события", callback_data=f"task_module_{task_id}")],
+                [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
             query.edit_message_text(text=message, reply_markup=reply_markup)
 
     except Exception as e:
@@ -14738,7 +14798,8 @@ def send_telegram_message(technician, task):
     # Формируем inline-кнопку для заявки
     keyboard = [
         [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task.id}")],
-        [InlineKeyboardButton(text="Вывести тревоги", callback_data=f"module_task_{task.id}")]
+        [InlineKeyboardButton(text="Вывести события", callback_data=f"task_module_{task.id}")],
+        [InlineKeyboardButton(text="Прибыл на объект", callback_data=f"arrival_task_{task.id}")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -14758,7 +14819,6 @@ def send_telegram_message(technician, task):
 def telegram_webhook(request):
     try:
         data = json.loads(request.body.decode('utf-8'))
-        print(f"Получены данные от Telegram: {data}")  # Отладка данных запроса
 
         update = Update.de_json(data, bot)
         dispatcher = Dispatcher(bot, None, workers=0)
@@ -14785,7 +14845,7 @@ def module_button_handler(update, context):
         # Если объект найден, извлекаем номер модуля (unitnumber)
         if card and card.unitnumber:
             module_number = card.unitnumber
-            # Выполняем хранимую процедуру с номером модуля
+            print(f"Отладка module_number в module_button_handler: {module_number}")
             result = execute_stored_procedure(module_number)
 
             # Формируем сообщение для отправки в Telegram
@@ -14812,7 +14872,7 @@ def execute_stored_procedure(module_number):
         with connections['third_db'].cursor() as cursor:
             # Определяем переменные
             date_now = timezone.now() - timezone.timedelta(hours=1)  # Дата от текущего времени минус 1 час
-            date_minus_3_days = date_now - timezone.timedelta(days=3)
+            date_minus_3_days = date_now
 
             # Отладочная информация
             print(f"Выполнение хранимой процедуры с параметрами: дата - {date_minus_3_days}, модуль - {module_number}")
@@ -14825,17 +14885,42 @@ def execute_stored_procedure(module_number):
                 SET @D = %s;
                 SET @M = %s;
                 SET @I = 0;
-                EXECUTE [sp_GSM2MSG_MODUL] @D, @I, @M;
+                EXECUTE [sp_GSM2MSG_MODUL_ADMIN] @D, @I, @M;
             """, [date_minus_3_days, module_number])
 
             # Получаем результаты
             result = cursor.fetchall()
-            print(f"Результат выполнения процедуры для модуля {module_number}: {result}")
             print(f"Дата {date_minus_3_days}:")
             return result
     except Exception as e:
         print(f"Ошибка при выполнении хранимой процедуры: {e}")
         return None
+
+
+# Функция для выполнения хранимой процедуры с последним ID события
+def execute_stored_procedure_with_last_id(module_number, last_event_id):
+    try:
+        with connections['third_db'].cursor() as cursor:
+            # Задаем параметры для выполнения процедуры
+            date_now = 0  # Чтобы запрос возвращал только новые данные
+            cursor.execute("""
+                DECLARE @D datetime;
+                DECLARE @I int;
+                DECLARE @M int;
+                SET @M = %s;
+                SET @D = %s;
+                SET @I = %s;
+                EXECUTE [sp_GSM2MSG_MODUL_ADMIN] @D, @I, @M;
+            """, [module_number, date_now, last_event_id])
+
+            # Получаем результаты
+            result = cursor.fetchall()
+            print(f"Новые события для модуля {module_number}: {result}")
+            return result
+    except Exception as e:
+        print(f"Ошибка при выполнении процедуры обновления событий: {e}")
+        return None
+
 
 
 def TechniciansAPIView(request):
@@ -14905,6 +14990,7 @@ class TechnicalTaskListView(ListView):
         context['pagination_url'] = pagination_url
         context['filter_form'] = self.get_filter_form()
         return context
+
 
 
 class DisconnectedObjectsView(ListView):

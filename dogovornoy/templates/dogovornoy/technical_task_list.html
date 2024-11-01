@@ -54,9 +54,12 @@
             <td>{{ task.client_object_id }}</td>
             <td>{{ task.reason }}</td>
             <td>{{ task.sent_time }}</td>
+            <td>{{ task.arrival_time }}</td>
             <td>
                 {% if task.completion_time %}
                     Завершено
+                  {% elif task.arrival_time %}
+                    Прибыл на объект
                 {% else %}
                     В процессе
                 {% endif %}

@@ -15,7 +15,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-CSRF_TRUSTED_ORIGINS = ['https://1ca0-87-255-198-65.ngrok-free.app']
+CSRF_TRUSTED_ORIGINS = ['*']
 
 
 # Quick-start development settings - unsuitable for production

@@ -249,3 +249,32 @@ class TechnicalTask(models.Model):
 
 
 
+# class TypeGSM(models.Model):
+#     type_GSM = models.CharField(max_length=100, verbose_name="Название типа GSM")
+#
+#     def __str__(self):
+#         return self.type_GSM
+#
+#     class Meta:
+#         verbose_name = "Тип GSM"
+#         verbose_name_plural = "Типы GSM"
+#
+#
+# class SkaldGSM(models.Model):
+#     date_vidachi = models.DateField(verbose_name="Дата выдачи")
+#     nubmer_gsm = models.CharField(max_length=50, verbose_name="№ GSM")
+#     technik = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Техник принявший")
+#     podpis = models.CharField(max_length=255, blank=True, verbose_name="Подпись")
+#     adres_object = models.CharField(max_length=255, verbose_name="Адрес объекта")
+#     type_gsm = models.ForeignKey(TypeGSM, on_delete=models.CASCADE, verbose_name="Тип GSM")  # Связь с TypeGSM
+#     date_back_gsm = models.DateField(null=True, blank=True, verbose_name="Дата возврата")
+#
+#     def __str__(self):
+#         return f"{self.nubmer_gsm} - {self.adres_object}"
+#
+#     class Meta:
+#         verbose_name = "Склад GSM"
+#         verbose_name_plural = "Склад GSM"
+
+
+

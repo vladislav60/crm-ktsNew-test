@@ -2117,7 +2117,7 @@ def akm_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=2, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    akm_fiz_count = partners_object_podkl['id__count']
+    akm_fiz_count = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -2344,7 +2344,7 @@ def akm_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=2, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    akm_fiz_count = partners_object_podkl['id__count']
+    akm_fiz_count = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -2739,7 +2739,7 @@ def rmg_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    rmg_fiz_count = partners_object_podkl['id__count']
+    rmg_fiz_count = partners_object_podkl.count()
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -2975,7 +2975,7 @@ def rmg_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=4, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    rmg_fiz_count = partners_object_podkl['id__count']
+    rmg_fiz_count = partners_object_podkl.count()
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -3424,7 +3424,7 @@ def kazkuzet_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=3, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    kazkuzet = partners_object_podkl['id__count']
+    kazkuzet = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -3671,7 +3671,7 @@ def kazkuzet_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=3, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    kazkuzet = partners_object_podkl['id__count']
+    kazkuzet = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -4103,7 +4103,7 @@ def sgs_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=5, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -4352,7 +4352,7 @@ def sgs_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=5, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -4792,7 +4792,7 @@ def ipkim_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=6, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -5026,7 +5026,7 @@ def ipkim_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=6, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -5449,7 +5449,7 @@ def kuzets_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=7, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -5696,7 +5696,7 @@ def kuzets_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=7, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -6137,7 +6137,7 @@ def samohvalov_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=8, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     reports = []
     summ_telemetria = 0
@@ -6373,7 +6373,7 @@ def samohvalov_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=8, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -6808,7 +6808,7 @@ def sobsecutity_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=9, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -7042,7 +7042,7 @@ def sobsecutity_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=9, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -7465,7 +7465,7 @@ def egida_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=15, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -7701,7 +7701,7 @@ def egida_download_ur(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=15, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -8133,7 +8133,7 @@ def eyewatch_download_fiz(request):
             num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=10, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
-    sgs = partners_object_podkl['id__count']
+    sgs = partners_object_podkl.count()
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -11629,7 +11629,7 @@ def partner_reports_kolvo(request):
     kts_count_podkl_end_all = 0
 
     for partner in partners:
-        connected_objects = partners_object.objects.filter(company_name=partner)
+        connected_objects = partners_object.objects.filter(company_name=partner).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
 
         kts_podkl_start = connected_objects.filter(
             Q(date_otkluchenia__gte=start_of_month, date_otkluchenia__lte=next_end_of_month) |
@@ -15197,7 +15197,15 @@ class ArchiveTaskListView(ListView):
 
 
 # Склад передатчиков
-
+# def add_skaldgsm(request):
+#     if request.method == 'POST':
+#         form = SkaldGSMForm(request.POST)
+#         if form.is_valid():
+#             form.save()
+#             return redirect('skaldgsm_list')  # Замените на нужный URL после сохранения
+#     else:
+#         form = SkaldGSMForm()
+#     return render(request, 'dogovornoy/add_skaldgsm.html', {'form': form})
 
 
 

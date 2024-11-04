@@ -193,5 +193,38 @@ class TechnicalTaskFilterForm(forms.Form):
 
 
 
+# class SkaldGSMForm(forms.ModelForm):
+#     class Meta:
+#         model = SkaldGSM
+#         fields = [
+#             'date_vidachi',
+#             'nubmer_gsm',
+#             'type_gsm',
+#             'technik',
+#             'podpis',
+#             'adres_object',
+#             'date_back_gsm'
+#         ]
+#         widgets = {
+#             'date_vidachi': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+#             'date_back_gsm': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+#             'nubmer_gsm': forms.NumberInput(attrs={'min': '0', 'class': 'form-control', 'max': '10000000'}),
+#             'technik': forms.Select(attrs={'class': 'form-control'}),
+#             'type_gsm': forms.Select(attrs={'class': 'form-control'}),
+#             'adres_object': forms.TextInput(attrs={'class': 'form-control'}),
+#             'podpis': forms.TextInput(attrs={'class': 'form-control'}),
+#         }
+#         labels = {
+#             'date_vidachi': 'Дата выдачи',
+#             'nubmer_gsm': '№ GSM',
+#             'type_gsm': 'Тип GSM',
+#             'technik': 'Техник принявший',
+#             'podpis': 'Подпись',
+#             'adres_object': 'Адрес объекта',
+#             'date_back_gsm': 'Дата возврата',
+#         }
+
+
+
 
 

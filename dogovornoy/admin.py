@@ -53,3 +53,6 @@ class EkipazhAdmin(admin.ModelAdmin):
 admin.site.register(AdditionalService, AdditionalServiceAdmin)
 admin.site.register(TaskReason)
 admin.site.register(TechnicalTask)
+admin.site.register(SkaldGSM2)
+admin.site.register(ReturnReason)
+admin.site.register(TypeGSM)

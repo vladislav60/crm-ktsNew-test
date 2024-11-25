@@ -1,0 +1,68 @@
+{% extends "dogovornoy/base.html" %}
+
+{% block content %}
+<h1>Список Склад GSM</h1>
+
+<div class="card recent-sales overflow-auto">
+    <div class="card-body">
+        <table class="table table-bordered text-center">
+            <thead>
+                <tr>
+                    <th>№ GSM</th>
+                    <th>Тип</th>
+                    <th>Адрес</th>
+                    <th>Номер объекта</th>
+                    <th>Дата выдачи</th>
+                    <th>Техник</th>
+                    <th>Причина</th>
+                    <th>Дата возврата</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in skladgsm_items %}
+                <tr>
+                    <td>{{ item.nubmer_gsm }}</td>
+                    <td>{{ item.type_gsm }}</td>
+                    <td>{{ item.adres_object }}</td>
+                    <td>{{ item.podpis }}</td>
+                    <td>{{ item.date_vidachi }}</td>
+                    <td>{{ item.technik }}</td>
+                    <td>{{ item.return_reason.reason|default:"-" }}</td>
+                    <td>
+                        {% if item.date_back_gsm %}
+                            {{ item.date_back_gsm }}
+                        {% else %}
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#returnModal{{ item.id }}">Возврат</button>
+                        {% endif %}
+
+                        <!-- Modal -->
+                        <div class="modal fade" id="returnModal{{ item.id }}" tabindex="-1" aria-labelledby="returnModalLabel{{ item.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="returnModalLabel{{ item.id }}">Возврат GSM</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form method="POST" action="{% url 'skladgsm_return' item.id %}">
+                                            {% csrf_token %}
+                                            {{ return_form.as_p }}
+
+                                            <button type="submit" class="btn btn-success">Сохранить</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a href="{% url 'add_skaldgsm' %}">
+            <button type="button" class="btn btn-primary">Выдать GSM</button>
+        </a>
+    </div>
+</div>
+{% endblock %}

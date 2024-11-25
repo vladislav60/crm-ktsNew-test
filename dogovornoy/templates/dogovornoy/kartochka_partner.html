@@ -229,11 +229,14 @@
                                 {% endif %}
                         </div>
 
-                        <div class="d-grid gap-2 mt-3">
-                            <a href="{% url 'update_client_partner' kartochka_partner.pk %}" class="btn btn-success rounded-pill">
-                                Изменить клиента
-                            </a>
-                        </div>
+                        {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' %}
+                            <div class="d-grid gap-2 mt-3">
+                                <a href="{% url 'update_client_partner' kartochka_partner.pk %}" class="btn btn-success rounded-pill">
+                                    Изменить клиента
+                                </a>
+                            </div>
+                        {% endif %}
+
                     </form>
                     </div>
                 </div>

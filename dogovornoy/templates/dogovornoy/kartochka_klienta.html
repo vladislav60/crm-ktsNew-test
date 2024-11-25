@@ -487,6 +487,8 @@
                             </div>
                         </form>
 
+
+                        {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' %}
                         <h3>Добавление доп.услуги</h3>
                         <form method="POST">
                             {% csrf_token %}
@@ -533,6 +535,7 @@
                             </div>
                             <button type="submit" class="btn btn-success rounded-pill">Сохранить</button>
                         </form>
+                    {% endif %}
 
                     </div>
                 </div>

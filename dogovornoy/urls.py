@@ -165,9 +165,12 @@ urlpatterns = [
     path('disconnected-objects/export/', export_disconnected_objects, name='export_disconnected_objects'),
     path('export_disconnected_objects_partners/export/', export_disconnected_objects_partners, name='export_disconnected_objects_partners'),
     path('archive_tasks/', ArchiveTaskListView.as_view(), name='archive_task_list'),
-    # path('add-skaldgsm/', views.add_skaldgsm, name='add_skaldgsm'),
+    path('add-skaldgsm/', views.add_skaldgsm, name='add_skaldgsm'),
     # Склад передатчик
-    # path('baza_gsm/', views.BazaGSM.as_view(), name='baza_gsm'),
+    path('skladgsm_list/', views.skladgsm_list, name='skladgsm_list'),
+    path('skladgsm/return/<int:pk>/', skladgsm_return, name='skladgsm_return'),
+    path('export_kts_to_exel/', export_kts_to_exel, name='export_kts_to_exel'),
+    path('export_partners_excel/', export_partners_to_excel, name='export_partners_excel'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

@@ -132,8 +132,7 @@ def create_dogovor(request, klient_id):
                 short_names_klient = f'{split_names_klient_[0]} {split_names_klient_[1][0]}.'.title()
             else:
                 short_names_klient = split_names_klient_[0].title()
-        elif (passport_info.mat_otv != '0') and (passport_info.urik == True) and (
-                (vid_sign1.name_sign == 'ОТС') or (vid_sign1.name_sign == 'ОС') or (vid_sign1.name_sign == 'ОТПС')):
+        elif (passport_info.mat_otv != '0') and (passport_info.urik == True):
             doc = DocxTemplate(os.path.abspath('media/dogovor2.docx'))
             short_names_klient = ""
         else:
@@ -211,6 +210,7 @@ def create_dogovor(request, klient_id):
             'fio_direktor_polnoe': passport_info.fio_direktor_polnoe,
             'dolznost_klient': passport_info.dolznost,
             'ucereditel_doc': passport_info.ucereditel_doc,
+            'urik_adess': passport_info.urik_adess,
         }
         doc.render(context)
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
@@ -11315,142 +11315,99 @@ def reports_kolvo(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
 
 
     companies = rekvizity.objects.all()
-    urik_companies = rekvizity.objects.filter(kts__urik=True, kts__date_otklulchenia=None)
-    non_urik_companies_quantity = rekvizity.objects.filter(kts__urik=False, kts__date_otklulchenia=None)
 
     reports = []
 
     for company in companies:
 
         # 2 Все объекты до выбранной даты
-        kts_podkl = kts.objects.filter(
-                                            Q(date_otklulchenia__gte=start_of_month, date_otklulchenia__lte=end_of_month) |
-                                            Q(date_otklulchenia__isnull=True),
-                                            company_name_id=company.id,
-                                            urik=True,
-                                            exclude_from_report=False
-                                        )
+        kts_podkl = kts.objects.filter(company_name_id=company.id).exclude(
+            Q(date_otklulchenia__lt=start_of_month) & Q(date_podkluchenia__lte=F('date_otklulchenia')))
 
 
         # Всего на начало выбранного месяца
-        kts_count_podkl = kts.objects.filter(
-                                            Q(date_otklulchenia__gte=start_of_month) |
-                                            Q(date_otklulchenia__isnull=True),
-                                            date_podkluchenia__lt=start_of_month,
-                                            company_name_id=company.id,
+        kts_count_podkl = kts_podkl.filter(
+                                            date_podkluchenia__lte=start_of_month,
                                             urik=True,
-                                            exclude_from_report=False
-                                        ).aggregate(Count('id'))
+                                            exclude_from_report=False).count()
 
 
-        kts_fiz_podkl = kts.objects.filter(
-                                            Q(date_otklulchenia__gte=start_of_month) |
-                                            Q(date_otklulchenia__isnull=True),
-                                            date_podkluchenia__lt=start_of_month,
-                                            company_name_id=company.id,
+        kts_fiz_podkl = kts_podkl.filter(
+                                            date_podkluchenia__lte=start_of_month,
                                             urik=False,
-                                            exclude_from_report=False
-                                        ).aggregate(Count('id'))
+                                            exclude_from_report=False).count()
 
-        # Всего на конец выбранного месяца
-        kts_count_podkl_end = kts.objects.filter(
-                                            Q(date_otklulchenia__gte=next_start_of_month) |
-                                            Q(date_otklulchenia__isnull=True),
-                                            date_podkluchenia__lte=end_of_month,
-                                            company_name_id=company.id,
-                                            urik=True,
-                                            exclude_from_report=False
-                                        ).aggregate(count=Count('id'))['count']
-
-        kts_fiz_podkl_end = kts.objects.filter(
-                                                Q(date_otklulchenia__gte=next_start_of_month) |
-                                                Q(date_otklulchenia__isnull=True),
-                                                date_podkluchenia__lte=end_of_month,
-                                                company_name_id=company.id,
-                                                urik=False,
-                                                exclude_from_report=False
-                                              ).aggregate(count=Count('id'))['count']
 
         # принято(в т.ч.после вр.снятия )
-        kolvo_podkl_obj = kts.objects.filter(company_name_id=company.id, urik=True,
-                                             date_podkluchenia__gte=start_of_month, exclude_from_report=False,
-                                             date_podkluchenia__lte=end_of_month).exclude(
-                                                                                    date_otklulchenia__month=F('date_podkluchenia__month'),
-                                                                                    date_otklulchenia__year=F('date_podkluchenia__year')
-                                                                                ).aggregate(Count('id'))
+        kolvo_podkl_obj = kts_podkl.filter(urik=True,
+                                            date_podkluchenia__gte=start_of_month,
+                                            date_podkluchenia__lte=end_of_month,
+                                           exclude_from_report=False).count()
 
-        kolvo_podkl_fiz = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia = None,
-                                             exclude_from_report=False,date_podkluchenia__gte=start_of_month,
-                                                                        date_podkluchenia__lte=end_of_month).exclude(
-                                                                                    date_otklulchenia__month=F('date_podkluchenia__month'),
-                                                                                    date_otklulchenia__year=F('date_podkluchenia__year')
-                                                                                ).aggregate(Count('id'))
+        kolvo_podkl_fiz = kts_podkl.filter(urik=False,
+                                             date_podkluchenia__gte=start_of_month,
+                                             date_podkluchenia__lte=end_of_month,
+                                           exclude_from_report=False).count()
 
         # расторженно (в т.ч.после вр.снятия )
-        kolvo_otkl_obj = kts.objects.filter(company_name_id=company.id, urik=True, date_otklulchenia__gte=start_of_month,
-                                            date_otklulchenia__lte=end_of_month, exclude_from_report=False).exclude(
-                                                                                    date_podkluchenia__month=F('date_otklulchenia__month'),
-                                                                                    date_podkluchenia__year=F('date_otklulchenia__year')
-                                                                                ).aggregate(Count('id'))
+        kolvo_otkl_obj = kts_podkl.filter(urik=True,
+                                            date_otklulchenia__gte=start_of_month,
+                                            date_otklulchenia__lte=end_of_month,
+                                          exclude_from_report=False).count()
 
-        kolvo_otkl_fiz = kts.objects.filter(company_name_id=company.id, urik=False, date_otklulchenia__gte=start_of_month,
-                                            date_otklulchenia__lte=end_of_month, exclude_from_report=False).aggregate(Count('id'))
+        kolvo_otkl_fiz = kts_podkl.filter(urik=False,
+                                            date_otklulchenia__gte=start_of_month,
+                                            date_otklulchenia__lte=end_of_month,
+                                          exclude_from_report=False).count()
+
+
+        # Всего на конец выбранного месяца
+        kts_count_podkl_end = (kts_count_podkl + kolvo_podkl_obj) - kolvo_otkl_obj
+
+        kts_fiz_podkl_end = (kts_fiz_podkl + kolvo_podkl_fiz) - kolvo_otkl_fiz
 
 
         # экипажи физические лица
-        gruppa_reagirovania_911_fiz = kts.objects.filter(company_name_id=company.id, urik=False,
-                                                         gruppa_reagirovania='911', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_911_fiz = kts_podkl.filter(urik=False,
+                                                         gruppa_reagirovania='911', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_bravo21_fiz = kts.objects.filter(company_name_id=company.id, urik=False, gruppa_reagirovania='Браво-21', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_bravo21_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='Браво-21', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_sms_fiz = kts.objects.filter(company_name_id=company.id, 
-                                                        urik=False, gruppa_reagirovania='СМС', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_sms_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='СМС', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_asker_fiz = kts.objects.filter(company_name_id=company.id, 
-                                                         urik=False, gruppa_reagirovania='Эскер', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_asker_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='Эскер', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_zardem_fiz = kts.objects.filter(company_name_id=company.id, 
-                                                         urik=False, gruppa_reagirovania='Жардем', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_zardem_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='Жардем', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_kuguar_fiz = kts.objects.filter(company_name_id=company.id, 
-                                                            urik=False, gruppa_reagirovania='Кугуар').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_kuguar_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='Кугуар', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
 
-        kolvo_ekipazh_fiz = int(kts_fiz_podkl_end - (gruppa_reagirovania_911_fiz + gruppa_reagirovania_bravo21_fiz + gruppa_reagirovania_sms_fiz +
-                             gruppa_reagirovania_asker_fiz + gruppa_reagirovania_zardem_fiz + gruppa_reagirovania_kuguar_fiz))
+        kolvo_ekipazh_fiz = kts_fiz_podkl_end - (gruppa_reagirovania_911_fiz + gruppa_reagirovania_bravo21_fiz + gruppa_reagirovania_sms_fiz +
+                             gruppa_reagirovania_asker_fiz + gruppa_reagirovania_zardem_fiz + gruppa_reagirovania_kuguar_fiz)
 
         # экипажи юридические лица
-        gruppa_reagirovania_911_ur = kts.objects.filter(company_name_id=company.id, 
-                                                         urik=True, gruppa_reagirovania='911').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_911_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='911', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_bravo21_ur = kts.objects.filter(company_name_id=company.id, 
-                                                    urik=True, gruppa_reagirovania='Браво-21').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_bravo21_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='Браво-21', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_sms_ur = kts.objects.filter(company_name_id=company.id, 
-                                                         urik=True, gruppa_reagirovania='СМС').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_sms_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='СМС', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_asker_ur = kts.objects.filter(company_name_id=company.id, 
-                                                        urik=True, gruppa_reagirovania='Эскер').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_asker_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='Эскер', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_zardem_ur = kts.objects.filter(company_name_id=company.id, 
-                                                        urik=True, gruppa_reagirovania='Жардем').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_zardem_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='Жардем', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
-        gruppa_reagirovania_kuguar_ur = kts.objects.filter(company_name_id=company.id, 
-                                                           urik=True, gruppa_reagirovania='Кугуар').exclude(date_otklulchenia__lte=end_of_month).aggregate(count=Count('id'))['count']
+        gruppa_reagirovania_kuguar_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='Кугуар', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
 
 
-        kolvo_ekipazh_ur = int(kts_count_podkl_end - (gruppa_reagirovania_911_ur + gruppa_reagirovania_bravo21_ur + gruppa_reagirovania_sms_ur
-                                                  + gruppa_reagirovania_asker_ur + gruppa_reagirovania_zardem_ur + gruppa_reagirovania_kuguar_ur))
+        kolvo_ekipazh_ur = kts_count_podkl_end - (gruppa_reagirovania_911_ur + gruppa_reagirovania_bravo21_ur + gruppa_reagirovania_sms_ur
+                                                  + gruppa_reagirovania_asker_ur + gruppa_reagirovania_zardem_ur + gruppa_reagirovania_kuguar_ur)
 
 
         reports.append({
             'companies': companies,
-            'urik_companies': urik_companies,
-            'non_urik_companies_quantity': non_urik_companies_quantity,
             'kts_podkl': kts_podkl,
             'kts_count_podkl': kts_count_podkl,
             'kts_fiz_podkl': kts_fiz_podkl,
@@ -15196,21 +15153,124 @@ class ArchiveTaskListView(ListView):
 
 
 
-# Склад передатчиков
-# def add_skaldgsm(request):
-#     if request.method == 'POST':
-#         form = SkaldGSMForm(request.POST)
-#         if form.is_valid():
-#             form.save()
-#             return redirect('skaldgsm_list')  # Замените на нужный URL после сохранения
-#     else:
-#         form = SkaldGSMForm()
-#     return render(request, 'dogovornoy/add_skaldgsm.html', {'form': form})
+def add_skaldgsm(request):
+    if request.method == 'POST':
+        form = SkaldGSMForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect(reverse('skladgsm_list'))  # Замените на нужный URL после сохранения
+    else:
+        form = SkaldGSMForm()
+    return render(request, 'dogovornoy/add_skaldgsm.html', {'form': form})
 
 
 
+def skladgsm_list(request):
+    skladgsm_items = SkaldGSM2.objects.all()
+    return_form = DateBackGSMForm()  # Форма для модального окна
+    return render(request, 'dogovornoy/skladgsm_list.html', {'skladgsm_items': skladgsm_items, 'return_form': return_form})
 
 
+def skladgsm_return(request, pk):
+    item = get_object_or_404(SkaldGSM2, pk=pk)
+    if request.method == 'POST':
+        form = DateBackGSMForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            return redirect('skladgsm_list')  # Redirect back to the list view
+    else:
+        form = DateBackGSMForm(instance=item)
+    return render(request, 'skladgsm_return.html', {'form': form, 'item': item})
+
+
+
+def export_kts_to_exel(request):
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "База договоров"
+
+    headers = [
+        "Номер УДВ", "Дата и Кем выдано", "Компания", "№ дог.", "Дата заключения",
+        "Наличие Договора", "Мат.отв", "Акты ТУ", "Время реагирования",
+        "Реагирование не более", "Условия договора", "Наименование Клиента",
+        "Наименование объекта", "Адрес объекта", "ИИН/БИН", "Телефон",
+        "Вид сигнализации", "Юридическое лицо", "Часы по договору", "Алсеко",
+        "Абон.плата", "№ объекта", "№ передатчика/GSM", "Стоимость РПО",
+        "Дата подключения", "Дата отключения", "Дата изменения",
+        "Группа реагирования", "Электронный адрес", "Вид РПО", "Примечание",
+        "Агентские", "ИИК", "БИК", "БАНК", "Режим работы",
+        "Имя директора сокращенное", "Имя директора полное", "Должность директора",
+        "Учередительные документы", "Юридический адрес"
+    ]
+
+    sheet.append(headers)
+
+    for obj in kts.objects.all():
+        row = [
+            obj.udv_number, obj.date_udv, obj.company_name.polnoe_name,
+            obj.dogovor_number, obj.data_zakluchenia, obj.nalichiye_dogovora,
+            obj.mat_otv, obj.act_ty, obj.time_reag, obj.time_reag_nebol,
+            obj.yslovie_dogovora, obj.klient_name, obj.name_object,
+            obj.adres, obj.iin_bin, obj.telephone,
+            obj.vid_sign.name_sign, obj.urik, obj.chasi_po_dog,
+            obj.dop_uslugi, obj.abon_plata, obj.object_number, obj.peredatchik_number,
+            obj.stoimost_rpo, obj.date_podkluchenia, obj.date_otklulchenia,
+            obj.date_izmenenia, obj.gruppa_reagirovania, obj.email, obj.vid_rpo,
+            obj.primechanie, obj.agentskie, obj.iik, obj.bik, obj.bank,
+            obj.rezhim_raboti, obj.fio_direktor_sokr, obj.fio_direktor_polnoe,
+            obj.dolznost, obj.ucereditel_doc, obj.urik_adress
+        ]
+        sheet.append(row)
+
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="baza_dogovorov.xlsx"'
+    workbook.save(response)
+
+    return response
+
+
+
+def export_partners_to_excel(request):
+    # Создаем новый Excel-файл
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+    sheet.title = "Объекты партнеров"
+
+    # Заголовки для столбцов
+    headers = [
+        "Номер объекта", "Номер GSM", "Наименование клиента", "Адрес", "Тип объекта",
+        "Вид сигнализации", "Часы в месяц", "Дата подключения",
+        "Тариф за мониторинг и реагирование в месяц", "Тех.обслуживание", "Аренда GSM",
+        "Пожарная сигнализация", "Телеметрия", "Наблюдение", "SMS уведомление",
+        "SMS кол-во номеров", "Кол-во дней", "Примечание", "Экипаж",
+        "Юридическое лицо", "Партнеры", "Дата отключения", "Прочее"
+    ]
+
+    # Добавляем заголовки в первую строку
+    sheet.append(headers)
+
+    # Получаем данные из модели partners_object
+    for obj in partners_object.objects.all():
+        row = [
+            obj.object_number, obj.gsm_number, obj.name_object, obj.adres, obj.type_object,
+            obj.vid_sign.name_sign, obj.hours_mounth, obj.date_podkluchenia,
+            obj.tariff_per_mounth, obj.tehnical_services, obj.rent_gsm,
+            obj.fire_alarm, obj.telemetria, obj.nabludenie, obj.sms_uvedomlenie,
+            obj.sms_number, obj.kolvo_day, obj.primechanie,
+            obj.ekipazh.ekipazh_name if obj.ekipazh else None, obj.urik,
+            obj.company_name.polnoe_name, obj.date_otkluchenia,
+            obj.prochee
+        ]
+        sheet.append(row)
+
+    # Настраиваем ответ для скачивания файла
+    response = HttpResponse(
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response["Content-Disposition"] = 'attachment; filename="partners_objects.xlsx"'
+    workbook.save(response)
+
+    return response
 
 
 

@@ -3,6 +3,7 @@ from datetime import datetime
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import SelectDateWidget
+from django.utils.timezone import now
 
 
 from .models import *
@@ -193,36 +194,63 @@ class TechnicalTaskFilterForm(forms.Form):
 
 
 
-# class SkaldGSMForm(forms.ModelForm):
-#     class Meta:
-#         model = SkaldGSM
-#         fields = [
-#             'date_vidachi',
-#             'nubmer_gsm',
-#             'type_gsm',
-#             'technik',
-#             'podpis',
-#             'adres_object',
-#             'date_back_gsm'
-#         ]
-#         widgets = {
-#             'date_vidachi': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-#             'date_back_gsm': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
-#             'nubmer_gsm': forms.NumberInput(attrs={'min': '0', 'class': 'form-control', 'max': '10000000'}),
-#             'technik': forms.Select(attrs={'class': 'form-control'}),
-#             'type_gsm': forms.Select(attrs={'class': 'form-control'}),
-#             'adres_object': forms.TextInput(attrs={'class': 'form-control'}),
-#             'podpis': forms.TextInput(attrs={'class': 'form-control'}),
-#         }
-#         labels = {
-#             'date_vidachi': 'Дата выдачи',
-#             'nubmer_gsm': '№ GSM',
-#             'type_gsm': 'Тип GSM',
-#             'technik': 'Техник принявший',
-#             'podpis': 'Подпись',
-#             'adres_object': 'Адрес объекта',
-#             'date_back_gsm': 'Дата возврата',
-#         }
+class SkaldGSMForm(forms.ModelForm):
+    technik = forms.ModelChoiceField(
+        queryset=User.objects.filter(userprofile__department="Техник"),
+        required=False,
+        label='Техник',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+    class Meta:
+        model = SkaldGSM2
+        fields = [
+            'date_vidachi',
+            'nubmer_gsm',
+            'type_gsm',
+            'technik',
+            'podpis',
+            'adres_object',
+            'date_back_gsm',
+            'return_reason',
+        ]
+        widgets = {
+            'date_vidachi': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'date_back_gsm': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'nubmer_gsm': forms.NumberInput(attrs={'min': '0', 'class': 'form-control', 'max': '10000000'}),
+            'type_gsm': forms.Select(attrs={'class': 'form-control'}),
+            'adres_object': forms.TextInput(attrs={'class': 'form-control'}),
+            'podpis': forms.TextInput(attrs={'class': 'form-control'}),
+            'return_reason': forms.Select(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'date_vidachi': 'Дата выдачи',
+            'nubmer_gsm': '№ GSM',
+            'type_gsm': 'Тип GSM',
+            'technik': 'Техник принявший',
+            'podpis': 'Номер объекта',
+            'adres_object': 'Адрес объекта',
+            'return_reason': 'Причина возврата',
+            'date_back_gsm': 'Дата возврата',
+        }
+
+
+class DateBackGSMForm(forms.ModelForm):
+    date_back_gsm = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        label='Дата возврата',
+        initial=now().date()  # Устанавливаем сегодняшнюю дату
+    )
+    return_reason = forms.ModelChoiceField(
+        queryset=ReturnReason.objects.all(),
+        required=False,  # Сделайте обязательным, если это нужно
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label='Причина возврата'
+    )
+
+    class Meta:
+        model = SkaldGSM2
+        fields = ['date_back_gsm', 'return_reason']
 
 
 

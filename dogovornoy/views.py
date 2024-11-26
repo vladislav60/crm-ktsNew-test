@@ -161,6 +161,12 @@ def create_dogovor(request, klient_id):
             email_itog = passport_info.email
         else:
             email_itog = ' '
+
+        if passport_info.urik_adress:
+            urik_adess = passport_info.urik_adress
+        else:
+            urik_adess = ' '
+
         context = {
             'snames_klient': short_names_klient,
             'udv_number': passport_info.udv_number,
@@ -210,7 +216,7 @@ def create_dogovor(request, klient_id):
             'fio_direktor_polnoe': passport_info.fio_direktor_polnoe,
             'dolznost_klient': passport_info.dolznost,
             'ucereditel_doc': passport_info.ucereditel_doc,
-            'urik_adess': passport_info.urik_adess,
+            'urik_adess': urik_adess,
         }
         doc.render(context)
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')

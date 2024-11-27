@@ -93,7 +93,7 @@ DATABASES = {
         'NAME': 'crm-kts',
         'USER': 'crmktsuser',
         'PASSWORD': 'c7VL09DcUnXGKVysq0fV!$',
-        'HOST': '192.168.1.60',
+        'HOST': 'localhost',
         'PORT': '5432',
     },
     'asu_ekc': {

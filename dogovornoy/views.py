@@ -2,6 +2,7 @@ import calendar
 import json
 import locale
 import math
+from decimal import Decimal
 from io import BytesIO
 
 import pyodbc as pyodbc
@@ -647,45 +648,6 @@ def importekipazh(request):
     return render(request, 'dogovornoy/importekipazh.html', {'form': form})
 
 
-@method_decorator(login_required, name='dispatch')
-class KartochkaKlienta(DetailView):
-    model = kts
-    template_name = 'dogovornoy/kartochka_klienta.html'
-    pk_url_kwarg = 'klient_id'
-    context_object_name = 'kartochka'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        kts_instance = self.get_object()
-
-        # Вычисляем общую стоимость дополнительных услуг
-        additional_services_cost = kts_instance.additional_services.aggregate(total_cost=Sum('price'))['total_cost']
-
-        # Проверка отключения всех дополнительных услуг
-        if kts_instance.additional_services.filter(date_unsubscribe__isnull=False).exists():
-            # Если есть хотя бы одна услуга с датой отключения
-            itog_oplata = kts_instance.abon_plata - (additional_services_cost or 0)
-        else:
-            # Если все дополнительные услуги активны
-            itog_oplata = kts_instance.abon_plata + (additional_services_cost or 0)
-
-        context['itog_oplata'] = itog_oplata
-        context['form'] = AdditionalServiceForm()
-        return context
-
-    def post(self, request, *args, **kwargs):
-        form = AdditionalServiceForm(request.POST)
-        if form.is_valid():
-            kts_instance = self.get_object()  # Get the Kts instance associated with the view
-            form.instance.kts = kts_instance  # Associate the additional service with the Kts instance
-            form.save()  # Save the additional service
-            return redirect('kartochka_klienta', klient_id=kts_instance.pk)
-        else:
-            context = self.get_context_data()
-            context['form'] = form
-            return self.render_to_response(context)
-
-
 class CopyClientView(View):
     def get(self, request, pk):
         # Находим оригинального клиента
@@ -782,6 +744,155 @@ class CopyClientViewPartner(View):
 
 
 
+def calculate_active_days(partner_object, start_of_month=None, end_of_month=None):
+    now = timezone.now()
+    if not start_of_month or not end_of_month:
+        previous_month = now.month or 12
+        year = now.year if now.month > 1 else now.year - 1
+        start_of_month = datetime(year, previous_month, 1, tzinfo=timezone.utc).date()
+        end_of_month = datetime(year, previous_month, calendar.monthrange(year, previous_month)[1], tzinfo=timezone.utc).date()
+        print(start_of_month)
+        print(end_of_month)
+
+    if not partner_object.date_podkluchenia:
+        return 0
+
+    podkluchenia = partner_object.date_podkluchenia
+
+    # Проверяем наличие поля даты отключения и извлекаем его
+    if hasattr(partner_object, 'date_otkluchenia') and partner_object.date_otkluchenia:
+        otkluchenia = partner_object.date_otkluchenia
+    elif hasattr(partner_object, 'date_otklulchenia') and partner_object.date_otklulchenia:
+        otkluchenia = partner_object.date_otklulchenia
+    else:
+        otkluchenia = None
+
+
+    if not otkluchenia:
+        if podkluchenia <= start_of_month:
+            return (end_of_month - start_of_month).days + 1
+        return (end_of_month - podkluchenia).days + 1
+
+    if otkluchenia < start_of_month:
+        return 0
+
+    if podkluchenia > end_of_month:
+        return 0
+
+    effective_start = max(podkluchenia, start_of_month)
+    effective_end = min(otkluchenia, end_of_month)
+
+    return (effective_end - effective_start).days + 1
+
+
+
+def calculate_service_active_days(service_instance, start_of_month=None, end_of_month=None):
+    now = timezone.now()
+
+    # Установить начало и конец месяца, если они не указаны
+    if not start_of_month or not end_of_month:
+        previous_month = now.month - 1 or 12
+        year = now.year if now.month > 1 else now.year - 1
+        start_of_month = datetime(year, previous_month, 1, tzinfo=timezone.utc).date()
+        end_of_month = datetime(year, previous_month, calendar.monthrange(year, previous_month)[1], tzinfo=timezone.utc).date()
+
+    # Проверить, подключена ли услуга
+    if not service_instance.date_added:
+        return 0
+
+    date_added = service_instance.date_added
+    date_unsubscribe = service_instance.date_unsubscribe
+
+    # Если услуга никогда не была отключена
+    if not date_unsubscribe:
+        if date_added <= start_of_month:
+            return (end_of_month - start_of_month).days + 1
+        return (end_of_month - date_added).days + 1
+
+    # Если услуга была отключена до начала месяца
+    if date_unsubscribe < start_of_month:
+        return 0
+
+    # Если услуга была подключена после конца месяца
+    if date_added > end_of_month:
+        return 0
+
+    # Рассчитать эффективные даты подключения
+    effective_start = max(date_added, start_of_month)
+    effective_end = min(date_unsubscribe, end_of_month)
+
+    return (effective_end - effective_start).days + 1
+
+
+
+
+@method_decorator(login_required, name='dispatch')
+class KartochkaKlienta(DetailView):
+    model = kts
+    template_name = 'dogovornoy/kartochka_klienta.html'
+    pk_url_kwarg = 'klient_id'
+    context_object_name = 'kartochka'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        kts_instance = self.get_object()
+
+        now = timezone.now()
+        num_days_mounth = calendar.monthrange(now.year, now.month)[1]
+        start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+        end_of_month = datetime(now.year, now.month, num_days_mounth, tzinfo=timezone.utc).date()
+        # Используем функцию calculate_active_days для расчета num_days
+        num_days = calculate_active_days(kts_instance, start_of_month, end_of_month)
+        print(num_days)
+
+        total_additional_services_cost = 0
+        itog_abon_plata = 0
+        services_with_cost = []
+
+        for service in kts_instance.additional_services.all():
+            active_days = calculate_service_active_days(service, start_of_month, end_of_month)
+            service_cost = (service.price / num_days_mounth) * active_days if active_days > 0 else 0
+
+            total_additional_services_cost += service_cost
+
+            services_with_cost.append ({
+                'id': service.pk,
+                'service_name': service.service_name,
+                'date_added': service.date_added,
+                'date_unsubscribe': service.date_unsubscribe,
+                'active_days': active_days,
+                'price_per_month': service.price,
+                'calculated_cost': service_cost
+            })
+
+        # Преобразование abon_plata в Decimal
+        itog_abon_plata = Decimal(kts_instance.abon_plata) / Decimal(num_days_mounth) * Decimal(num_days)
+
+        # Итоговая оплата
+        itog_oplata = itog_abon_plata + total_additional_services_cost
+        itog_oplata = round(itog_oplata, 2)
+
+        context['itog_oplata'] = itog_oplata
+        context['num_days'] = num_days
+        context['services_with_cost'] = services_with_cost
+        context['total_additional_services_cost'] = round(total_additional_services_cost, 2)
+        context['form'] = AdditionalServiceForm()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        form = AdditionalServiceForm(request.POST)
+        if form.is_valid():
+            kts_instance = self.get_object()  # Get the Kts instance associated with the view
+            form.instance.kts = kts_instance  # Associate the additional service with the Kts instance
+            form.save()  # Save the additional service
+            return redirect('kartochka_klienta', klient_id=kts_instance.pk)
+        else:
+            context = self.get_context_data()
+            context['form'] = form
+            return self.render_to_response(context)
+
+
+
 @method_decorator(login_required, name='dispatch')
 class KartochkaPartner(DetailView):
     model = partners_object
@@ -794,38 +905,15 @@ class KartochkaPartner(DetailView):
 
         now = timezone.now()
         partner_object = self.get_object()
-        num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]
+        num_days_mounth = calendar.monthrange(now.year, now.month)[1]
+        start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+        end_of_month = datetime(now.year, now.month, num_days_mounth, tzinfo=timezone.utc).date()
 
-        start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-        end_of_month = datetime(now.year, now.month-1, num_days_mounth, tzinfo=timezone.utc).date()
+        # Используем функцию calculate_active_days для расчета num_days
+        num_days = calculate_active_days(partner_object, start_of_month, end_of_month)
+        print(num_days)
 
         sms_uvedomlenie = 0
-
-        if partner_object.date_otkluchenia:
-            if isinstance(start_of_month, datetime):
-                start_of_month = start_of_month.date()
-            if isinstance(end_of_month, datetime):
-                end_of_month = end_of_month.date()
-
-            if (partner_object.date_otkluchenia > start_of_month) and (partner_object.date_podkluchenia <= start_of_month):
-                num_days = (partner_object.date_otkluchenia - start_of_month).days
-            elif (partner_object.date_otkluchenia > start_of_month) and (
-                    partner_object.date_podkluchenia > partner_object.date_otkluchenia):
-                num_days = num_days_mounth - (partner_object.date_podkluchenia - partner_object.date_otkluchenia).days
-            elif partner_object.date_otkluchenia > start_of_month:
-                num_days = num_days_mounth - (partner_object.date_podkluchenia - partner_object.date_otkluchenia).days
-            elif partner_object.date_otkluchenia < start_of_month:
-                num_days = num_days_mounth
-            else:
-                num_days = (partner_object.date_otkluchenia - start_of_month).days
-        else:
-            if partner_object.date_podkluchenia:
-                if partner_object.date_podkluchenia > start_of_month:
-                    num_days = (end_of_month - partner_object.date_podkluchenia).days + 1
-                else:
-                    num_days = num_days_mounth
-            else:
-                num_days = num_days_mounth
 
         # Calculate itog_tehnical_services
         if partner_object.tehnical_services:
@@ -916,7 +1004,7 @@ def delete_additional_service(request, service_id):
 
     if request.method == 'POST':
         additional_service.delete()
-        return redirect('baza_dogovorov')  # Redirect to client list or a specific page after deletion
+        return redirect('kartochka_klienta', klient_id=additional_service.kts_id)
 
     return render(request, 'dogovornoy/delete_additional_service.html', {'additional_service': additional_service})
 
@@ -929,7 +1017,7 @@ def edit_additional_service(request, service_id):
         form = AdditionalServiceForm(request.POST, instance=additional_service)
         if form.is_valid():
             form.save()
-            return redirect('baza_dogovorov')  # Redirect to client list or a specific page after editing
+            return redirect('kartochka_klienta', klient_id=additional_service.kts_id)
     else:
         form = AdditionalServiceForm(instance=additional_service)
 

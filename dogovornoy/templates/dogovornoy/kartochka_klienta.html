@@ -178,7 +178,7 @@
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
                             </div>
-                            <div class="col-3">
+                            <div class="col-2">
                                 <label for="inputNanme4" class="form-label">Часы по договору</label>
 
                                 {% if kartochka.chasi_po_dog %}
@@ -188,7 +188,7 @@
                                     <input type="text" class="form-control" value=" " disabled>
                                 {% endif %}
                             </div>
-                            <div class="col-3">
+                            <div class="col-2">
                                 <label for="inputNanme4" class="form-label">Абон.плата</label>
 
                                 {% if kartochka.abon_plata %}
@@ -198,7 +198,12 @@
                                 {% endif %}
                             </div>
 
-                             <div class="col-3">
+                            <div class="col-2">
+                                <label for="inputNanme4" class="form-label">Кол-во дней</label>
+                                <input type="text" class="form-control" value="{{ num_days }}" disabled>
+                            </div>
+
+                             <div class="col-2">
                                 <label for="inputNanme4" class="form-label">Итого</label>
                                 {% if itog_oplata %}
                                     <input type="text" class="form-control" value="{{ itog_oplata }}"
@@ -208,7 +213,7 @@
                                 {% endif %}
                             </div>
 
-                            <div class="col-3">
+                            <div class="col-2">
                                 <label for="inputNanme4" class="form-label">Стоимость РПО</label>
 
                                 {% if kartochka.stoimost_rpo %}
@@ -447,18 +452,21 @@
                                         <th scope="col">Стоимость</th>
                                         <th scope="col">Дата подключения</th>
                                         <th scope="col">Дата отключения</th>
+                                        <th scope="col">Кол-во дней</th>
+                                        <th scope="col">Итого</th>
                                         <th scope="col"></th>
                                         <th scope="col"></th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    {% for service in kartochka.additional_services.all %}
+                                    {% for service in services_with_cost %}
                                         <tr>
                                             <td>{{ service.service_name }}</td>
-                                            <td>{{ service.price }}</td>
+                                            <td>{{ service.price_per_month }}</td>
                                             <td>{{ service.date_added }}</td>
-                                            <td>{{ service.date_unsubscribe }}</td>
-
+                                            <td>{{ service.date_unsubscribe|default:''}}</td>
+                                            <td>{{ service.active_days }}</td>
+                                            <td>{{ service.calculated_cost }}</td>
                                             <td>
                                                 <a href="{% url 'edit_additional_service' service.id %}">
                                                     <button type="button" class="btn btn-secondary">
@@ -478,7 +486,6 @@
                                     {% empty %}
                                         <tr>
                                             <td colspan="3">Дополнительных услуг не подключено</td>
-                                            .
                                         </tr>
                                     {% endfor %}
                                     </tbody>

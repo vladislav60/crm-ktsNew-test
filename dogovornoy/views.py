@@ -1076,15 +1076,15 @@ def generate_invoice(request, pk):
 
     # Сохранение PDF в папку invoices
     file_path, file_name = save_pdf_to_invoices(html_string, new_number)
-    file_url = f"https://180b-87-255-198-65.ngrok-free.app/{settings.MEDIA_URL}invoices/{file_name}"  # Публичный URL
+    file_url = f"http://87.255.198.65:9910/{settings.MEDIA_URL}invoices/{file_name}"  # Публичный URL
 
     # Отправка через WhatsApp
     access_token = "f895ca7a98494aa6b1dd7a4cab83f026"
     channel_id = "da3aa85a-4133-44a5-8e4c-1c259e0fb885"
     phone_number = kts_instance.telephone
     message = f"Здравствуйте, {kts_instance.company_name.polnoe_name}! Ваш счет на оплату готов. Общая сумма: {kts_instance.abon_plata} тенге."
-    # send_whatsapp_message(phone_number, file_url, access_token, message, channel_id)
-    # send_whatsapp_pdf(phone_number, file_url, access_token, message, channel_id)
+    send_whatsapp_message(phone_number, file_url, access_token, message, channel_id)
+    send_whatsapp_pdf(phone_number, file_url, access_token, message, channel_id)
 
     # Возврат HTTP-ответа
     with open(file_path, 'rb') as pdf_file:

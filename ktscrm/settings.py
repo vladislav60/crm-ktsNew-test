@@ -15,9 +15,8 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-CSRF_TRUSTED_ORIGINS = ['https://180b-87-255-198-65.ngrok-free.app',
+CSRF_TRUSTED_ORIGINS = ['https://1ca0-87-255-198-65.ngrok-free.app',
                         'http://192.168.1.19:8008',
-                        'http://127.0.0.1:4040',
                         ]
 
 
@@ -171,9 +170,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATIC_URL = '/static/'
 
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+STATICFILES_DIRS = (os.path.join(BASE_DIR,'dogovornoy/static'),os.path.join(BASE_DIR, 'static'),)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 

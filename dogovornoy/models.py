@@ -78,6 +78,7 @@ class rekvizity(models.Model):
     doljnost = models.CharField(max_length=255, null=True, verbose_name="Должность")
     ucheriditel_name_polnoe = models.CharField(max_length=255, null=True, verbose_name="ФИО директора")
     ucheriditel_name_sokr = models.CharField(max_length=255, null=True, verbose_name="ФИО директора сокращенно")
+    img_pechat = models.ImageField(upload_to='company_seals/', blank=True, null=True, verbose_name="Печать компании")
 
     def __str__(self):
         return self.polnoe_name
@@ -287,6 +288,17 @@ class SkaldGSM2(models.Model):
     class Meta:
         verbose_name = "Склад GSM"
         verbose_name_plural = "Склад GSM"
+
+
+
+class Invoice(models.Model):
+    number = models.PositiveIntegerField(unique=True)  # Номер счета (уникальный)
+    date_created = models.DateTimeField(auto_now_add=True)
+    client = models.CharField(max_length=255)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"Счет № {self.number}"
 
 
 

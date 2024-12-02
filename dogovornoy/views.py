@@ -2,15 +2,19 @@ import calendar
 import json
 import locale
 import math
+import tempfile
+import requests
 from decimal import Decimal
 from io import BytesIO
-
+from django.template.loader import render_to_string
+from weasyprint import HTML
+from django.contrib.sites.shortcuts import get_current_site
 import pyodbc as pyodbc
 import telegram
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import AbstractUser
 from django.db import connections
-from django.db.models import Count, Sum, F, Q
+from django.db.models import Count, Sum, F, Q, Max
 from django.utils.decorators import method_decorator
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.paginator import Paginator
@@ -892,6 +896,204 @@ class KartochkaKlienta(DetailView):
             return self.render_to_response(context)
 
 
+def format_date_russian(date):
+    months = {
+        1: "января", 2: "февраля", 3: "марта", 4: "апреля", 5: "мая", 6: "июня",
+        7: "июля", 8: "августа", 9: "сентября", 10: "октября", 11: "ноября", 12: "декабря"
+    }
+    return f"{date.day} {months[date.month]} {date.year}"
+
+
+def format_date_russian_invoice(date):
+    months = {
+        1: "январе", 2: "феврале", 3: "марте", 4: "апреле", 5: "мае", 6: "июне",
+        7: "июле", 8: "августе", 9: "сентябре", 10: "октябре", 11: "ноябре", 12: "декабре"
+    }
+    return f"{months[date.month]} {date.year}"
+
+
+def save_pdf_to_invoices(html_string, invoice_number):
+    # Путь к папке invoices в MEDIA_ROOT
+    invoices_dir = os.path.join(settings.MEDIA_ROOT, 'invoices')
+    os.makedirs(invoices_dir, exist_ok=True)  # Создаем папку, если она не существует
+
+    # Путь для сохранения файла
+    file_name = f'invoice_{invoice_number}.pdf'
+    file_path = os.path.join(invoices_dir, file_name)
+
+    # Генерация PDF и сохранение
+    with open(file_path, 'wb') as pdf_file:
+        HTML(string=html_string).write_pdf(pdf_file)
+
+    return file_path, file_name
+
+
+def send_whatsapp_pdf(phone_number, pdf_path, access_token, message, channel_id):
+    # Отправляем документ через WhatsApp API
+    url = f"https://api.wazzup24.com/v3/message"
+
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+
+
+    # Создаем публичный URL для временного файла
+    # (вместо этого вы можете загрузить файл на ваш сервер или S3 и получить публичный URL)
+    public_url = "https://disk.yandex.ru/i/c7T5lpf9sJkhMw"  # Публичный URL временного файла
+
+    # Запрос на отправку сообщения через WhatsApp
+    data = {
+        "channelId": channel_id,
+        "chatType": "whatsapp",
+        "chatId": phone_number,  # Номер клиента в международном формате
+        "contentUri": pdf_path,
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+
+    # Проверяем статус запроса
+    if response.status_code == 201:
+        print("Сообщение успешно отправлено!")
+        return True
+    else:
+        print(f"Ошибка: {response.status_code} - {response.json()}")
+        return False
+
+
+def send_whatsapp_message(phone_number, pdf_path, access_token, message, channel_id):
+    # Отправляем документ через WhatsApp API
+    url = f"https://api.wazzup24.com/v3/message"
+
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json'
+    }
+
+
+    # Создаем публичный URL для временного файла
+    # (вместо этого вы можете загрузить файл на ваш сервер или S3 и получить публичный URL)
+    public_url = "https://disk.yandex.ru/i/c7T5lpf9sJkhMw"  # Публичный URL временного файла
+
+    # Запрос на отправку сообщения через WhatsApp
+    data = {
+        "channelId": channel_id,
+        "chatType": "whatsapp",
+        "chatId": phone_number,  # Номер клиента в международном формате
+        "text": message,
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+
+    # Проверяем статус запроса
+    if response.status_code == 201:
+        print("Сообщение успешно отправлено!")
+        return True
+    else:
+        print(f"Ошибка: {response.status_code} - {response.json()}")
+        return False
+
+
+def generate_invoice(request, pk):
+    # Получаем клиента
+    kts_instance = kts.objects.get(pk=pk)
+
+    # Получаем данные по услугам
+    services_with_cost = []
+    total_services_cost = 0
+    now = timezone.now()
+    formatted_date = format_date_russian(now)
+    formatted_date_month = format_date_russian_invoice(now)
+    num_days_mounth = calendar.monthrange(now.year, now.month)[1]
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, num_days_mounth, tzinfo=timezone.utc).date()
+    kbe = 17 if "ТОО" in kts_instance.company_name.polnoe_name else 19
+    company = kts_instance.company_name
+
+    for service in kts_instance.additional_services.all():
+        active_days = calculate_service_active_days(service, start_of_month, end_of_month)
+        service_cost = (service.price / num_days_mounth) * active_days if active_days > 0 else 0
+        total_services_cost += service_cost
+        services_with_cost.append({
+            'service_name': service.service_name,
+            'active_days': active_days,
+            'price_per_month': service.price,
+            'calculated_cost': service_cost
+        })
+
+    # Расчет итоговой суммы
+    num_days = calculate_active_days(kts_instance, start_of_month, end_of_month)
+    abon_plata = Decimal(kts_instance.abon_plata) / Decimal(num_days_mounth) * Decimal(num_days)
+    total_cost = abon_plata + total_services_cost
+    nds = (total_cost / 100) * 13
+    currency_main = ('тенге', 'тенге', 'тенге')
+    currency_additional = ('тиын', 'тиына', 'тиынов')
+    itog_oplata_propis = get_string_by_number(total_cost, currency_main, currency_additional)
+
+    # Найти максимальный номер счета
+    last_number = Invoice.objects.aggregate(Max('number'))['number__max'] or 0
+
+    # Увеличить номер на 1
+    new_number = last_number + 1
+
+    # Создать новый счет
+    invoice = Invoice.objects.create(
+        number=new_number,
+        client=kts_instance.company_name.polnoe_name,
+        total_amount=total_cost
+    )
+
+    current_site = get_current_site(request)
+    company_seal_url = request.build_absolute_uri(company.img_pechat.url) if company.img_pechat else None
+
+    # Подготовка данных для шаблона
+    context = {
+        'client_name': kts_instance.company_name.polnoe_name,
+        'adres_company': kts_instance.company_name.adres_company,
+        'telephone_ofiice': kts_instance.company_name.telephone_ofiice,
+        'kbe': kbe,
+        'bin': kts_instance.company_name.bin,
+        'iban': kts_instance.company_name.iban,
+        'bank': kts_instance.company_name.bank,
+        'bic': kts_instance.company_name.bic,
+        'invoice_date': formatted_date,
+        'last_number': last_number,
+        'invoice_date_month': formatted_date_month,
+        'klient_name': kts_instance.klient_name,
+        'iin_bin': kts_instance.iin_bin,
+        'adres': kts_instance.adres,
+        'telephone': kts_instance.telephone,
+        'itog_oplata_propis': itog_oplata_propis,
+        'services': services_with_cost,
+        'abon_plata': round(abon_plata, 2),
+        'total_cost': round(total_cost, 2),
+        'nds': round(nds, 2),
+        'company_seal': company_seal_url,
+    }
+
+    # Генерация HTML из шаблона
+    html_string = render_to_string('dogovornoy/invoice.html', context)
+
+    # Сохранение PDF в папку invoices
+    file_path, file_name = save_pdf_to_invoices(html_string, new_number)
+    file_url = f"https://180b-87-255-198-65.ngrok-free.app/{settings.MEDIA_URL}invoices/{file_name}"  # Публичный URL
+
+    # Отправка через WhatsApp
+    access_token = "f895ca7a98494aa6b1dd7a4cab83f026"
+    channel_id = "da3aa85a-4133-44a5-8e4c-1c259e0fb885"
+    phone_number = kts_instance.telephone
+    message = f"Здравствуйте, {kts_instance.company_name.polnoe_name}! Ваш счет на оплату готов. Общая сумма: {kts_instance.abon_plata} тенге."
+    # send_whatsapp_message(phone_number, file_url, access_token, message, channel_id)
+    # send_whatsapp_pdf(phone_number, file_url, access_token, message, channel_id)
+
+    # Возврат HTTP-ответа
+    with open(file_path, 'rb') as pdf_file:
+        response = HttpResponse(pdf_file.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{file_name}"'
+
+    return response
+
+
 
 @method_decorator(login_required, name='dispatch')
 class KartochkaPartner(DetailView):
@@ -1475,8 +1677,12 @@ def reports_partners(request):
 
         if kts_instance.urik:
             reagirovanie = int(((kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
         else:
             reagirovanie = int(((kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
 
         if kts_instance.sms_uvedomlenie:
             if kts_instance.sms_number:
@@ -1638,9 +1844,14 @@ def reports_partners_download_urik(request):
             itog_fire_alarm = 0
 
         if kts_instance.urik:
-            reagirovanie = int(((kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = int(
+                ((kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
         else:
-            reagirovanie = int(kts_instance.tariff_per_mounth)
+            reagirovanie = int(((kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
 
         if kts_instance.sms_uvedomlenie:
             if kts_instance.sms_number:
@@ -1865,9 +2076,14 @@ def sgs_plus_download_fiz(request):
             itog_fire_alarm = 0
 
         if kts_instance.urik:
-            reagirovanie = int(((kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = int(
+                ((kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
         else:
-            reagirovanie = int(kts_instance.tariff_per_mounth)
+            reagirovanie = int(((kts_instance.tariff_per_mounth) / num_days_mounth) * num_days)
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
 
         if kts_instance.sms_uvedomlenie:
             if kts_instance.sms_number:

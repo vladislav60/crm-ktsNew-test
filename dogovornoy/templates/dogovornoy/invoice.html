@@ -1,0 +1,178 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Счет на оплату</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .payment-details {
+            font-size: 8px;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .payment-details td, .payment-details th {
+            border: 1px solid #000;
+            padding: 4px;
+            text-align: left;
+        }
+        .payment-details .center {
+            text-align: center;
+        }
+        .invoice-header, .invoice-header h1{
+            text-align: left;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .invoice-details, .invoice-items, .invoice-summary {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .invoice-details th, .invoice-details td,
+        .invoice-items th, .invoice-items td,
+        .invoice-summary th, .invoice-summary td {
+            border: 1px solid #000;
+            padding: 8px;
+            font-size: 9px;
+        }
+        .invoice-details th, .invoice-items th, .invoice-summary th {
+            background-color: #f2f2f2;
+            text-align: left;
+        }
+        .right {
+            text-align: right;
+        }
+        .center {
+            text-align: center;
+        }
+        .footer{
+            margin-top: 20px;
+            border-bottom: 1px solid #000;
+        }
+        .footer p {
+            font-size: 14px;
+        }
+        .header_text_invoice {
+            font-size: 9px;
+        }
+        .font_bold {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <p class="header_text_invoice"> Внимание! Оплата данного счета означает согласие с условиями поставки товара. Уведомление об оплате
+ обязательно, в противном случае не гарантируется наличие товара на складе. Товар отпускается по факту  прихода денег
+        на р/с Поставщика, самовывозом, при наличии доверенности и документов удостоверяющих личность.</p>
+    <!-- Таблица платежного поручения -->
+    <table class="payment-details">
+        <tr>
+            <th colspan="3">Образец платежного поручения</th>
+        </tr>
+        <tr>
+            <td><strong>Бенефициар:</strong><br><strong>{{ client_name }}</strong><br>БИН: {{ bin }}</td>
+            <td><strong>ИИК</strong><br><strong>{{ iban }}</strong></td>
+            <td><strong>Кбе</strong><br><strong>{{ kbe }}</strong></td>
+        </tr>
+        <tr>
+            <td><strong>Банк бенефициара:</strong><br>{{bank}}</td>
+            <td><strong>БИК</strong><br><strong>{{ bic }}</strong></td>
+            <td><strong>Код назначения платежа</strong><br><strong>859</strong></td>
+        </tr>
+    </table>
+
+    <!-- Основная часть счета -->
+    <div class="invoice-header">
+        <h1>Счет на оплату № {{ last_number }} от {{ invoice_date }} г.</h1>
+        <p> </p>
+    </div>
+
+    <table class="invoice-details">
+        <tr>
+            <th>Поставщик:</th>
+            <td><strong>{{ client_name }}</strong><br><strong>БИН / ИИН: {{ bin }}</strong></td>
+        </tr>
+        <tr>
+            <th>Адрес:</th>
+            <td>{{ adres_company }}</td>
+        </tr>
+        <tr>
+            <th>Телефон:</th>
+            <td>{{ telephone_ofiice }}</td>
+        </tr>
+    </table>
+
+    <p></p>
+
+    <table class="invoice-details">
+        <tr>
+            <th>Покупатель:</th>
+            <td><strong>{{ klient_name }},</strong><br><strong>БИН / ИИН: {{ iin_bin }}</strong></td>
+        </tr>
+        <tr>
+            <th>Адрес:</th>
+            <td>{{ adres }}</td>
+        </tr>
+        <tr>
+            <th>Телефон:</th>
+            <td>{{ telephone }}</td>
+        </tr>
+    </table>
+
+    <table class="invoice-items">
+        <thead>
+            <tr>
+                <th>№</th>
+                <th>Наименование</th>
+                <th>Кол-во</th>
+                <th>Ед.</th>
+                <th>Цена</th>
+                <th>Сумма</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="center">1</td>
+                <td>Услуги наблюдения за охранной сигнализацией в {{ invoice_date_month }} г.</td>
+                <td class="center">1,000</td>
+                <td class="center">мес.</td>
+                <td class="right">{{ total_cost }}</td>
+                <td class="right">{{ total_cost }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="invoice-summary">
+        <tr>
+            <th>Итого:</th>
+            <td class="right">{{ total_cost }}</td>
+        </tr>
+        {% if client_name == "ТОО «КузетТехноСервис»" %}
+            <tr>
+                <th>В том числе НДС:</th>
+                <td class="right">{{ nds }}</td>
+            </tr>
+        {% endif %} 
+
+    </table>
+
+    <div class="footer">
+        <p>Всего наименований 1, на сумму {{ total_cost }} KZT</p>
+        <p class="font_bold">Всего к оплате: {{ itog_oplata_propis}}</p>
+    </div>
+
+    <div class="div">
+    {% if company_seal %}
+        <img src="{{ company_seal }}" alt="Печать компании" style="width: 100%; margin-top: 20px;">
+    {% else %}
+        <p>Печать отсутствует</p>
+    {% endif %}
+</div>
+</body>
+</html>

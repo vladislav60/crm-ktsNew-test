@@ -171,6 +171,7 @@ urlpatterns = [
     path('skladgsm/return/<int:pk>/', skladgsm_return, name='skladgsm_return'),
     path('export_kts_to_exel/', export_kts_to_exel, name='export_kts_to_exel'),
     path('export_partners_excel/', export_partners_to_excel, name='export_partners_excel'),
+    path('generate_invoice/<int:pk>/', generate_invoice, name='generate_invoice'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

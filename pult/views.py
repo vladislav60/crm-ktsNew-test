@@ -238,7 +238,80 @@ def export_alarms_to_excel(request):
     return response
 
 
+from django.db import connections, connection
 
+
+def gsm2moduls_list(request):
+    with connections['third_db'].cursor() as cursor:
+        cursor.execute("SELECT * FROM dbo.v_GSM2MODULS")
+        rows = cursor.fetchall()
+
+    # Формируем список словарей
+    records = [
+        {
+            'Модуль': row[0],
+            'Тип': row[1],
+            'Дата': row[2],
+            'Качество': row[3],
+            'Интернет': row[4],
+            'Сот': row[5],
+            'КолSMS': row[6],
+            'SN': row[7],
+            'ORGID': row[8],
+            'COLOR': row[9],
+        }
+        for row in rows
+    ]
+    # print(records[0])
+
+    # Передаем данные в шаблон
+    return render(request, 'gsm2moduls_list.html', {'records': records})
+
+
+def gsm_info_view(request):
+    query = """SELECT
+        O.Name AS organization,
+        I.MODUL AS module,
+        I.SN AS serial_number,
+        S.PHONE AS phone,
+        I.DT AS imei_date,
+        I.IM AS imei,
+        C.OTISNUMBER AS object_number,
+        C.OBJECTNAME AS object_name
+    FROM dbo.tbl_IMEI AS I
+    INNER JOIN dbo.GSMSIM AS S ON S.SN = I.SN
+    INNER JOIN dbo.CARDS AS C ON C.UNITNUMBER = I.MODUL
+    INNER JOIN dbo.ORG AS O ON O.OrgID = C.ORGID
+    INNER JOIN (
+        SELECT
+            CM.OTISNUMBER,
+            MAX(IM.DT) AS MDT
+        FROM dbo.tbl_IMEI AS IM
+        INNER JOIN dbo.CARDS AS CM ON CM.UNITNUMBER = IM.MODUL
+        GROUP BY CM.OTISNUMBER
+    ) AS DM ON C.OTISNUMBER = DM.OTISNUMBER AND I.DT = DM.MDT
+    WHERE (I.IM IS NOT NULL) AND (I.IM <> '')"""
+
+    with connections['third_db'].cursor() as cursor:
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+    data = [
+        {
+            "organization": row[0],
+            "module": row[1],
+            "serial_number": row[2],
+            "phone": row[3],
+            "imei_date": row[4],
+            "imei": row[5],
+            "object_number": row[6],
+            "object_name": row[7],
+        }
+        for row in rows
+    ]
+    # print(data[0])
+
+    return render(request, 'gsminfo.html', {"data": data})
 
 
 

@@ -9,4 +9,6 @@ urlpatterns = [
     path('alarm_report_tech/', views.alarm_report_tech, name='alarm_report_tech'),
     path('export-alarms/', export_alarms_to_excel, name='export_alarms_to_excel'),
     path('cards/<int:pk>/', card_detail, name='card_detail'),
+    path('gsminfo/', gsm_info_view, name='gsm_info'),
+    path('gsm2moduls/', gsm2moduls_list, name='gsm2moduls'),
 ]

@@ -1620,3 +1620,20 @@ class TblDrycontact(models.Model):
         managed = False
         db_table = 'tbl_dryContact'
         unique_together = (('zoneid', 'orgeventkind'),)
+
+
+class VGsm2Moduls(models.Model):
+    mod_id = models.IntegerField(db_column='Модуль')  # Поле 'Модуль'
+    module_type = models.CharField(max_length=255, db_column='Тип')  # Поле 'Тип'
+    date = models.DateField(db_column='Дата')  # Поле 'Дата'
+    quality = models.IntegerField(db_column='Качество')  # Поле 'Качество'
+    internet = models.CharField(max_length=255, db_column='Интернет')  # Поле 'Интернет'
+    cellular = models.CharField(max_length=255, db_column='Сот.')  # Поле 'Сот.'
+    sms_count = models.IntegerField(db_column='Кол. SMS')  # Поле 'Кол. SMS'
+    sn = models.CharField(max_length=255, db_column='SN')  # Поле 'SN'
+    org_id = models.IntegerField(db_column='ORGID')  # Поле 'ORGID'
+    color = models.IntegerField(db_column='COLOR')  # Поле 'COLOR'
+
+    class Meta:
+        managed = False
+        db_table = 'v_GSM2MODULS'  # Указание схемы и имени представления

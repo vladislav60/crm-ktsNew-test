@@ -242,8 +242,55 @@ from django.db import connections, connection
 
 
 def gsm2moduls_list(request):
+    query = """SELECT        
+    M.ID AS Модуль,
+    ISNULL(V.NAME, 'Неизвестен') AS Тип,
+    VC.Дата,
+    VC.Качество,
+    VC.Интернет,
+    VC.[Сот.],
+    ISNULL(SMS.SMS, 0) AS [Кол. SMS],
+    VC.SN,
+    O.Name AS Организация,
+    ISNULL(VC.COLOR, 12639424) AS COLOR,
+    I.IM AS IMEI
+FROM            
+    dbo.MODULS AS M
+    INNER JOIN (
+        SELECT MIN(SN) AS SN, MODUL
+        FROM dbo.GSM_USN AS GU
+        GROUP BY MODUL
+    ) AS SU ON SU.MODUL = M.ID
+    INNER JOIN dbo.GSMSIM AS S ON S.SN = SU.SN
+    LEFT OUTER JOIN dbo.tbl_DevVer AS V ON V.ADT = M.ADT
+    LEFT OUTER JOIN (
+        SELECT        
+            P.NAME AS [Сот.], 
+            I.Name AS Интернет, 
+            C.DT AS Дата, 
+            C.SQ AS Качество, 
+            C.SN, 
+            U.MODUL, 
+            P.COLOR
+        FROM dbo.GSM_CONN AS C
+        INNER JOIN dbo.GSMSIM AS S1 ON S1.SN = C.SN
+        INNER JOIN dbo.GSM_USN AS U ON U.SN = S1.SN
+        LEFT OUTER JOIN dbo.tbl_PROVIDERS AS P ON P.PREF = SUBSTRING(S1.PHONE, 1, 3)
+        LEFT OUTER JOIN dbo.tbl_SPRIP AS I ON I.IP = C.IP
+    ) AS VC ON VC.MODUL = M.ID
+    LEFT OUTER JOIN dbo.V_GSM2SMSCNT AS SMS ON SMS.MODUL = M.ID
+    LEFT OUTER JOIN dbo.ORG AS O ON O.OrgID = S.ORGID
+    LEFT OUTER JOIN (
+        SELECT
+            IM.MODUL,
+            MAX(IM.DT) AS LatestDate,
+            IM.IM
+        FROM dbo.tbl_IMEI AS IM
+        GROUP BY IM.MODUL, IM.IM
+    ) AS I ON I.MODUL = M.ID"""
+
     with connections['third_db'].cursor() as cursor:
-        cursor.execute("SELECT * FROM dbo.v_GSM2MODULS")
+        cursor.execute(query)
         rows = cursor.fetchall()
 
     # Формируем список словарей
@@ -259,6 +306,7 @@ def gsm2moduls_list(request):
             'SN': row[7],
             'ORGID': row[8],
             'COLOR': row[9],
+            'IMEI': row[10],
         }
         for row in rows
     ]

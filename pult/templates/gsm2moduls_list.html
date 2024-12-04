@@ -60,8 +60,10 @@
                 <th>Кол. SMS</th>
                 <th>SN</th>
                 <th>ORGID</th>
+                <th>IMEI</th>
             </tr>
             <tr>
+                <th><input type="text" class="search-input"></th>
                 <th><input type="text" class="search-input"></th>
                 <th><input type="text" class="search-input"></th>
                 <th><input type="text" class="search-input"></th>
@@ -85,6 +87,7 @@
                 <td>{{ record.КолSMS }}</td>
                 <td>{{ record.SN|default:'' }}</td>
                 <td>{{ record.ORGID }}</td>
+                <td>{{ record.IMEI|default:'' }}</td>
             </tr>
             {% endfor %}
         </tbody>

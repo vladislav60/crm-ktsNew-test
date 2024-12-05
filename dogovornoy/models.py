@@ -243,6 +243,7 @@ class TechnicalTask(models.Model):
     reason = models.TextField(null=True, blank=True)
     note = models.TextField(blank=True)
     result = models.TextField(blank=True)
+    previous_workstation = models.IntegerField(null=True, blank=True, verbose_name="Предыдущее значение WORKSTATION")
 
     def __str__(self):
         # При необходимости, получаем объект Cards через API или запрос к third_db

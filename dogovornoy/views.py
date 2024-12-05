@@ -39,8 +39,7 @@ import pandas as pd
 from django.urls import reverse
 from openpyxl.workbook import Workbook
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update, Bot
-from telegram.ext import CallbackQueryHandler, Updater, updater, Dispatcher
-
+from telegram.ext import CallbackQueryHandler, Updater, updater, Dispatcher, MessageHandler, Filters
 from ekc.models import *
 from ktscrm import settings
 from pult.models import *
@@ -14901,6 +14900,9 @@ class CompleteTaskView(View):
         task.complete_task(note)
         return redirect(reverse('task_list'))
 
+# Телеграм бот для техников
+
+pending_results = {}
 
 class CreateTechnicalTaskView(View):
     def post(self, request, *args, **kwargs):
@@ -14926,7 +14928,7 @@ class CreateTechnicalTaskView(View):
         # Отправляем уведомление в Telegram (если нужно)
         send_telegram_message(technician, task)
 
-        return redirect('baza_partnerov')  # Перенаправляем на страницу списка задач
+        return redirect('technical_task_list')
 
 
 def get_card_from_third_db(card_id):
@@ -14957,6 +14959,31 @@ bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 
 # Глобальная переменная для хранения последнего SN (можно заменить на БД или кэш)
 last_event_sn = {}
+
+def message_handler(update,context):
+    user_id = update.message.from_user.id
+    text = update.message.text
+
+    # Проверяем, ожидает ли пользователь ввода результата
+    if user_id in pending_results:
+        task_id = pending_results[user_id]
+        try:
+            # Получаем задачу и сохраняем результат
+            task = TechnicalTask.objects.get(pk=task_id)
+            task.result = text  # Поле для хранения результата (добавьте его в модель, если еще нет)
+            task.save()
+
+            # Уведомляем пользователя об успешном сохранении
+            update.message.reply_text(f"Результат для заявки #{task_id} успешно сохранен.")
+
+            # Удаляем из ожидающих
+            del pending_results[user_id]
+        except Exception as e:
+            update.message.reply_text(f"Ошибка при сохранении результата: {e}")
+    else:
+        # Если пользователь не в ожидании ввода
+        update.message.reply_text("Я не ожидал от вас результата. Попробуйте снова.")
+
 
 def button_handler(update, context):
     global last_event_sn
@@ -15028,7 +15055,7 @@ def button_handler(update, context):
             # Проверка на наличие сохраненного `SN` для обновления
             card = get_card_from_third_db(task.client_object_id)
             module_number = card.unitnumber
-            new_alarms = execute_stored_procedure_with_last_id(module_number, last_event_sn.get(task_id, None))
+            new_alarms = execute_stored_procedure(module_number)
 
             if new_alarms:
                 message = f"Обновленные события для модуля {module_number}:\n\n"
@@ -15042,7 +15069,7 @@ def button_handler(update, context):
                     last_event_sn[task_id] = new_alarms[0][1]
 
                 # Обновляем последний SN для последующих обновлений
-                print(f"Обновленный last_event_sn = {last_event_sn[task_id]}")
+                # print(f"Обновленный last_event_sn = {last_event_sn[task_id]}")
             else:
                 message = "Нет новых событий для модуля."
 
@@ -15070,19 +15097,55 @@ def button_handler(update, context):
             query.edit_message_text(text=message, reply_markup=reply_markup)
 
         elif action == "arrival":
-            # Устанавливаем время прибытия на объект
-            task.arrival_time = timezone.now()
-            task.save()
+            card = get_card_from_third_db(task.client_object_id)
+            if card:
+                # Сохраняем текущее значение workstation перед изменением
+                task.previous_workstation = card.workstation
+                task.arrival_time = timezone.now()
+                task.save()
 
-            message = f"Время прибытия на объект установлено: {task.arrival_time.strftime('%d-%m-%Y %H:%M:%S')}"
-            keyboard = [
-                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
-                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
-                [InlineKeyboardButton(text="Вывести события", callback_data=f"task_module_{task_id}")],
-                [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")]
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            query.edit_message_text(text=message, reply_markup=reply_markup)
+                # Изменяем workstation на 3 (техническое обслуживание)
+                card.workstation = 3
+                card.save(using='third_db')  # Сохраняем изменение в базе данных `third_db`
+
+                message = f"Время прибытия на объект установлено: {task.arrival_time.strftime('%d-%m-%Y %H:%M:%S')}\n" \
+                          f"Клиент временно переведен на техническое обслуживание."
+                keyboard = [
+                    [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
+                    [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                    [InlineKeyboardButton(text="Вывести события", callback_data=f"task_module_{task_id}")],
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                query.edit_message_text(text=message, reply_markup=reply_markup)
+            else:
+                query.edit_message_text(text="Клиент не найден.")
+        elif action == "completion":
+            card = get_card_from_third_db(task.client_object_id)
+            if card and task.previous_workstation is not None:
+                # Возвращаем значение workstation к предыдущему состоянию
+                card.workstation = task.previous_workstation
+                card.save(using='third_db')
+
+                # Сбрасываем сохраненное значение, так как задача завершена
+                task.previous_workstation = None
+                task.completion_time = timezone.now()
+                task.save()
+
+                message = f"Время завершения заявки установлено: {task.completion_time.strftime('%d-%m-%Y %H:%M:%S')}\n" \
+                          f"Клиент переведен в прежний режим работы."
+                keyboard = [
+                    [InlineKeyboardButton(text="Заполнить результат", callback_data=f"result_{task_id}")],
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                query.edit_message_text(text=message, reply_markup=reply_markup)
+            else:
+                query.edit_message_text(text="Ошибка: невозможно восстановить состояние клиента.")
+        elif action == "result":
+            # Сохраняет результат выполнения от техника
+            pending_results[query.from_user.id] = task_id
+
+            message = f"Пожалуйста, отправьте текстовое сообщение с результатом для заявки #{task_id}."
+            query.edit_message_text(text=message)
 
     except Exception as e:
         print(f"Ошибка при обработке запроса: {e}")
@@ -15094,7 +15157,8 @@ def send_telegram_message(technician, task):
     card = get_card_from_third_db(task.client_object_id)
     bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 
-    message = f"Новая заявка для {technician.username}:\n"
+    message = f"Номер объекта: {card.otisnumber}\n"
+    message += f"Новая заявка для {technician.username}:\n"
     message += f"Наименование клиента: {card.objectname}\n"
     message += f"Номер модуля: {card.unitnumber}\n"
     message += f"Адрес: {card.info}\n"
@@ -15103,11 +15167,14 @@ def send_telegram_message(technician, task):
     message += f"Примечание к заявке: {task.note}\n"
 
     # Формируем inline-кнопку для заявки
-    keyboard = [
-        [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task.id}")],
-        [InlineKeyboardButton(text="Вывести события", callback_data=f"task_module_{task.id}")],
-        [InlineKeyboardButton(text="Прибыл на объект", callback_data=f"arrival_task_{task.id}")]
-    ]
+    if task.arrival_time:
+        keyboard = [
+            [InlineKeyboardButton(text="Завершить заявку", callback_data=f"completion_task_{task.id}")],
+        ]
+    else:
+        keyboard = [
+            [InlineKeyboardButton(text="Прибыл на объект", callback_data=f"arrival_task_{task.id}")],
+        ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Отправляем сообщение с кнопкой
@@ -15130,6 +15197,7 @@ def telegram_webhook(request):
         update = Update.de_json(data, bot)
         dispatcher = Dispatcher(bot, None, workers=0)
         dispatcher.add_handler(CallbackQueryHandler(button_handler))
+        dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, message_handler))
 
         dispatcher.process_update(update)
         return JsonResponse({'status': 'ok'})
@@ -15268,7 +15336,14 @@ class TechnicalTaskListView(ListView):
         if start_date and end_date:
             queryset = queryset.filter(sent_time__range=[start_date, end_date])
 
-        return queryset
+            # Дополняем задачи информацией из `Cards`
+        tasks_with_card_info = []
+        for task in queryset:
+            card = get_card_from_third_db(task.client_object_id)
+            task.card_info = card  # Добавляем объект `Cards` к задаче
+            tasks_with_card_info.append(task)
+
+        return tasks_with_card_info
 
     def get_filter_form(self):
         form = TechnicalTaskFilterForm(self.request.GET)

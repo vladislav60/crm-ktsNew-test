@@ -16,7 +16,7 @@
 
 
     <!-- Button to open modal -->
-<button type="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createTaskModal">Создать заявку</button>
+<button type="btn btn-primary" data-bs-toggle="modal" data-bs-target="#CreateTechnicalTask">Создать заявку</button>
 
 <!-- Modal -->
 <div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
@@ -60,6 +60,7 @@
 
 <div class="card col-lg-12" style="border-radius: 10px;margin: 10px auto;padding: 20px">
     <h3>{{ card.objectname }}</h3>
+    <h4>ID клиента для отправки технику: {{ card.pk }}</h4>
     <p></p>
     <p><strong>Модуль: </strong>{{ card.basenumber.name}}-{{ card.unitnumber }}</p>
     <p><strong>Объект: </strong>{{ card.orgid.name}}-{{ card.otisnumber }}</p>

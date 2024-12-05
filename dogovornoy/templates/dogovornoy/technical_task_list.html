@@ -1,6 +1,12 @@
 {% extends 'dogovornoy/base.html' %}
 
 {% block content %}
+    <style>
+     .text-align-center {
+         text-align: center;
+         font-size: 12px;
+     }
+    </style>
 <h1>Все технические задачи</h1>
 
 <div class="col-lg-8">
@@ -22,6 +28,7 @@
         <label for="id_start_date">Дата от</label>
         {{ filter_form.start_date }}
     </div>
+    <p></p>
     <div class="form-group">
         <label for="id_end_date">Дата до</label>
         {{ filter_form.end_date }}
@@ -33,28 +40,43 @@
     </div>
 </div>
 
-<table class="table table-striped">
+<table class="table table-striped table-bordered text-align-center">
     <thead>
         <tr>
-            <th>ID</th>
-            <th>Техник</th>
-            <th>Отправитель</th>
-            <th>Клиент</th>
-            <th>Причина</th>
+            <th>ID клиента</th>
+            <th>Номер объекта</th>
+            <th>Номер модуля</th>
+            <th>Наименование клиента</th>
+            <th>Адрес</th>
             <th>Дата отправки</th>
+            <th>Вр прибытия</th>
+            <th>Вр отработки</th>
+            <th>Причина заявки</th>
+            <th>Примечание, время подачи</th>
+            <th>Результат выполнения</th>
+            <th>Ф.И.О инж</th>
+            <th>Отпр</th>
+            <th>Рабочее место</th>
             <th>Статус</th>
         </tr>
     </thead>
     <tbody>
         {% for task in tasks %}
         <tr>
-            <td>{{ task.id }}</td>
+            <td>{{ task.client_object_id }}</td>
+            <td>{{ task.card_info.otisnumber|default:" " }}</td>
+            <td>{{ task.card_info.unitnumber|default:" " }}</td>
+            <td>{{ task.card_info.objectname|default:" " }}</td>
+            <td>{{ task.card_info.info|default:" " }}</td>
+            <td>{{ task.sent_time|default:" " }}</td>
+            <td>{{ task.arrival_time|default:" " }}</td>
+            <td>{{ task.completion_time|default:" "}}</td>
+            <td>{{ task.reason|default:" " }}</td>
+            <td>{{ task.note|default:" " }}</td>
+            <td>{{ task.result }}</td>
             <td>{{ task.technician.username }}</td>
             <td>{{ task.sender.username }}</td>
-            <td>{{ task.client_object_id }}</td>
-            <td>{{ task.reason }}</td>
-            <td>{{ task.sent_time }}</td>
-            <td>{{ task.arrival_time }}</td>
+            <td>{{ task.previous_workstation }}</td>
             <td>
                 {% if task.completion_time %}
                     Завершено
@@ -114,4 +136,11 @@
                 </ul>
               </nav><!-- End Pagination with icons -->
         </div>
+
+    <script>
+    // Устанавливаем таймер на 5 секунд (5000 мс)
+    setInterval(function() {
+        location.reload(); // Перезагрузка текущей страницы
+    }, 15000);
+</script>
 {% endblock %}

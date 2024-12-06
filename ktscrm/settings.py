@@ -152,7 +152,7 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'ru'
 
 # Алматинское время
-TIME_ZONE = 'Asia/Almaty'
+TIME_ZONE = 'Asia/Qyzylorda'
 
 USE_I18N = True
 

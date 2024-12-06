@@ -15112,7 +15112,7 @@ def button_handler(update, context):
             if card:
                 # Сохраняем текущее значение workstation перед изменением
                 task.previous_workstation = card.workstation
-                task.arrival_time = localtime()
+                task.arrival_time = timezone.now()
                 task.save()
 
                 # Изменяем workstation на 3 (техническое обслуживание)

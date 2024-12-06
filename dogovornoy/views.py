@@ -1075,7 +1075,7 @@ def generate_invoice(request, pk):
 
     # Сохранение PDF в папку invoices
     file_path, file_name = save_pdf_to_invoices(html_string, new_number)
-    file_url = f"http://87.255.198.65:9910/{settings.MEDIA_URL}invoices/{file_name}"  # Публичный URL
+    file_url = f"https://kateryushin.pro/{settings.MEDIA_URL}invoices/{file_name}"  # Публичный URL
 
     # Отправка через WhatsApp
     access_token = "f895ca7a98494aa6b1dd7a4cab83f026"
@@ -14960,7 +14960,8 @@ bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 # Глобальная переменная для хранения последнего SN (можно заменить на БД или кэш)
 last_event_sn = {}
 
-def message_handler(update,context):
+
+def message_handler(update, context):
     user_id = update.message.from_user.id
     text = update.message.text
 
@@ -14968,8 +14969,10 @@ def message_handler(update,context):
     if user_id in pending_results:
         task_id = pending_results[user_id]
         try:
-            # Получаем задачу и сохраняем результат
+            # Проверяем, существует ли задача
             task = TechnicalTask.objects.get(pk=task_id)
+
+            # Сохраняем результат
             task.result = text  # Поле для хранения результата (добавьте его в модель, если еще нет)
             task.save()
 
@@ -14978,7 +14981,14 @@ def message_handler(update,context):
 
             # Удаляем из ожидающих
             del pending_results[user_id]
+        except TechnicalTask.DoesNotExist:
+            # Уведомляем, что задача не найдена
+            update.message.reply_text(f"Заявка #{task_id} больше не существует в системе.")
+
+            # Удаляем из списка ожидающих
+            del pending_results[user_id]
         except Exception as e:
+            # Обрабатываем другие ошибки
             update.message.reply_text(f"Ошибка при сохранении результата: {e}")
     else:
         # Если пользователь не в ожидании ввода
@@ -15091,7 +15101,6 @@ def button_handler(update, context):
                 [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
                 [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
                 [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")],
-                [InlineKeyboardButton(text="Прибыл на объект", callback_data=f"arrival_task_{task_id}")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             query.edit_message_text(text=message, reply_markup=reply_markup)

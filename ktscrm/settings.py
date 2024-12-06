@@ -15,11 +15,7 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-CSRF_TRUSTED_ORIGINS = ['http://87.255.198.65:9910',
-                        'http://192.168.1.19:8008',
-                        'http://127.0.0.1:9910',
-                        'http://kateryushin.pro/',
-                        'http://www.kateryushin.pro/',
+CSRF_TRUSTED_ORIGINS = ['http://192.168.1.19:8008',
                         'https://kateryushin.pro/',
                         'https://www.kateryushin.pro/',
                         ]

@@ -68,9 +68,9 @@
             <td>{{ task.card_info.unitnumber|default:" " }}</td>
             <td>{{ task.card_info.objectname|default:" " }}</td>
             <td>{{ task.card_info.info|default:" " }}</td>
-            <td>{{ task.sent_time }}</td>
-            <td>{{ task.arrival_time}}</td>
-            <td>{{ task.completion_time}}</td>
+            <td>{{ task.sent_time|default:" " }}</td>
+            <td>{{ task.arrival_time|default:" " }}</td>
+            <td>{{ task.completion_time|default:" " }}</td>
             <td>{{ task.reason|default:" " }}</td>
             <td>{{ task.note|default:" " }}</td>
             <td>{{ task.result }}</td>

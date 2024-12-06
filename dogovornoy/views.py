@@ -15048,7 +15048,7 @@ def button_handler(update, context):
                     date_event = row[8].strftime('%d-%m-%Y %H:%M:%S') if row[8] else 'Нет данных'
                     gprs_quality = row[15]
                     message += f"Раздел: {razdel}, Зона/Польз: {zona_user}, Событие: {event_str}, Дата: {date_event}, Качество: {gprs_quality}\n\n"
-                    last_event_sn[task_id] = alarms[0][1]
+                    # last_event_sn[task_id] = alarms[0][1]
                 # Сохраняем последний SN из полученных данных
                 print(f"SN из последнего события + {last_event_sn[task_id]}")
             else:
@@ -15081,7 +15081,7 @@ def button_handler(update, context):
                     date_event = row[8].strftime('%d-%m-%Y %H:%M:%S') if row[8] else 'Нет данных'
                     gprs_quality = row[15]
                     message += f"Раздел: {razdel}, Зона/Польз: {zona_user}, Событие: {event_str}, Дата: {date_event}, Качество: {gprs_quality}\n\n"
-                    last_event_sn[task_id] = new_alarms[0][1]
+                    # last_event_sn[task_id] = new_alarms[0][1]
 
                 # Обновляем последний SN для последующих обновлений
                 # print(f"Обновленный last_event_sn = {last_event_sn[task_id]}")

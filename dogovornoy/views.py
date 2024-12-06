@@ -15061,7 +15061,10 @@ def button_handler(update, context):
             ]
 
             reply_markup = InlineKeyboardMarkup(keyboard)
-            query.edit_message_text(text=message, reply_markup=reply_markup)
+            if query.message.text != message or query.message.reply_markup != reply_markup:
+                query.edit_message_text(text=message, reply_markup=reply_markup)
+            else:
+                print("Содержимое сообщения и разметка не изменились, обновление пропущено.")
 
         elif action == "update":
             # Проверка на наличие сохраненного `SN` для обновления
@@ -15071,7 +15074,7 @@ def button_handler(update, context):
 
             if new_alarms:
                 message = f"Обновленные события для модуля {module_number}:\n\n"
-                for row in new_alarms:
+                for row in reversed(new_alarms):
                     razdel = row[3] if row[3] else '-'
                     zona_user = row[4] if row[3] else '-'
                     event_str = row[6]
@@ -15094,18 +15097,10 @@ def button_handler(update, context):
             reply_markup = InlineKeyboardMarkup(keyboard)
 
             # Проверка перед редактированием сообщения
-            if query.message.text != message:
+            if query.message.text != message or query.message.reply_markup != reply_markup:
                 query.edit_message_text(text=message, reply_markup=reply_markup)
             else:
                 print("Содержимое сообщения и разметка не изменились, обновление пропущено.")
-
-            keyboard = [
-                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
-                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
-                [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")],
-            ]
-            reply_markup = InlineKeyboardMarkup(keyboard)
-            query.edit_message_text(text=message, reply_markup=reply_markup)
 
         elif action == "arrival":
             card = get_card_from_third_db(task.client_object_id)

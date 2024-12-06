@@ -69,7 +69,7 @@
             <td>{{ task.card_info.objectname|default:" " }}</td>
             <td>{{ task.card_info.info|default:" " }}</td>
             <td>{{ task.sent_time|default:" " }}</td>
-            <td>{{ task.arrival_time|default:" " }}</td>
+            <td>{{ task.arrival_time|date:"d F Y H:i" }}</td>
             <td>{{ task.completion_time|default:" "}}</td>
             <td>{{ task.reason|default:" " }}</td>
             <td>{{ task.note|default:" " }}</td>

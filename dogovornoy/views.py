@@ -3,6 +3,8 @@ import json
 import locale
 import math
 import tempfile
+from django.utils.timezone import localtime
+
 import requests
 from decimal import Decimal
 from io import BytesIO
@@ -15110,7 +15112,7 @@ def button_handler(update, context):
             if card:
                 # Сохраняем текущее значение workstation перед изменением
                 task.previous_workstation = card.workstation
-                task.arrival_time = timezone.now()
+                task.arrival_time = localtime()
                 task.save()
 
                 # Изменяем workstation на 3 (техническое обслуживание)
@@ -15165,7 +15167,7 @@ def button_handler(update, context):
 def send_telegram_message(technician, task):
     card = get_card_from_third_db(task.client_object_id)
     bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
-
+    print(localtime())
     message = f"Номер объекта: {card.otisnumber}\n"
     message += f"Новая заявка для {technician.username}:\n"
     message += f"Наименование клиента: {card.objectname}\n"

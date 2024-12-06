@@ -15071,9 +15071,9 @@ def button_handler(update, context):
 
             if new_alarms:
                 message = f"Обновленные события для модуля {module_number}:\n\n"
-                for row in new_alarms:
+                for row in reversed(new_alarms):
                     razdel = row[3] if row[3] else '-'
-                    zona_user = row[4] if row[3] else '-'
+                    zona_user = row[4] if row[4] else '-'
                     event_str = row[6]
                     date_event = row[8].strftime('%d-%m-%Y %H:%M:%S') if row[8] else 'Нет данных'
                     gprs_quality = row[15]
@@ -15256,7 +15256,7 @@ def execute_stored_procedure(module_number):
         # Открываем соединение с базой данных 'third_db'
         with connections['third_db'].cursor() as cursor:
             # Определяем переменные
-            date_now = timezone.now() - timezone.timedelta(hours=1)  # Дата от текущего времени минус 1 час
+            date_now = timezone.now() - timezone.timedelta(hours=0.5)  # Дата от текущего времени минус 1 час
             date_minus_3_days = date_now
 
             # Отладочная информация

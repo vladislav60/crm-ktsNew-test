@@ -15097,7 +15097,7 @@ def button_handler(update, context):
             reply_markup = InlineKeyboardMarkup(keyboard)
 
             # Проверка перед редактированием сообщения
-            if query.message.text != message or query.message.reply_markup != reply_markup:
+            if query.message.text != message:
                 query.edit_message_text(text=message, reply_markup=reply_markup)
             else:
                 print("Содержимое сообщения и разметка не изменились, обновление пропущено.")
@@ -15111,8 +15111,9 @@ def button_handler(update, context):
                 task.save()
 
                 # Изменяем workstation на 3 (техническое обслуживание)
-                card.workstation = 3
-                card.save(using='third_db')  # Сохраняем изменение в базе данных `third_db`
+                if card.workstation != 3:
+                    card.workstation = 3
+                    card.save(using='third_db')  # Сохраняем изменение в базе данных `third_db`
 
                 message = f"Время прибытия на объект установлено: {task.arrival_time.strftime('%d-%m-%Y %H:%M:%S')}\n" \
                           f"Клиент временно переведен на техническое обслуживание."

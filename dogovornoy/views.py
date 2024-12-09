@@ -15048,6 +15048,9 @@ def button_handler(update, context):
                     date_event = row[8].strftime('%d-%m-%Y %H:%M:%S') if row[8] else 'Нет данных'
                     gprs_quality = row[15]
                     message += f"Раздел: {razdel}, Зона/Польз: {zona_user}, Событие: {event_str}, Дата: {date_event}, Качество: {gprs_quality}\n\n"
+                    last_event_sn[task_id] = alarms[0][1]
+                # Сохраняем последний SN из полученных данных
+                print(f"SN из последнего события + {last_event_sn[task_id]}")
             else:
                 message = "События не найдены."
 
@@ -15058,10 +15061,7 @@ def button_handler(update, context):
             ]
 
             reply_markup = InlineKeyboardMarkup(keyboard)
-            if query.message.text != message:
-                query.edit_message_text(text=message, reply_markup=reply_markup)
-            else:
-                print("Содержимое сообщения и разметка не изменились, обновление пропущено.")
+            query.edit_message_text(text=message, reply_markup=reply_markup)
 
         elif action == "update":
             # Проверка на наличие сохраненного `SN` для обновления
@@ -15071,13 +15071,17 @@ def button_handler(update, context):
 
             if new_alarms:
                 message = f"Обновленные события для модуля {module_number}:\n\n"
-                for row in reversed(new_alarms):
+                for row in new_alarms:
                     razdel = row[3] if row[3] else '-'
                     zona_user = row[4] if row[3] else '-'
                     event_str = row[6]
                     date_event = row[8].strftime('%d-%m-%Y %H:%M:%S') if row[8] else 'Нет данных'
                     gprs_quality = row[15]
                     message += f"Раздел: {razdel}, Зона/Польз: {zona_user}, Событие: {event_str}, Дата: {date_event}, Качество: {gprs_quality}\n\n"
+                    last_event_sn[task_id] = new_alarms[0][1]
+
+                # Обновляем последний SN для последующих обновлений
+                # print(f"Обновленный last_event_sn = {last_event_sn[task_id]}")
             else:
                 message = "Нет новых событий для модуля."
 
@@ -15100,13 +15104,12 @@ def button_handler(update, context):
             if card:
                 # Сохраняем текущее значение workstation перед изменением
                 task.previous_workstation = card.workstation
-                task.arrival_time = timezone.now()
+                task.arrival_time = localtime()
                 task.save()
 
                 # Изменяем workstation на 3 (техническое обслуживание)
-                if card.workstation != 3:
-                    card.workstation = 3
-                    card.save(using='third_db')  # Сохраняем изменение в базе данных `third_db`
+                card.workstation = 3
+                card.save(using='third_db')  # Сохраняем изменение в базе данных `third_db`
 
                 message = f"Время прибытия на объект установлено: {task.arrival_time.strftime('%d-%m-%Y %H:%M:%S')}\n" \
                           f"Клиент временно переведен на техническое обслуживание."

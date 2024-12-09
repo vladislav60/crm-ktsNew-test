@@ -15153,6 +15153,8 @@ def button_handler(update, context):
     except Exception as e:
         print(f"Ошибка при обработке запроса: {e}")
         query.edit_message_text(text=f"Произошла ошибка при получении данных: {e}")
+        send_telegram_message(task.technician, task)
+        query.edit_message_text(text="Заявка была повторно отправлена.")
 
 
 # Функция для отправки сообщения с кнопками

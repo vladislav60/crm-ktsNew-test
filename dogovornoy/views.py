@@ -14961,44 +14961,52 @@ bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
 
 # Глобальная переменная для хранения последнего SN (можно заменить на БД или кэш)
 last_event_sn = {}
+import time
+import threading
 
+pending_results_with_time = {}  # {user_id: (task_id, timestamp)}
+
+def remove_from_pending(user_id, delay=300):
+    def remove():
+        if user_id in pending_results_with_time:
+            del pending_results_with_time[user_id]
+            print(f"Пользователь {user_id} удален из ожидания.")
+
+    timer = threading.Timer(delay, remove)
+    timer.start()
 
 def message_handler(update, context):
     user_id = update.message.from_user.id
     text = update.message.text
+    current_time = time.time()
 
-    # Проверяем, ожидает ли пользователь ввода результата
-    if user_id in pending_results:
-        task_id = pending_results[user_id]
+    if user_id in pending_results_with_time:
+        task_id, timestamp = pending_results_with_time[user_id]
+        # Проверяем, не истек ли тайм-аут
+        if current_time - timestamp > 300:  # 300 секунд (5 минут)
+            del pending_results_with_time[user_id]
+            update.message.reply_text("Время ожидания результата истекло. Попробуйте снова.")
+            return
+
         try:
-            # Проверяем, существует ли задача
             task = TechnicalTask.objects.get(pk=task_id)
-
-            # Сохраняем результат
-            task.result = text  # Поле для хранения результата (добавьте его в модель, если еще нет)
+            task.result = text
             task.save()
 
-            # Уведомляем пользователя об успешном сохранении
             update.message.reply_text(f"Результат для заявки #{task_id} успешно сохранен.")
-
-            # Удаляем из ожидающих
-            del pending_results[user_id]
+            del pending_results_with_time[user_id]
         except TechnicalTask.DoesNotExist:
-            # Уведомляем, что задача не найдена
-            update.message.reply_text(f"Заявка #{task_id} больше не существует в системе.")
-
-            # Удаляем из списка ожидающих
-            del pending_results[user_id]
+            update.message.reply_text(f"Ошибка: задача с ID #{task_id} не найдена.")
+            del pending_results_with_time[user_id]
         except Exception as e:
-            # Обрабатываем другие ошибки
             update.message.reply_text(f"Ошибка при сохранении результата: {e}")
     else:
-        # Если пользователь не в ожидании ввода
         update.message.reply_text("Я не ожидал от вас результата. Попробуйте снова.")
 
 
 def button_handler(update, context):
     global last_event_sn
+    global pending_results
     query = update.callback_query
     data = query.data.split('_')
 
@@ -15008,6 +15016,12 @@ def button_handler(update, context):
 
     action = data[0]
     task_id = data[-1]
+
+    user_id = query.from_user.id
+    pending_results_with_time[user_id] = (task_id, time.time())
+
+    # Удаляем из ожидания через 5 минут
+    remove_from_pending(user_id, delay=300)
 
     try:
         task = TechnicalTask.objects.get(pk=task_id)
@@ -15149,7 +15163,13 @@ def button_handler(update, context):
                 query.edit_message_text(text="Ошибка: невозможно восстановить состояние клиента.")
         elif action == "result":
             # Сохраняет результат выполнения от техника
-            pending_results[query.from_user.id] = task_id
+            user_id = query.from_user.id
+            pending_results[user_id] = task_id
+
+            # Запуск асинхронного удаления записи через 5 минут
+            thread = threading.Thread(target=remove_from_pending, args=(user_id, 300))
+            thread.daemon = True  # Поток завершится, если завершится основной процесс
+            thread.start()
 
             message = f"Пожалуйста, отправьте текстовое сообщение с результатом для заявки #{task_id}."
             query.edit_message_text(text=message)

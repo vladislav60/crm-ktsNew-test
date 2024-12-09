@@ -15017,7 +15017,8 @@ def button_handler(update, context):
             if zones.exists():
                 message = "Зоны клиента:\n"
                 for zone in zones:
-                    message += f"Раздел: {zone.sectionid.sectionname}, Зона: {zone.zonenumber} - {zone.info}\n\n"
+                    message += f"Получено: {timezone.now().strftime('%H:%M:%S')}\n\n"
+                    message += f"Раздел: {zone.sectionid.sectionname}, Зона: {zone.zonenumber} - {zone.info}\n"
             else:
                 message = "Зоны не найдены."
 
@@ -15040,7 +15041,8 @@ def button_handler(update, context):
 
             if alarms:
                 print(alarms)
-                message = f"Результаты для модуля {module_number}:\n\n"
+                message = f"Результаты для модуля {module_number}:\n"
+                message += f"Получено: {timezone.now().strftime('%H:%M:%S')}\n\n"
                 for row in reversed(alarms):
                     razdel = row[3] if row[3] else '-'
                     zona_user = row[4] if row[4] else '-'

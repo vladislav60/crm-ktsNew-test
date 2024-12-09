@@ -15071,7 +15071,7 @@ def button_handler(update, context):
 
             if new_alarms:
                 message = f"Обновленные события для модуля {module_number}:\n\n"
-                for row in new_alarms:
+                for row in reversed(new_alarms):
                     razdel = row[3] if row[3] else '-'
                     zona_user = row[4] if row[3] else '-'
                     event_str = row[6]

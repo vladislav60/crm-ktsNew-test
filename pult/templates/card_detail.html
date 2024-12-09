@@ -18,44 +18,6 @@
     <!-- Button to open modal -->
 <button type="btn btn-primary" data-bs-toggle="modal" data-bs-target="#CreateTechnicalTask">Создать заявку</button>
 
-<!-- Modal -->
-<div class="modal fade" id="createTaskModal" tabindex="-1" aria-labelledby="createTaskModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="createTaskModalLabel">Создать задачу</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-        <form method="post" action="{% url 'create_technical_task' %}">
-            {% csrf_token %}
-            <label for="technician_id">Техник:</label>
-            <select name="technician_id">
-                {% for technician in technicians %}
-                <option value="{{ technician.id }}">{{ technician.username }}</option>
-                {% endfor %}
-            </select>
-
-            <label for="reason_id">Причина:</label>
-            <select name="reason_id">
-                {% for reason in reasons %}
-                <option value="{{ reason.id }}">{{ reason.name }}</option>
-                {% endfor %}
-            </select>
-
-            <label for="client_object_id">ID клиента:</label>
-            <input type="text" name="client_object_id">
-
-            <label for="note">Заметка:</label>
-            <textarea name="note"></textarea>
-
-            <button type="submit">Отправить задачу</button>
-        </form>
-    </div>
-        </div>
-    </div>
-</div>
-
 
 
 <div class="card col-lg-12" style="border-radius: 10px;margin: 10px auto;padding: 20px">

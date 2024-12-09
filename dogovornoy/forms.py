@@ -202,6 +202,11 @@ class SkaldGSMForm(forms.ModelForm):
         widget=forms.Select(attrs={'class': 'form-control'})
     )
 
+    def __init__(self, *args, **kwargs):
+        super(SkaldGSMForm, self).__init__(*args, **kwargs)
+        # Используем label_from_instance для кастомизации отображения пользователей
+        self.fields['technik'].label_from_instance = lambda obj: f"{obj.first_name} {obj.last_name} ({obj.username})"
+
     class Meta:
         model = SkaldGSM2
         fields = [

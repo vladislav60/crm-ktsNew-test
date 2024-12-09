@@ -161,6 +161,7 @@ urlpatterns = [
     path('api_task_reasons/', TaskReasonsAPIView, name='api_task_reasons'),
     path('telegram_webhook/', telegram_webhook, name='telegram_webhook'),
     path('technical_task_list/', TechnicalTaskListView.as_view(), name='technical_task_list'),
+    path('archive_technical_task_list/', ArchiveTechnicalTaskListView.as_view(), name='archive_technical_task_list'),
     path('disconnected-objects/', DisconnectedObjectsView.as_view(), name='disconnected_objects'),
     path('disconnected-objects/export/', export_disconnected_objects, name='export_disconnected_objects'),
     path('export_disconnected_objects_partners/export/', export_disconnected_objects_partners, name='export_disconnected_objects_partners'),

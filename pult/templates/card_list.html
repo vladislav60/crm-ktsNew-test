@@ -94,7 +94,7 @@
                 <td style="text-align: left;">{{ card.info }}</td>
                 <td style="text-align: left;">{{ card.phones }}</td>
                 <td>{{ card.callsign }}-{{ card.callnumber }}</td>
-                <td><a href="{% url 'card_detail' card.pk %}">Карточка клиента</a></td>
+                <td><a href="{% url 'card_detail' card.pk %}" target="_blank">Карточка клиента</a></td>
             </tr>
             {% endfor %}
         </tbody>

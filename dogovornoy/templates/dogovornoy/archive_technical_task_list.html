@@ -7,7 +7,7 @@
          font-size: 12px;
      }
     </style>
-<h1>Заявки техников в работе</h1>
+<h1>Архив заявок техникам</h1>
 
 <div class="col-lg-8">
     <div class="card">
@@ -82,8 +82,8 @@
             <td>{{ task.reason|default:" " }}</td>
             <td>{{ task.note|default:" " }}</td>
             <td>{{ task.result }}</td>
-            <td>{{ task.technician.first_name }} {{ task.technician.last_name|default:" " }} ({{ task.technician.username|default:" " }})</td>
-            <td>{{ task.sender.first_name }} {{ task.sender.last_name|default:" " }} ({{ task.sender.username|default:" " }})</td>
+            <td>{{ task.technician.first_name }} {{ task.technician.last_name|default:" " }} {{ task.technician.username|default:" " }}</td>
+            <td>{{ task.sender.username }}</td>
             <td>{{ task.previous_workstation }}</td>
             <td>
                 {% if task.completion_time %}

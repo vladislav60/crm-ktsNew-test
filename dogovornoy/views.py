@@ -56,7 +56,7 @@ from openpyxl.utils import get_column_letter
 from .forms import *
 from .models import *
 from django.db.models import CharField, F, ExpressionWrapper, Value
-
+from django.db.models import F, Value, Case, When
 # from .utils import *
 
 menu = ["О сайте", "Добавить статью", "Обратная связь", "Войти"]
@@ -15022,8 +15022,8 @@ def button_handler(update, context):
                 message = "Зоны не найдены."
 
             keyboard = [
-                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
-                [InlineKeyboardButton(text="Вывести события", callback_data=f"task_module_{task_id}")]
+                [InlineKeyboardButton(text="🔴 Показать заявку", callback_data=f"task_show_{task_id}")],
+                [InlineKeyboardButton(text="🟢 Вывести события", callback_data=f"task_module_{task_id}")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
             query.edit_message_text(text=message, reply_markup=reply_markup)
@@ -15055,9 +15055,9 @@ def button_handler(update, context):
                 message = "События не найдены."
 
             keyboard = [
-                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
-                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
-                [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")]
+                [InlineKeyboardButton(text="🔴 Показать заявку", callback_data=f"task_show_{task_id}")],
+                [InlineKeyboardButton(text="🟢 Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                [InlineKeyboardButton(text="🟢 Обновить события", callback_data=f"update_task_{task_id}")]
             ]
 
             reply_markup = InlineKeyboardMarkup(keyboard)
@@ -15087,9 +15087,9 @@ def button_handler(update, context):
 
             # Добавляем кнопки
             keyboard = [
-                [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
-                [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
-                [InlineKeyboardButton(text="Обновить события", callback_data=f"update_task_{task_id}")]
+                [InlineKeyboardButton(text="🔴 Показать заявку", callback_data=f"task_show_{task_id}")],
+                [InlineKeyboardButton(text="🟢 Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                [InlineKeyboardButton(text="🟢 Обновить события", callback_data=f"update_task_{task_id}")]
             ]
             reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -15114,9 +15114,9 @@ def button_handler(update, context):
                 message = f"Время прибытия на объект установлено: {task.arrival_time.strftime('%d-%m-%Y %H:%M:%S')}\n" \
                           f"Клиент временно переведен на техническое обслуживание."
                 keyboard = [
-                    [InlineKeyboardButton(text="Показать заявку", callback_data=f"task_show_{task_id}")],
-                    [InlineKeyboardButton(text="Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
-                    [InlineKeyboardButton(text="Вывести события", callback_data=f"task_module_{task_id}")],
+                    [InlineKeyboardButton(text="🔴 Показать заявку", callback_data=f"task_show_{task_id}")],
+                    [InlineKeyboardButton(text="🟢 Вывести зоны клиента", callback_data=f"select_task_{task_id}")],
+                    [InlineKeyboardButton(text="🟢 Вывести события", callback_data=f"task_module_{task_id}")],
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 query.edit_message_text(text=message, reply_markup=reply_markup)
@@ -15137,7 +15137,7 @@ def button_handler(update, context):
                 message = f"Время завершения заявки установлено: {task.completion_time.strftime('%d-%m-%Y %H:%M:%S')}\n" \
                           f"Клиент переведен в прежний режим работы."
                 keyboard = [
-                    [InlineKeyboardButton(text="Заполнить результат", callback_data=f"result_{task_id}")],
+                    [InlineKeyboardButton(text="🔴 Заполнить результат", callback_data=f"result_{task_id}")],
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 query.edit_message_text(text=message, reply_markup=reply_markup)
@@ -15160,7 +15160,7 @@ def send_telegram_message(technician, task):
     card = get_card_from_third_db(task.client_object_id)
     bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
     message = f"Номер объекта: {card.otisnumber}\n"
-    message += f"Новая заявка для {technician.username}:\n"
+    message += f"Новая заявка для {technician.first_name} {technician.last_name} ({technician.username}):\n"
     message += f"Наименование клиента: {card.objectname}\n"
     message += f"Номер модуля: {card.unitnumber}\n"
     message += f"Адрес: {card.info}\n"
@@ -15171,11 +15171,11 @@ def send_telegram_message(technician, task):
     # Формируем inline-кнопку для заявки
     if task.arrival_time:
         keyboard = [
-            [InlineKeyboardButton(text="Завершить заявку", callback_data=f"completion_task_{task.id}")],
+            [InlineKeyboardButton(text="🔴 Завершить заявку", callback_data=f"completion_task_{task.id}")],
         ]
     else:
         keyboard = [
-            [InlineKeyboardButton(text="Прибыл на объект", callback_data=f"arrival_task_{task.id}")],
+            [InlineKeyboardButton(text="🟡 Прибыл на объект", callback_data=f"arrival_task_{task.id}")],
         ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -15302,7 +15302,14 @@ def execute_stored_procedure_with_last_id(module_number, last_event_id):
 
 def TechniciansAPIView(request):
     technicians = User.objects.filter(userprofile__department__icontains="Техник")  # Фильтрация списка техников
-    data = [{'id': technician.id, 'name': technician.username} for technician in technicians]
+    data = [
+        {'id': technician.id,
+         "first_name": technician.first_name or "",
+         "last_name": technician.last_name or "",
+         "username": technician.username,
+         }
+         for technician in technicians
+    ]
     return JsonResponse(data, safe=False)
 
 
@@ -15319,7 +15326,7 @@ class TechnicalTaskListView(ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(completion_time__isnull=True)
         form = self.get_filter_form()
 
         # Фильтр по ID клиента
@@ -15337,6 +15344,85 @@ class TechnicalTaskListView(ListView):
         end_date = form.cleaned_data.get('end_date')
         if start_date and end_date:
             queryset = queryset.filter(sent_time__range=[start_date, end_date])
+
+        queryset = queryset.annotate(
+             sort_priority = Case(
+                 When(arrival_time__isnull=False, then=Value(0)),
+                 default=Value(1),
+             )
+        ).order_by('sort_priority', '-arrival_time', '-sent_time')
+
+            # Дополняем задачи информацией из `Cards`
+        tasks_with_card_info = []
+        for task in queryset:
+            card = get_card_from_third_db(task.client_object_id)
+            task.card_info = card  # Добавляем объект `Cards` к задаче
+            tasks_with_card_info.append(task)
+
+        return tasks_with_card_info
+
+    def get_filter_form(self):
+        form = TechnicalTaskFilterForm(self.request.GET)
+        if form.is_valid():
+            return form
+        return TechnicalTaskFilterForm()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        queryset = self.get_queryset()
+        paginator = Paginator(queryset, self.paginate_by)
+
+        # Получение номера страницы
+        page_number = self.request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        # Копируем параметры запроса для использования в пагинации
+        params = self.request.GET.copy()
+        if 'page' in params:
+            del params['page']
+        pagination_url = self.request.path + '?' + urlencode(params)
+
+        # Добавляем объекты пагинации в контекст
+        context['tasks'] = page_obj
+        context['pagination_url'] = pagination_url
+        context['filter_form'] = self.get_filter_form()
+        return context
+
+
+
+class ArchiveTechnicalTaskListView(ListView):
+    model = TechnicalTask
+    template_name = 'dogovornoy/archive_technical_task_list.html'
+    context_object_name = 'tasks'
+    paginate_by = 25
+
+    def get_queryset(self):
+        queryset = super().get_queryset().filter(completion_time__isnull=False)
+        form = self.get_filter_form()
+
+        # Фильтр по ID клиента
+        client_object_id = form.cleaned_data.get('client_object_id')
+        if client_object_id:
+            queryset = queryset.filter(client_object_id=client_object_id)
+
+        # Фильтр по технику
+        technician = form.cleaned_data.get('technician')
+        if technician:
+            queryset = queryset.filter(technician=technician)
+
+        # Фильтр по диапазону дат
+        start_date = form.cleaned_data.get('start_date')
+        end_date = form.cleaned_data.get('end_date')
+        if start_date and end_date:
+            queryset = queryset.filter(sent_time__range=[start_date, end_date])
+
+        queryset = queryset.annotate(
+             sort_priority = Case(
+                 When(arrival_time__isnull=False, then=Value(0)),
+                 default=Value(1),
+             )
+        ).order_by('sort_priority', '-arrival_time', '-sent_time')
 
             # Дополняем задачи информацией из `Cards`
         tasks_with_card_info = []

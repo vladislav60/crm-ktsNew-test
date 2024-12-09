@@ -497,7 +497,7 @@
         {% endif %}
 
 
-        {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' or user_profile.department == 'Пульт' or user_profile.department == 'Технический отдел' or user_profile.department == 'Директор'%}
+        {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' or user_profile.department == 'Пульт' or user_profile.department == 'Технический отдел' or user_profile.department == 'Директор' or user_profile.department == 'Оператор'%}
         <li class="nav-item">
             <a class="nav-link collapsed" data-bs-target="#pult-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
                 <i class="bi bi-server"></i><span>Пульт</span>
@@ -505,11 +505,13 @@
             </a>
             <ul id="pult-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
 
-                <li>
-                    <a href="{% url 'baza_dogovorov' %}">
-                        <i class="bi bi-circle"></i><span>База договоров</span>
-                    </a>
-                </li>
+                {% if user_profile.department != 'Оператор' %}
+                    <li>
+                        <a href="{% url 'baza_dogovorov' %}">
+                            <i class="bi bi-circle"></i><span>База договоров</span>
+                        </a>
+                    </li>
+                {% endif %}
 
                 <li>
                     <a href="{% url 'card_list' %}">
@@ -517,21 +519,23 @@
                     </a>
                 </li>
 
+                {% if user_profile.department != 'Оператор' %}
                 <li>
                     <a href="{% url 'alarm_report' %}">
                         <i class="bi bi-circle"></i><span>Отчет по тревогам</span>
                     </a>
                 </li>
+                {% endif %}
 
                 <li>
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#CreateTechnicalTask">
-                        <i class="bi bi-plus"></i><span>Отправить заявку технику</span>
+                    <a href="{% url 'technical_task_list' %}">
+                        <i class="bi bi-circle"></i><span>Текущие заявки техники</span>
                     </a>
                 </li>
 
                 <li>
-                    <a href="{% url 'technical_task_list' %}">
-                        <i class="bi bi-circle"></i><span>Архив заявок техникам</span>
+                    <a href="{% url 'archive_technical_task_list' %}">
+                        <i class="bi bi-circle"></i><span>Архив заявок техники</span>
                     </a>
                 </li>
 
@@ -719,7 +723,7 @@
                     <div class="mb-3">
                         <label for="technician_id" class="form-label">Техник:</label>
                         <select name="technician_id" class="form-select" id="userSelect">
-                            <!-- Здесь добавляются пользователи через JS -->
+                            <!-- Пользователи добавляются через JavaScript -->
                         </select>
                     </div>
                     <div class="mb-3">
@@ -755,13 +759,12 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             const select = document.getElementById('userSelect');
             data.forEach(user => {
-                const option = new Option(user.name, user.id);
+                const optionText = `${user.first_name} ${user.last_name} (${user.username})`;
+                const option = new Option(optionText, user.id);
                 select.add(option);
             });
         });
-});
 
-document.addEventListener('DOMContentLoaded', function() {
     fetch('{% url "api_task_reasons" %}')
         .then(response => response.json())
         .then(data => {

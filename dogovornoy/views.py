@@ -15070,7 +15070,8 @@ def button_handler(update, context):
             new_alarms = execute_stored_procedure(module_number)
 
             if new_alarms:
-                message = f"Обновленные события для модуля {module_number}:\n\n"
+                message = f"Обновленные события для модуля {module_number}:\n"
+                message += f"Обновлено: {timezone.now().strftime('%H:%M:%S')}\n\n"
                 for row in reversed(new_alarms):
                     razdel = row[3] if row[3] else '-'
                     zona_user = row[4] if row[3] else '-'
@@ -15084,6 +15085,7 @@ def button_handler(update, context):
                 # print(f"Обновленный last_event_sn = {last_event_sn[task_id]}")
             else:
                 message = "Нет новых событий для модуля."
+                message += f"Обновлено: {timezone.now().strftime('%H:%M:%S')}\n\n"
 
             # Добавляем кнопки
             keyboard = [

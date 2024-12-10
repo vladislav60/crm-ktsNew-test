@@ -122,6 +122,10 @@ urlpatterns = [
     path('reports_partners_zhakitov/', reports_partners_zhakitov, name='reports_partners_zhakitov'),
     path('zhakitov_download_fiz/', zhakitov_download_fiz, name='zhakitov_download_fiz'),
     path('zhakitov_download_ur/', zhakitov_download_ur, name='zhakitov_download_ur'),
+    # Ссылка страницу отчета   ТОО "Alash Group Kuzet"
+    path('reports_partners_alash/', reports_partners_alash, name='reports_partners_alash'),
+    path('alash_download_fiz/', alash_download_fiz, name='alash_download_fiz'),
+    path('alash_download_ur/', alash_download_ur, name='alash_download_ur'),
     # Ссылка страницу отчета ТОО "Эгида-Дружина
     path('reports_partners_egida/', reports_partners_egida, name='reports_partners_egida'),
     path('egida_download_fiz/', egida_download_fiz, name='egida_download_fiz'),
@@ -130,6 +134,7 @@ urlpatterns = [
     path('reports_kolvo/', reports_kolvo, name='reports_kolvo'),
     path('partner_reports_kolvo/', partner_reports_kolvo, name='partner_reports_kolvo'),
     path('kts_reports_kolvo/', kts_reports_kolvo, name='kts_reports_kolvo'),
+    path('kolvo_hours_security/', kolvo_hours_security, name='kolvo_hours_security'),
     # Ссылка на страницу изменения клиента
     path('update_client/<int:klient_id>/', views.update_client, name='update_client'),
     # Ссылка на страницу изменения клиента партнеров

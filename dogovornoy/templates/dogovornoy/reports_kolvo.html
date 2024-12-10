@@ -30,8 +30,8 @@
 <div class="card">
     <div class="card-body">
 
-        <h5 class="card-title">{% for kts in con.kts_podkl %}{% ifchanged kts.company_name %}{{ kts.company_name }}{% endifchanged %}
-            {% endfor %} отчет за период ( {{ start_of_month }} - {{ end_of_month }} )</h5>
+        <h5 class="card-title">{{ con.company }}
+            отчет за период ( {{ con.start_of_month }} - {{ con.end_of_month }} )</h5>
 
                 <table class="table table-bordered fz-table-1 width801">
                     <thead>
@@ -79,38 +79,38 @@
 
                                 <tr>
                                     <td>911</td>
-                                    <td>{{ con.gruppa_reagirovania_911_ur }}</td>
-                                    <td>{{ con.gruppa_reagirovania_911_fiz }}</td>
+                                    <td>{{ con.911_ur }}</td>
+                                    <td>{{ con.911_fiz }}</td>
                                 </tr>
 
                                 <tr>
                                     <td>СМС</td>
-                                    <td>{{ con.gruppa_reagirovania_sms_ur }}</td>
-                                    <td>{{ con.gruppa_reagirovania_sms_fiz }}</td>
+                                    <td>{{ con.СМС_ur }}</td>
+                                    <td>{{ con.СМС_fiz }}</td>
                                 </tr>
 
                                 <tr>
                                     <td>Эскер</td>
-                                    <td>{{ con.gruppa_reagirovania_asker_ur }}</td>
-                                    <td>{{ con.gruppa_reagirovania_asker_fiz }}</td>
+                                    <td>{{ con.Эскер_ur }}</td>
+                                    <td>{{ con.Эскер_fiz }}</td>
                                 </tr>
 
                                 <tr>
                                     <td>Жардем</td>
-                                    <td>{{ con.gruppa_reagirovania_zardem_ur }}</td>
-                                    <td>{{ con.gruppa_reagirovania_zardem_fiz }}</td>
+                                    <td>{{ con.Жардем_ur }}</td>
+                                    <td>{{ con.Жардем_fiz }}</td>
                                 </tr>
 
                                 <tr>
                                     <td>Браво-21</td>
-                                    <td>{{ con.gruppa_reagirovania_bravo21_ur }}</td>
-                                    <td>{{ con.gruppa_reagirovania_bravo21_fiz }}</td>
+                                    <td>{{ con.Браво_21_ur }}</td>
+                                    <td>{{ con.Браво_21_fiz }}</td>
                                 </tr>
 
                                 <tr>
                                     <td>Кугуар</td>
-                                    <td>{{ con.gruppa_reagirovania_kuguar_ur }}</td>
-                                    <td>{{ con.gruppa_reagirovania_kuguar_fiz }}</td>
+                                    <td>{{ con.Кугуар_ur }}</td>
+                                    <td>{{ con.Кугуар_fiz }}</td>
                                 </tr>
                             <tr>
                                 <td>Итого для Кузет-Сенiм</td>

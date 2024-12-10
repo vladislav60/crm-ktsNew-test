@@ -11611,142 +11611,173 @@ def monolit_download_ur(request):
     return response
 
 
+def calculate_stats_for_company(company, start_of_month, end_of_month):
+    # Фильтрация всех объектов компании
+    kts_podkl = kts.objects.filter(company_name_id=company.id).exclude(
+        Q(date_otklulchenia__lt=start_of_month) & Q(date_podkluchenia__lte=F('date_otklulchenia'))
+    )
+
+    # На начало месяца
+    kts_count_podkl = kts_podkl.filter(
+        date_podkluchenia__lt=start_of_month, urik=True, exclude_from_report=False
+    ).count()
+
+    kts_fiz_podkl = kts_podkl.filter(
+        date_podkluchenia__lt=start_of_month, urik=False, exclude_from_report=False
+    ).count()
+
+    # Новые клиенты
+    kolvo_podkl_obj = kts_podkl.filter(
+        urik=True,
+        date_podkluchenia__gte=start_of_month,
+        date_podkluchenia__lte=end_of_month,
+        exclude_from_report=False,
+    ).count()
+
+    kolvo_podkl_fiz = kts_podkl.filter(
+        urik=False,
+        date_podkluchenia__gte=start_of_month,
+        date_podkluchenia__lte=end_of_month,
+        exclude_from_report=False,
+    ).count()
+
+    # Расторгнутые клиенты
+    kolvo_otkl_obj = kts_podkl.filter(
+        urik=True,
+        date_otklulchenia__gte=start_of_month,
+        date_otklulchenia__lte=end_of_month,
+        exclude_from_report=False,
+    ).count()
+
+    kolvo_otkl_fiz = kts_podkl.filter(
+        urik=False,
+        date_otklulchenia__gte=start_of_month,
+        date_otklulchenia__lte=end_of_month,
+        exclude_from_report=False,
+    ).count()
+
+    # На конец месяца
+    kts_count_podkl_end = kts_count_podkl + kolvo_podkl_obj - kolvo_otkl_obj
+    kts_fiz_podkl_end = kts_fiz_podkl + kolvo_podkl_fiz - kolvo_otkl_fiz
+
+    # Группы реагирования для юридических и физических лиц
+    gruppa_reagirovania = {}
+    groups = ['911', 'Браво-21', 'СМС', 'Эскер', 'Жардем', 'Кугуар']
+
+    formatted_keys = {
+        '911': '911',
+        'Браво-21': 'Браво_21',
+        'СМС': 'СМС',
+        'Эскер': 'Эскер',
+        'Жардем': 'Жардем',
+        'Кугуар': 'Кугуар',
+    }
+
+    for group in groups:
+        formatted_key = formatted_keys[group]
+        gruppa_reagirovania[f'{formatted_key}_ur'] = kts_podkl.filter(
+            urik=True, gruppa_reagirovania=group, exclude_from_report=False
+        ).exclude(date_otklulchenia__lte=end_of_month).count()
+
+        gruppa_reagirovania[f'{formatted_key}_fiz'] = kts_podkl.filter(
+            urik=False, gruppa_reagirovania=group, exclude_from_report=False
+        ).exclude(date_otklulchenia__lte=end_of_month).count()
+
+    # Итоговое количество экипажей
+    kolvo_ekipazh_ur = kts_count_podkl_end - sum(gruppa_reagirovania[f'{formatted_keys[group]}_ur'] for group in groups)
+    kolvo_ekipazh_fiz = kts_fiz_podkl_end - sum(gruppa_reagirovania[f'{formatted_keys[group]}_fiz'] for group in groups)
+
+    return {
+        'kts_count_podkl': kts_count_podkl,
+        'kts_fiz_podkl': kts_fiz_podkl,
+        'kolvo_podkl_obj': kolvo_podkl_obj,
+        'kolvo_podkl_fiz': kolvo_podkl_fiz,
+        'kolvo_otkl_obj': kolvo_otkl_obj,
+        'kolvo_otkl_fiz': kolvo_otkl_fiz,
+        'kts_count_podkl_end': kts_count_podkl_end,
+        'kts_fiz_podkl_end': kts_fiz_podkl_end,
+        'kolvo_ekipazh_ur': kolvo_ekipazh_ur,
+        'kolvo_ekipazh_fiz': kolvo_ekipazh_fiz,
+        **gruppa_reagirovania,
+    }
+
+
 
 @login_required
 def reports_kolvo(request):
-    now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc)
-    end_of_month = timezone.datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc)
-    next_start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    next_end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    now_date = now()
+    start_of_month = datetime(now_date.year, now_date.month - 1, 1, tzinfo=now_date.tzinfo)
+    end_of_month = datetime(
+        now_date.year, now_date.month - 1, calendar.monthrange(now_date.year, now_date.month - 1)[1], tzinfo=now_date.tzinfo
+    )
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         if start_date and end_date:
-            start_of_month = parse_date(start_date)
-            end_of_month = parse_date(end_date)
-
+            start_of_month = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=now_date.tzinfo)
+            end_of_month = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=now_date.tzinfo)
 
     companies = rekvizity.objects.all()
 
-    reports = []
-
-    for company in companies:
-
-        # 2 Все объекты до выбранной даты
-        kts_podkl = kts.objects.filter(company_name_id=company.id).exclude(
-            Q(date_otklulchenia__lt=start_of_month) & Q(date_podkluchenia__lte=F('date_otklulchenia')))
-
-
-        # Всего на начало выбранного месяца
-        kts_count_podkl = kts_podkl.filter(
-                                            date_podkluchenia__lte=start_of_month,
-                                            urik=True,
-                                            exclude_from_report=False).count()
-
-
-        kts_fiz_podkl = kts_podkl.filter(
-                                            date_podkluchenia__lte=start_of_month,
-                                            urik=False,
-                                            exclude_from_report=False).count()
-
-
-        # принято(в т.ч.после вр.снятия )
-        kolvo_podkl_obj = kts_podkl.filter(urik=True,
-                                            date_podkluchenia__gte=start_of_month,
-                                            date_podkluchenia__lte=end_of_month,
-                                           exclude_from_report=False).count()
-
-        kolvo_podkl_fiz = kts_podkl.filter(urik=False,
-                                             date_podkluchenia__gte=start_of_month,
-                                             date_podkluchenia__lte=end_of_month,
-                                           exclude_from_report=False).count()
-
-        # расторженно (в т.ч.после вр.снятия )
-        kolvo_otkl_obj = kts_podkl.filter(urik=True,
-                                            date_otklulchenia__gte=start_of_month,
-                                            date_otklulchenia__lte=end_of_month,
-                                          exclude_from_report=False).count()
-
-        kolvo_otkl_fiz = kts_podkl.filter(urik=False,
-                                            date_otklulchenia__gte=start_of_month,
-                                            date_otklulchenia__lte=end_of_month,
-                                          exclude_from_report=False).count()
-
-
-        # Всего на конец выбранного месяца
-        kts_count_podkl_end = (kts_count_podkl + kolvo_podkl_obj) - kolvo_otkl_obj
-
-        kts_fiz_podkl_end = (kts_fiz_podkl + kolvo_podkl_fiz) - kolvo_otkl_fiz
-
-
-        # экипажи физические лица
-        gruppa_reagirovania_911_fiz = kts_podkl.filter(urik=False,
-                                                         gruppa_reagirovania='911', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_bravo21_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='Браво-21', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_sms_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='СМС', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_asker_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='Эскер', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_zardem_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='Жардем', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_kuguar_fiz = kts_podkl.filter(urik=False, gruppa_reagirovania='Кугуар', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-
-        kolvo_ekipazh_fiz = kts_fiz_podkl_end - (gruppa_reagirovania_911_fiz + gruppa_reagirovania_bravo21_fiz + gruppa_reagirovania_sms_fiz +
-                             gruppa_reagirovania_asker_fiz + gruppa_reagirovania_zardem_fiz + gruppa_reagirovania_kuguar_fiz)
-
-        # экипажи юридические лица
-        gruppa_reagirovania_911_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='911', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_bravo21_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='Браво-21', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_sms_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='СМС', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_asker_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='Эскер', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_zardem_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='Жардем', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-        gruppa_reagirovania_kuguar_ur = kts_podkl.filter(urik=True, gruppa_reagirovania='Кугуар', exclude_from_report=False).exclude(date_otklulchenia__lte=end_of_month).count()
-
-
-        kolvo_ekipazh_ur = kts_count_podkl_end - (gruppa_reagirovania_911_ur + gruppa_reagirovania_bravo21_ur + gruppa_reagirovania_sms_ur
-                                                  + gruppa_reagirovania_asker_ur + gruppa_reagirovania_zardem_ur + gruppa_reagirovania_kuguar_ur)
-
-
-        reports.append({
-            'companies': companies,
-            'kts_podkl': kts_podkl,
-            'kts_count_podkl': kts_count_podkl,
-            'kts_fiz_podkl': kts_fiz_podkl,
-            'kts_count_podkl_end': kts_count_podkl_end,
-            'kts_fiz_podkl_end': kts_fiz_podkl_end,
+    reports = [
+        {
+            'company': company,
+            **calculate_stats_for_company(company, start_of_month, end_of_month),
             'start_of_month': start_of_month,
             'end_of_month': end_of_month,
-            'kolvo_podkl_obj': kolvo_podkl_obj,
-            'kolvo_podkl_fiz': kolvo_podkl_fiz,
-            'kolvo_otkl_obj': kolvo_otkl_obj,
-            'kolvo_otkl_fiz': kolvo_otkl_fiz,
-            'gruppa_reagirovania_911_fiz': gruppa_reagirovania_911_fiz,
-            'gruppa_reagirovania_sms_fiz': gruppa_reagirovania_sms_fiz,
-            'gruppa_reagirovania_asker_fiz': gruppa_reagirovania_asker_fiz,
-            'gruppa_reagirovania_zardem_fiz': gruppa_reagirovania_zardem_fiz,
-            'gruppa_reagirovania_bravo21_fiz': gruppa_reagirovania_bravo21_fiz,
-            'gruppa_reagirovania_911_ur': gruppa_reagirovania_911_ur,
-            'gruppa_reagirovania_sms_ur': gruppa_reagirovania_sms_ur,
-            'gruppa_reagirovania_asker_ur': gruppa_reagirovania_asker_ur,
-            'gruppa_reagirovania_zardem_ur': gruppa_reagirovania_zardem_ur,
-            'gruppa_reagirovania_bravo21_ur': gruppa_reagirovania_bravo21_ur,
-            'gruppa_reagirovania_kuguar_ur': gruppa_reagirovania_kuguar_ur,
-            'gruppa_reagirovania_kuguar_fiz': gruppa_reagirovania_kuguar_fiz,
-            'kolvo_ekipazh_fiz': kolvo_ekipazh_fiz,
-            'kolvo_ekipazh_ur': kolvo_ekipazh_ur,
-        })
-        context = {'reports': reports, 'start_of_month': start_of_month, 'end_of_month': end_of_month}
-    return render(request, 'dogovornoy/reports_kolvo.html', context)
+        }
+        for company in companies
+    ]
+    print(reports[1])
+
+    return render(request, 'dogovornoy/reports_kolvo.html', {'reports': reports})
+
+
+def calculate_hours_security(start_of_month, end_of_month):
+    """
+    Подсчет часов охраны для подключенных клиентов (только юридические лица).
+    """
+    # Фильтруем только подключенных клиентов
+    kts_podkl = kts.objects.filter(
+        urik=True
+    ).exclude(
+        Q(date_otklulchenia__lt=start_of_month) & Q(date_podkluchenia__lte=F('date_otklulchenia'))
+    ).filter(
+        date_podkluchenia__lte=end_of_month,
+        exclude_from_report=False
+    )
+
+    # Группируем по компании и считаем сумму часов
+    data = kts_podkl.values('company_name__polnoe_name').annotate(
+        total_hours=Sum('chasi_po_dog')
+    )
+
+    return data
+
+
+@login_required
+def kolvo_hours_security(request):
+    """
+    Отчет о количестве часов охраны по компаниям.
+    """
+    now_date = timezone.now()
+    start_of_month = datetime(now_date.year, now_date.month, 1, tzinfo=now_date.tzinfo)
+    end_of_month = datetime(
+        now_date.year, now_date.month, calendar.monthrange(now_date.year, now_date.month)[1],
+        tzinfo=now_date.tzinfo
+    )
+
+    # Получаем данные для отчета
+    report_data = calculate_hours_security(start_of_month, end_of_month)
+
+    context = {
+        'report_data': report_data,
+        'start_of_month': start_of_month,
+        'end_of_month': end_of_month,
+    }
+
+    return render(request, 'dogovornoy/kolvo_hours_security.html', context)
 
 
 
@@ -14859,6 +14890,598 @@ def zhakitov_download_ur(request):
 
     response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename=TOO "Zhakitov" Urik {now.date()}.xlsx'
+
+    return response
+
+
+@login_required
+def reports_partners_alash(request):
+    now = timezone.now()
+    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
+                            tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        if start_date and end_date:
+            start_of_month = datetime.strptime(start_date, '%Y-%m-%d').date()
+            end_of_month = datetime.strptime(end_date, '%Y-%m-%d').date()
+            num_days_mounth = (end_of_month - start_of_month).days + 1
+
+    partners_object_podkl = partners_object.objects.filter(company_name_id=21).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=21).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_ur = partners_object.objects.filter(company_name_id=21, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object_fiz = partners_object.objects.filter(company_name_id=21, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+
+    reports = []
+    summ_telemetria = 0
+    summ_rent_gsm = 0
+    summ_nabludenie = 0
+    summ_reagirovanie = 0
+    summ_tehnical_services = 0
+    summ_sms_uvedomlenie = 0
+    itog_summ_mounth = 0
+    summ_fire_alarm = 0
+
+    for kts_instance in partners_object_podkl:
+        tarif_nabludenia = None
+        num_days = calculate_active_days(kts_instance, start_of_month, end_of_month)
+
+
+        if kts_instance.telemetria:
+            itog_telemetria = int((kts_instance.company_name.telemetria / num_days_mounth) * num_days)
+        else:
+            itog_telemetria = 0
+
+        if kts_instance.rent_gsm:
+            if kts_instance.urik:
+                itog_rent_gsm = int((kts_instance.company_name.arenda_ur / num_days_mounth) * num_days)
+            else:
+                itog_rent_gsm = int((kts_instance.company_name.arenda_fiz / num_days_mounth) * num_days)
+        else:
+            itog_rent_gsm = 0
+
+        if kts_instance.nabludenie:
+            if kts_instance.urik:
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_ur / num_days_mounth) * num_days)
+            else:
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_fiz / num_days_mounth) * num_days)
+        else:
+            itog_nabludenie = 0
+
+        if kts_instance.tehnical_services:
+            if kts_instance.urik:
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_ur / num_days_mounth) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                    itog_tehnical_services) > 0.5 else math.floor(
+                    itog_tehnical_services)
+            else:
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_mounth) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                    itog_tehnical_services) > 0.5 else math.floor(
+                    itog_tehnical_services)
+        else:
+            itog_tehnical_services = 0
+
+        if kts_instance.fire_alarm:
+            if kts_instance.urik:
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_ur / num_days_mounth) * num_days)
+            else:
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_fiz / num_days_mounth) * num_days)
+        else:
+            itog_fire_alarm = 0
+
+        if kts_instance.urik:
+            if kts_instance.tariff_per_mounth > 30:
+                reagirovanie = kts_instance.tariff_per_mounth
+            else:
+                reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                    reagirovanie)
+        else:
+            reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
+
+        if kts_instance.sms_uvedomlenie:
+            if kts_instance.urik:
+                if kts_instance.sms_number:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur * kts_instance.sms_number) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+            else:
+                if kts_instance.sms_number:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms * kts_instance.sms_number) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+        else:
+            itog_sms_uvedomlenie = 0
+
+        summ_mounth = itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm
+        summ_telemetria += itog_telemetria
+        summ_rent_gsm += itog_rent_gsm
+        summ_nabludenie += itog_nabludenie
+        summ_reagirovanie += reagirovanie
+        summ_tehnical_services += itog_tehnical_services
+        summ_sms_uvedomlenie += itog_sms_uvedomlenie
+        summ_fire_alarm += itog_fire_alarm
+        itog_summ_mounth += summ_mounth
+
+        reports.append({
+            'kts_instance': kts_instance,
+            'tarif_nabludenia': tarif_nabludenia,
+            'num_days': num_days,
+            'itog_telemetria': itog_telemetria,
+            'itog_rent_gsm': itog_rent_gsm,
+            'itog_nabludenie': itog_nabludenie,
+            'itog_tehnical_services': itog_tehnical_services,
+            'itog_sms_uvedomlenie': itog_sms_uvedomlenie,
+            'itog_fire_alarm': itog_fire_alarm,
+            'reagirovanie': reagirovanie,
+            'summ_mounth': summ_mounth,
+        })
+
+    context = {
+        'reports': reports,
+        'start_of_month': start_of_month,
+        'end_of_month': end_of_month,
+        'summ_telemetria': summ_telemetria,
+        'summ_rent_gsm': summ_rent_gsm,
+        'summ_nabludenie': summ_nabludenie,
+        'summ_reagirovanie': summ_reagirovanie,
+        'summ_tehnical_services': summ_tehnical_services,
+        'summ_sms_uvedomlenie': summ_sms_uvedomlenie,
+        'summ_fire_alarm': summ_fire_alarm,
+        'itog_summ_mounth': itog_summ_mounth,
+        'partners_kolvo_object': partners_kolvo_object,
+        'partners_kolvo_object_ur': partners_kolvo_object_ur,
+        'partners_kolvo_object_fiz': partners_kolvo_object_fiz,
+    }
+
+    return render(request, 'dogovornoy/reports_partners_alash.html', context)
+
+
+def alash_download_fiz(request):
+    now = timezone.now()
+    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
+                            tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        if start_date and end_date:
+            start_of_month = parse_date(start_date)
+            end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
+
+    partners_object_podkl = partners_object.objects.filter(company_name_id=21, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object.objects.filter(company_name_id=21, urik=False).aggregate(Count('id'))
+    sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=21, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
+
+    reports = []
+    summ_telemetria = 0
+    summ_rent_gsm = 0
+    summ_nabludenie = 0
+    summ_reagirovanie = 0
+    summ_tehnical_services = 0
+    summ_sms_uvedomlenie = 0
+    itog_summ_mounth = 0
+    summ_fire_alarm = 0
+    summ_tariff_per_mounth = 0
+
+    for kts_instance in partners_object_podkl:
+        tarif_nabludenia = None
+        all_object_number = str(kts_instance.object_number) + "\\" + str(kts_instance.gsm_number)
+
+        num_days = calculate_active_days(kts_instance, start_of_month, end_of_month)
+
+        if kts_instance.telemetria:
+            itog_telemetria = int((kts_instance.company_name.telemetria / num_days_mounth) * num_days)
+        else:
+            itog_telemetria = 0
+
+        if kts_instance.rent_gsm:
+            if kts_instance.urik:
+                itog_rent_gsm = int((kts_instance.company_name.arenda_ur / num_days_mounth) * num_days)
+            else:
+                itog_rent_gsm = int((kts_instance.company_name.arenda_fiz / num_days_mounth) * num_days)
+        else:
+            itog_rent_gsm = 0
+
+        if kts_instance.nabludenie:
+            if kts_instance.urik:
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_ur / num_days_mounth) * num_days)
+            else:
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_fiz / num_days_mounth) * num_days)
+        else:
+            itog_nabludenie = 0
+
+        if kts_instance.tehnical_services:
+            if kts_instance.urik:
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_ur / num_days_mounth) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(itog_tehnical_services) > 0.5 else math.floor(
+                    itog_tehnical_services)
+            else:
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_mounth) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                    itog_tehnical_services) > 0.5 else math.floor(
+                    itog_tehnical_services)
+        else:
+            itog_tehnical_services = 0
+
+        if kts_instance.fire_alarm:
+            if kts_instance.urik:
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_ur / num_days_mounth) * num_days)
+            else:
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_fiz / num_days_mounth) * num_days)
+        else:
+            itog_fire_alarm = 0
+
+        if kts_instance.urik:
+            if kts_instance.tariff_per_mounth > 30:
+                reagirovanie = kts_instance.tariff_per_mounth
+            else:
+                reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                    reagirovanie)
+        else:
+            reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
+
+        if kts_instance.sms_uvedomlenie:
+            if kts_instance.urik:
+                if kts_instance.sms_number:
+                    itog_sms_uvedomlenie = int(
+                        (kts_instance.company_name.sms_ur * kts_instance.sms_number) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+            else:
+                if kts_instance.sms_number:
+                    itog_sms_uvedomlenie = int(
+                        (kts_instance.company_name.sms * kts_instance.sms_number) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+        else:
+            itog_sms_uvedomlenie = 0
+
+        summ_mounth = itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm
+        summ_telemetria += itog_telemetria
+        summ_rent_gsm += itog_rent_gsm
+        summ_nabludenie += itog_nabludenie
+        summ_reagirovanie += reagirovanie
+        summ_tehnical_services += itog_tehnical_services
+        summ_sms_uvedomlenie += itog_sms_uvedomlenie
+        summ_fire_alarm += itog_fire_alarm
+        summ_tariff_per_mounth += kts_instance.tariff_per_mounth
+        itog_summ_mounth += summ_mounth
+
+        reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
+            'kts_instance': kts_instance,
+            'tarif_nabludenia': tarif_nabludenia,
+            'num_days': num_days,
+            'num_days_mounth': num_days_mounth,
+            'itog_telemetria': itog_telemetria,
+            'itog_rent_gsm': itog_rent_gsm,
+            'itog_nabludenie': itog_nabludenie,
+            'itog_tehnical_services': itog_tehnical_services,
+            'itog_sms_uvedomlenie': itog_sms_uvedomlenie,
+            'itog_fire_alarm': itog_fire_alarm,
+            'reagirovanie': reagirovanie,
+            'summ_mounth': summ_mounth,
+            'summ_telemetria': summ_telemetria,
+            'summ_rent_gsm': summ_rent_gsm,
+            'summ_nabludenie': summ_nabludenie,
+            'summ_reagirovanie': summ_reagirovanie,
+            'summ_tehnical_services': summ_tehnical_services,
+            'summ_sms_uvedomlenie': summ_sms_uvedomlenie,
+            'summ_fire_alarm': summ_fire_alarm,
+            'itog_summ_mounth': itog_summ_mounth,
+            'summ_tariff_per_mounth': summ_tariff_per_mounth,
+            'all_object_number': all_object_number,
+            'sgs': sgs,
+        })
+
+    # Загрузка шаблона Excel и инициализация row_num
+    template_path = os.path.join(settings.MEDIA_ROOT, 'alash_download_fiz.xlsx')
+    wb = openpyxl.load_workbook(template_path)
+    ws = wb.active
+
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
+    # Start filling in the data from row 2 (assuming row 1 is the header)
+    row_num = 10
+    for report in reports:
+        ws[f'A{row_num}'] = report['kts_instance'].object_number
+        ws[f'B{row_num}'] = report['kts_instance'].gsm_number
+        ws[f'C{row_num}'] = report['kts_instance'].name_object
+        ws[f'D{row_num}'] = report['kts_instance'].adres
+        ws[f'E{row_num}'] = report['kts_instance'].type_object
+        ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
+        ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
+        ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['itog_rent_gsm']
+        ws[f'K{row_num}'] = report['num_days']
+        ws[f'L{row_num}'] = report['reagirovanie']
+        ws[f'M{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'N{row_num}'] = report['itog_rent_gsm']
+        ws[f'O{row_num}'] = report['summ_mounth']
+        ws[f'P{row_num}'] = report['kts_instance'].primechanie
+        row_num += 1
+
+    ws[f'C{row_num+1}'] = 'Итого'
+    ws[f'O{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 3}'] = 'Итого охраняется:'
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
+    ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=TOO "Alash Group Kuzet" Fiziki {now.date()}.xlsx'
+
+    return response
+
+
+@login_required
+def alash_download_ur(request):
+    now = timezone.now()
+    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
+                            tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        if start_date and end_date:
+            start_of_month = parse_date(start_date)
+            end_of_month = parse_date(end_date)
+            num_days_month = (end_of_month - start_of_month).days + 1
+
+    partners_object_podkl = partners_object.objects.filter(company_name_id=21, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
+    sgs = partners_object.objects.filter(company_name_id=21, urik=True).aggregate(Count('id'))
+    sgs = sgs['id__count']
+
+    current_month = get_current_month_russian()
+    current_year = get_current_year()
+    partners_kolvo_object = partners_object.objects.filter(company_name_id=21, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
+    partners_kolvo_object = partners_kolvo_object.get('id__count', 0)
+
+    reports = []
+    summ_telemetria = 0
+    summ_rent_gsm = 0
+    summ_nabludenie = 0
+    summ_reagirovanie = 0
+    summ_tehnical_services = 0
+    summ_sms_uvedomlenie = 0
+    itog_summ_mounth = 0
+    summ_fire_alarm = 0
+    summ_tariff_per_mounth = 0
+
+    for kts_instance in partners_object_podkl:
+        tarif_nabludenia = None
+        all_object_number = str(kts_instance.object_number) + "\\" + str(kts_instance.gsm_number)
+
+        num_days = calculate_active_days(kts_instance, start_of_month, end_of_month)
+
+        if kts_instance.telemetria:
+            itog_telemetria = int((kts_instance.company_name.telemetria / num_days_mounth) * num_days)
+        else:
+            itog_telemetria = 0
+
+        if kts_instance.rent_gsm:
+            if kts_instance.urik:
+                itog_rent_gsm = int((kts_instance.company_name.arenda_ur / num_days_mounth) * num_days)
+            else:
+                itog_rent_gsm = int((kts_instance.company_name.arenda_fiz / num_days_mounth) * num_days)
+        else:
+            itog_rent_gsm = 0
+
+        if kts_instance.nabludenie:
+            if kts_instance.urik:
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_ur / num_days_mounth) * num_days)
+            else:
+                itog_nabludenie = int((kts_instance.company_name.nabludenie_fiz / num_days_mounth) * num_days)
+        else:
+            itog_nabludenie = 0
+
+        if kts_instance.tehnical_services:
+            if kts_instance.urik:
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_ur / num_days_mounth) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(itog_tehnical_services) > 0.5 else math.floor(
+                    itog_tehnical_services)
+            else:
+                itog_tehnical_services = (kts_instance.company_name.tehnic_srv_cost_fiz / num_days_mounth) * num_days
+                itog_tehnical_services = math.ceil(itog_tehnical_services) if itog_tehnical_services - math.floor(
+                    itog_tehnical_services) > 0.5 else math.floor(
+                    itog_tehnical_services)
+        else:
+            itog_tehnical_services = 0
+
+        if kts_instance.fire_alarm:
+            if kts_instance.urik:
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_ur / num_days_mounth) * num_days)
+            else:
+                itog_fire_alarm = int((kts_instance.company_name.pozharka_fiz / num_days_mounth) * num_days)
+        else:
+            itog_fire_alarm = 0
+
+        if kts_instance.urik:
+            if kts_instance.tariff_per_mounth > 30:
+                reagirovanie = kts_instance.tariff_per_mounth
+            else:
+                reagirovanie = (kts_instance.hours_mounth * kts_instance.tariff_per_mounth) / num_days_mounth * num_days
+                reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                    reagirovanie)
+        else:
+            reagirovanie = (kts_instance.tariff_per_mounth / num_days_mounth) * num_days
+            reagirovanie = math.ceil(reagirovanie) if reagirovanie - math.floor(reagirovanie) > 0.5 else math.floor(
+                reagirovanie)
+
+        if kts_instance.sms_uvedomlenie:
+            if kts_instance.urik:
+                if kts_instance.sms_number:
+                    itog_sms_uvedomlenie = int(
+                        (kts_instance.company_name.sms_ur * kts_instance.sms_number) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms_ur) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+            else:
+                if kts_instance.sms_number:
+                    itog_sms_uvedomlenie = int(
+                        (kts_instance.company_name.sms * kts_instance.sms_number) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+                else:
+                    itog_sms_uvedomlenie = int((kts_instance.company_name.sms) / num_days_mounth * num_days)
+                    itog_sms_uvedomlenie = math.ceil(itog_sms_uvedomlenie) if itog_sms_uvedomlenie - math.floor(
+                        itog_sms_uvedomlenie) > 0.5 else math.floor(
+                        itog_sms_uvedomlenie)
+        else:
+            itog_sms_uvedomlenie = 0
+
+        summ_mounth = itog_telemetria + itog_rent_gsm + itog_nabludenie + reagirovanie + itog_tehnical_services + itog_sms_uvedomlenie + itog_fire_alarm
+        summ_telemetria += itog_telemetria
+        summ_rent_gsm += itog_rent_gsm
+        summ_nabludenie += itog_nabludenie
+        summ_reagirovanie += reagirovanie
+        summ_tehnical_services += itog_tehnical_services
+        summ_sms_uvedomlenie += itog_sms_uvedomlenie
+        summ_fire_alarm += itog_fire_alarm
+        summ_tariff_per_mounth += kts_instance.tariff_per_mounth
+        itog_summ_mounth += summ_mounth
+
+        reports.append({
+            'current_month': current_month,
+            'partners_kolvo_object': partners_kolvo_object,
+            'current_year': current_year,
+            'kts_instance': kts_instance,
+            'tarif_nabludenia': tarif_nabludenia,
+            'num_days': num_days,
+            'num_days_mounth': num_days_mounth,
+            'itog_telemetria': itog_telemetria,
+            'itog_rent_gsm': itog_rent_gsm,
+            'itog_nabludenie': itog_nabludenie,
+            'itog_tehnical_services': itog_tehnical_services,
+            'itog_sms_uvedomlenie': itog_sms_uvedomlenie,
+            'itog_fire_alarm': itog_fire_alarm,
+            'reagirovanie': reagirovanie,
+            'summ_mounth': summ_mounth,
+            'summ_telemetria': summ_telemetria,
+            'summ_rent_gsm': summ_rent_gsm,
+            'summ_nabludenie': summ_nabludenie,
+            'summ_reagirovanie': summ_reagirovanie,
+            'summ_tehnical_services': summ_tehnical_services,
+            'summ_sms_uvedomlenie': summ_sms_uvedomlenie,
+            'summ_fire_alarm': summ_fire_alarm,
+            'itog_summ_mounth': itog_summ_mounth,
+            'summ_tariff_per_mounth': summ_tariff_per_mounth,
+            'all_object_number': all_object_number,
+            'sgs': sgs,
+        })
+
+    # Загрузка шаблона Excel и инициализация row_num
+    template_path = os.path.join(settings.MEDIA_ROOT, 'alash_download_ur.xlsx')
+    wb = openpyxl.load_workbook(template_path)
+    ws = wb.active
+
+    # Исправляем доступ к данным
+    if reports:
+        first_report = reports[0]  # Берем первый отчет для заполнения заголовка
+        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+
+    # Start filling in the data from row 2 (assuming row 1 is the header)
+    row_num = 10
+    for report in reports:
+        ws[f'A{row_num}'] = report['kts_instance'].object_number
+        ws[f'B{row_num}'] = report['kts_instance'].gsm_number
+        ws[f'C{row_num}'] = report['kts_instance'].name_object
+        ws[f'D{row_num}'] = report['kts_instance'].adres
+        ws[f'E{row_num}'] = report['kts_instance'].type_object
+        ws[f'F{row_num}'] = str(report['kts_instance'].vid_sign)
+        ws[f'G{row_num}'] = report['kts_instance'].hours_mounth
+        ws[f'H{row_num}'] = report['kts_instance'].date_podkluchenia
+        ws[f'I{row_num}'] = report['kts_instance'].tariff_per_mounth
+        ws[f'J{row_num}'] = report['itog_rent_gsm']
+        ws[f'K{row_num}'] = report['num_days']
+        ws[f'L{row_num}'] = report['reagirovanie']
+        ws[f'M{row_num}'] = report['itog_sms_uvedomlenie']
+        ws[f'N{row_num}'] = report['itog_rent_gsm']
+        ws[f'O{row_num}'] = report['summ_mounth']
+        ws[f'P{row_num}'] = report['kts_instance'].primechanie
+        row_num += 1
+
+    ws[f'C{row_num+1}'] = 'Итого'
+    ws[f'O{row_num+1}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 3}'] = 'Итого охраняется:'
+    ws[f'D{row_num + 3}'] = report['partners_kolvo_object']
+    ws[f'C{row_num + 4}'] = f'Итого к оплате за {current_month} {current_year} г.:'
+    ws[f'D{row_num + 4}'] = report['itog_summ_mounth']
+    ws[f'C{row_num + 5}'] = '(В том числе НДС 12%)'
+    ws[f'C{row_num + 6}'] = 'Исполнитель: бухгалтер'
+    ws[f'D{row_num + 6}'] = '_________________'
+    ws[f'E{row_num + 6}'] = 'Пак И.C.'
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(output, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=TOO "Alash Group Kuzet" Urik {now.date()}.xlsx'
 
     return response
 

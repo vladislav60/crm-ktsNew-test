@@ -11619,11 +11619,11 @@ def calculate_stats_for_company(company, start_of_month, end_of_month):
 
     # На начало месяца
     kts_count_podkl = kts_podkl.filter(
-        date_podkluchenia__lt=start_of_month, urik=True, exclude_from_report=False
+        date_podkluchenia__lt=start_of_month, urik=True, exclude_from_report=False, date_otklulchenia__isnull=True
     ).count()
 
     kts_fiz_podkl = kts_podkl.filter(
-        date_podkluchenia__lt=start_of_month, urik=False, exclude_from_report=False
+        date_podkluchenia__lt=start_of_month, urik=False, exclude_from_report=False, date_otklulchenia__isnull=True
     ).count()
 
     # Новые клиенты
@@ -11711,6 +11711,7 @@ def reports_kolvo(request):
         now_date.year, now_date.month - 1, calendar.monthrange(now_date.year, now_date.month - 1)[1], tzinfo=now_date.tzinfo
     )
 
+
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
@@ -11740,7 +11741,7 @@ def calculate_hours_security(start_of_month, end_of_month):
     """
     # Фильтруем только подключенных клиентов
     kts_podkl = kts.objects.filter(
-        urik=True
+        urik=True, date_otklulchenia__isnull=True
     ).exclude(
         Q(date_otklulchenia__lt=start_of_month) & Q(date_podkluchenia__lte=F('date_otklulchenia'))
     ).filter(

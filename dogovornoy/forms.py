@@ -258,6 +258,40 @@ class DateBackGSMForm(forms.ModelForm):
         fields = ['date_back_gsm', 'return_reason']
 
 
+class TechnicalTaskForm(forms.ModelForm):
+    class Meta:
+        model = TechnicalTask
+        fields = ['arrival_time', 'completion_time', 'result']  # Замените на нужные поля
+        widgets = {
+            'completion_time': forms.DateTimeInput(
+                attrs={
+                    'type': 'datetime-local',
+                    'class': 'form-control',  # Для использования стилей Bootstrap
+                },
+                format='%Y-%m-%dT%H:%M',  # Формат для HTML5 input
+            ),
+            'arrival_time': forms.DateTimeInput(
+                attrs={
+                    'type': 'datetime-local',
+                    'class': 'form-control',  # Для использования стилей Bootstrap
+                },
+                format='%Y-%m-%dT%H:%M',  # Формат для HTML5 input
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Добавляем CSS-классы ко всем полям
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control'
+
+
+class ArchTechnicalTaskForm(forms.ModelForm):
+    class Meta:
+        model = TechnicalTask
+        fields = ['result']  # Замените на нужные поля
+
+
 
 
 

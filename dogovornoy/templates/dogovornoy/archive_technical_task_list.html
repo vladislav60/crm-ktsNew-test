@@ -58,6 +58,7 @@
             <th>Отпр</th>
             <th>Рабочее место</th>
             <th>Статус</th>
+            <th>Редактировать</th>
         </tr>
     </thead>
     <tbody>
@@ -93,6 +94,9 @@
                 {% else %}
                     В процессе
                 {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'archive_task_edit' task.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
             </td>
         </tr>
         {% endfor %}

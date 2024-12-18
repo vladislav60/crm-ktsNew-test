@@ -238,11 +238,11 @@ class TechnicalTask(models.Model):
     ekcbase_object_id = models.IntegerField(null=True, blank=True)  # Используем IntegerField для хранения ID клиента
     sent_time = models.DateTimeField(auto_now_add=True)
     accepted_time = models.DateTimeField(null=True, blank=True)
-    arrival_time = models.DateTimeField(null=True, blank=True)
-    completion_time = models.DateTimeField(null=True, blank=True)
+    arrival_time = models.DateTimeField(null=True, blank=True, verbose_name="Время прибытия")
+    completion_time = models.DateTimeField(null=True, blank=True, verbose_name="Время завершения")
     reason = models.TextField(null=True, blank=True)
     note = models.TextField(blank=True)
-    result = models.TextField(blank=True)
+    result = models.TextField(blank=True, verbose_name="Результат")
     previous_workstation = models.IntegerField(null=True, blank=True, verbose_name="Предыдущее значение WORKSTATION")
 
     def __str__(self):

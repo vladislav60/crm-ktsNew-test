@@ -11619,7 +11619,7 @@ def calculate_stats_for_company(company, start_of_month, end_of_month):
 
     # На начало месяца
     kts_count_podkl = kts_podkl.filter(
-        date_podkluchenia__lt=start_of_month, urik=True, exclude_from_report=False, date_otklulchenia__isnull=True
+        date_podkluchenia__lt=start_of_month, urik=True, exclude_from_report=False
     ).count()
 
     kts_fiz_podkl = kts_podkl.filter(
@@ -11741,7 +11741,7 @@ def calculate_hours_security(start_of_month, end_of_month):
     """
     # Фильтруем только подключенных клиентов
     kts_podkl = kts.objects.filter(
-        urik=True, date_otklulchenia__isnull=True
+        urik=True
     ).exclude(
         Q(date_otklulchenia__lt=start_of_month) & Q(date_podkluchenia__lte=F('date_otklulchenia'))
     ).filter(
@@ -16038,6 +16038,26 @@ class TechnicalTaskListView(ListView):
         context['pagination_url'] = pagination_url
         context['filter_form'] = self.get_filter_form()
         return context
+
+
+class TechnicalTaskUpdateView(UpdateView):
+    model = TechnicalTask
+    form_class = TechnicalTaskForm
+    template_name = 'dogovornoy/technical_task_form.html'
+    success_url = reverse_lazy('technical_task_list')
+
+
+class ArchTechnicalTaskUpdateView(UpdateView):
+    model = TechnicalTask
+    form_class = ArchTechnicalTaskForm
+    template_name = 'dogovornoy/arch_technical_task_form.html'
+    success_url = reverse_lazy('archive_technical_task_list')
+
+
+class TechnicalTaskDeleteView(DeleteView):
+    model = TechnicalTask
+    template_name = 'dogovornoy/technical_task_confirm_delete.html'
+    success_url = reverse_lazy('technical_task_list')
 
 
 

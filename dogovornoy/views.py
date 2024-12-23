@@ -16326,7 +16326,6 @@ def skladgsm_return(request, pk):
     return render(request, 'skladgsm_return.html', {'form': form, 'item': item})
 
 
-
 def export_kts_to_exel(request):
     workbook = openpyxl.Workbook()
     sheet = workbook.active
@@ -16370,7 +16369,6 @@ def export_kts_to_exel(request):
     workbook.save(response)
 
     return response
-
 
 
 def export_partners_to_excel(request):

@@ -110,7 +110,7 @@ DATABASES = {
         'NAME': 'GBASE',
         'USER': 'vlad_asukts',
         'PASSWORD': 'KtsPCN@2024!$_Lol',
-        'HOST': '192.168.1.101',
+        'HOST': '192.168.1.17',
         'PORT': '1433',
 
         'OPTIONS': {

@@ -1,0 +1,149 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
+
+    <title>Канбан-доска</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .kanban-board {
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        .kanban-column {
+            background: #f7f8f9;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            min-width: 380px;
+            overflow-x: hidden;
+            height: 85vh;
+        }
+        .kanban-h3 {
+            margin: 10px 0 20px;
+            text-align: center;
+            color: #626F86;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .kanban-card {
+            font-size: 14px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            padding: 10px;
+            margin-bottom: 13px;
+            cursor: grab;
+            width: 360px;
+            padding: 1rem;
+            box-shadow: 4px 4px 16px #E1E1E1, -2px -2px 16px #ffffff;
+            border-radius: 0.2rem;
+        }
+        /* Стили для выезжающей формы */
+        .offcanvas {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background: #f9f9f9;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .offcanvas.show {
+            right: 0;
+        }
+        .offcanvas-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .offcanvas-header button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .padb {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="kanban-board">
+        {% for status in statuses %}
+            <div class="kanban-column" data-status-id="{{ status.order }}">
+                <h3 class="kanban-h3">{{ status.name }}</h3>
+                <div>
+                    {% for lead in leads %}
+                    {% if lead.status_id == status.id %}
+                    <div class="kanban-card" data-id="{{ lead.id }}">
+                        Имя: <strong>{{ lead.name }}</strong><br>
+                        <p></p>
+                       <div class="padb">Источник: {{ lead.source }}<br></div>
+                        Телефон: {{ lead.phone }}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+    </div>
+
+    <!-- Кнопка для открытия формы -->
+    <button onclick="toggleOffcanvas()" style="position: fixed; bottom: 20px; right: 20px; background: #007bff; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 24px;">+</button>
+
+    <!-- Выезжающее окно с формой -->
+    <div class="offcanvas" id="add-lead-form">
+        <div class="offcanvas-header">
+            <h3>Добавить лид</h3>
+            <button onclick="toggleOffcanvas()">✖</button>
+        </div>
+        <form method="POST" action="{% url 'add_lead' %}">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">Добавить</button>
+        </form>
+    </div>
+
+<script>
+    document.querySelectorAll('.kanban-column').forEach(column => {
+        new Sortable(column.querySelector('div'), {
+            group: 'shared',
+            animation: 100,
+            sort: true,
+            delay: 0,
+            onEnd: async function (evt) {
+                const leadId = evt.item.dataset.id;
+                const newStatusId = evt.to.closest('.kanban-column').dataset.statusId;
+                console.log(newStatusId)
+                // Отправляем на сервер
+                await fetch(`/kanban/update_status/${leadId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ status_id: newStatusId })
+                });
+            }
+        });
+    });
+
+    function toggleOffcanvas() {
+            const offcanvas = document.getElementById('add-lead-form');
+            offcanvas.classList.toggle('show');
+        }
+</script>
+
+{% endblock %}

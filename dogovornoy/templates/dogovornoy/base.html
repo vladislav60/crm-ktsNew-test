@@ -30,6 +30,7 @@
 
     <!-- Template Main CSS File -->
     <link href="{% static 'dogovornoy/css/style.css' %}" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
 
     <!-- =======================================================
     * Template Name: NiceAdmin - v2.4.1
@@ -267,12 +268,23 @@
 
         {% if user_profile.department == 'Директор' or user_profile.department == 'Админ'%}
         <li class="nav-item">
-            <a class="nav-link " href="{% url 'home' %}">
+            <a class="nav-link collapsed" href="{% url 'home' %}">
                 <i class="bi bi-grid"></i>
                 <span>Главная</span>
             </a>
         </li><!-- End Главная Nav -->
         {% endif %}
+
+
+        {% if user_profile.department == 'Директор' or user_profile.department == 'Админ' or user_profile.department == 'Инженер'%}
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="{% url 'kanban' %}">
+                    <i class="bi bi-grid"></i>
+                    <span>CRM</span>
+                </a>
+            </li>
+        {% endif %}
+
 
 
         {% if user_profile.department == 'Договорной отдел' or user_profile.department == 'Админ' or user_profile.department == 'Директор' %}

@@ -24,9 +24,6 @@ CSRF_TRUSTED_ORIGINS = ['http://192.168.1.19:8008',
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '$$==_c9vm&-h6(h2x0@urr(ya1*ywwm!@t@1u=ccr=0tcc-r6x'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
@@ -49,6 +46,7 @@ INSTALLED_APPS = [
     # 'accounts',
     'accounts.apps.AccountsConfig',
     'whitenoise.runserver_nostatic',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -85,39 +83,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ktscrm.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/3.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'crm-kts',
-        'USER': 'crmktsuser',
-        'PASSWORD': 'c7VL09DcUnXGKVysq0fV!$',
-        'HOST': '192.168.1.60',
-        'PORT': '5432',
-    },
-    'asu_ekc': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'asu_ekc',
-        'USER': 'asu2',
-        'PASSWORD': 'c7VL09DcUnXGKVysq0fV',
-        'HOST': '192.168.1.60',
-        'PORT': '5432',
-    },
-    'third_db': {
-        'ENGINE': 'mssql',
-        'NAME': 'GBASE',
-        'USER': 'vlad_asukts',
-        'PASSWORD': 'KtsPCN@2024!$_Lol',
-        'HOST': '192.168.1.17',
-        'PORT': '1433',
-
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-        },
-    },
-}
+# Импорт конфиденциальных данных
+try:
+    from config import SECRET_KEY, TELEGRAM_BOT_TOKEN, DATABASES
+except ImportError:
+    raise Exception("Не удалось найти config.py. Проверьте, что файл существует и содержит нужные настройки.")
 
 
 
@@ -184,5 +154,3 @@ LOGIN_URL = '/login/'
 INTERNAL_IPS = [
     '*',
 ]
-
-TELEGRAM_BOT_TOKEN = '7362467897:AAHrluc3JLzPq7XXOGZ5V--6zUPXx4GC8fI'

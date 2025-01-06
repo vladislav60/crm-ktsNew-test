@@ -302,6 +302,28 @@ class Invoice(models.Model):
         return f"Счет № {self.number}"
 
 
+class KanbanStatus(models.Model):
+    name = models.CharField(max_length=100, verbose_name="Статус")
+    order = models.PositiveIntegerField(default=0, verbose_name="Порядок")
+
+    def __str__(self):
+        return self.name
+
+
+class Lead(models.Model):
+    name = models.CharField(max_length=200, verbose_name="Имя клиента")
+    phone = models.CharField(max_length=20, verbose_name="Телефон", blank=True, null=True)
+    email = models.EmailField(verbose_name="Email", blank=True, null=True)
+    source = models.CharField(max_length=100, verbose_name="Источник", choices=[
+        ('instagram', 'Instagram'),
+        ('website', 'Сайт'),
+        ('call', 'Звонок в офис')
+    ])
+    status = models.ForeignKey(KanbanStatus, on_delete=models.SET_NULL, null=True, verbose_name="Статус")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата обновления")
+
+
 
 
 

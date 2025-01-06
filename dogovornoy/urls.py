@@ -181,6 +181,10 @@ urlpatterns = [
     path('export_kts_to_exel/', export_kts_to_exel, name='export_kts_to_exel'),
     path('export_partners_excel/', export_partners_to_excel, name='export_partners_excel'),
     path('generate_invoice/<int:pk>/', generate_invoice, name='generate_invoice'),
+    path('kanban/', kanban_view, name='kanban'),
+    path('kanban/update_status/<int:lead_id>/', update_lead_status, name='update_lead_status'),
+    path('kanban/add-lead/', add_lead, name='add_lead'),
+    path('api/create_lead/', views.create_lead, name='create_lead'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

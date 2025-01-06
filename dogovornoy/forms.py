@@ -289,7 +289,20 @@ class TechnicalTaskForm(forms.ModelForm):
 class ArchTechnicalTaskForm(forms.ModelForm):
     class Meta:
         model = TechnicalTask
-        fields = ['result']  # Замените на нужные поля
+        fields = ['result']
+
+
+class LeadForm(forms.ModelForm):
+    class Meta:
+        model = Lead
+        fields = ['name', 'phone', 'email', 'source', 'status']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'source': forms.Select(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-control'}),
+        }
 
 
 

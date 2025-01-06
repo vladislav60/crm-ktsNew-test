@@ -361,7 +361,7 @@ class DogBaza(ListView):
     def post(self, request, *args, **kwargs):
         # Получаем ID клиента из POST данных формы
         client_id = request.POST.get('client_id')
-        print(client_id)
+        # print(client_id)
 
         try:
             client = kts.objects.get(pk=client_id)
@@ -756,8 +756,8 @@ def calculate_active_days(partner_object, start_of_month=None, end_of_month=None
         year = now.year if now.month > 1 else now.year - 1
         start_of_month = datetime(year, previous_month, 1, tzinfo=timezone.utc).date()
         end_of_month = datetime(year, previous_month, calendar.monthrange(year, previous_month)[1], tzinfo=timezone.utc).date()
-        print(start_of_month)
-        print(end_of_month)
+        # print(start_of_month)
+        # print(end_of_month)
 
     if not partner_object.date_podkluchenia:
         return 0
@@ -848,7 +848,7 @@ class KartochkaKlienta(DetailView):
         end_of_month = datetime(now.year, now.month, num_days_mounth, tzinfo=timezone.utc).date()
         # Используем функцию calculate_active_days для расчета num_days
         num_days = calculate_active_days(kts_instance, start_of_month, end_of_month)
-        print(num_days)
+        # print(num_days)
 
         total_additional_services_cost = 0
         itog_abon_plata = 0
@@ -1114,7 +1114,7 @@ class KartochkaPartner(DetailView):
 
         # Используем функцию calculate_active_days для расчета num_days
         num_days = calculate_active_days(partner_object, start_of_month, end_of_month)
-        print(num_days)
+        # print(num_days)
 
         sms_uvedomlenie = 0
 
@@ -1248,8 +1248,8 @@ def login_view(request):
 @login_required
 def reports(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1363,8 +1363,8 @@ def reports(request):
 @login_required
 def export_reports_to_excel(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1500,8 +1500,8 @@ def export_reports_to_excel(request):
 @login_required
 def reports_agentskie(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc)
-    end_of_month = timezone.datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc)
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+    end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc)
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1558,9 +1558,9 @@ def reports_agentskie(request):
 @login_required
 def reports_partners(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -1595,7 +1595,7 @@ def reports_partners(request):
         Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))
     ).aggregate(Count('id'))
 
-    print(end_of_month)
+    # print(end_of_month)
 
     reports = []
     summ_telemetria = 0
@@ -1741,9 +1741,9 @@ def reports_partners(request):
 @login_required
 def reports_partners_download_urik(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -1971,9 +1971,9 @@ def reports_partners_download_urik(request):
 @login_required
 def sgs_plus_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -2204,9 +2204,9 @@ def sgs_plus_download_fiz(request):
 @login_required
 def reports_partners_akm(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_month = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    num_days_month = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -2411,9 +2411,9 @@ def reports_partners_akm(request):
 @login_required
 def akm_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -2638,9 +2638,9 @@ def akm_download_fiz(request):
 @login_required
 def akm_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -3037,9 +3037,9 @@ def reports_partners_rmg(request):
 @login_required
 def rmg_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -3273,9 +3273,9 @@ def rmg_download_fiz(request):
 @login_required
 def rmg_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month-1)[1]  # Default to full month days
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -3518,8 +3518,8 @@ def rmg_download_ur(request):
 @login_required
 def reports_partners_kazkuzet(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month-1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month-1, calendar.monthrange(now.year, now.month-1)[1], tzinfo=timezone.utc).date()
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
+    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
     num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
     current_month = get_current_month_russian()
     num_days = num_days_mounth
@@ -11902,7 +11902,7 @@ def partner_reports_kolvo(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1], tzinfo=timezone.utc).date()
 
-    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month-1)[1])
+    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
     next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()
     next_end_of_month = datetime(next_month.year, next_month.month,
                                  calendar.monthrange(next_month.year, next_month.month)[1], tzinfo=timezone.utc).date()
@@ -12053,7 +12053,7 @@ def kts_reports_kolvo(request):
     start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
     end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1], tzinfo=timezone.utc).date()
 
-    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month-1)[1])
+    next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
     next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()
     next_end_of_month = datetime(next_month.year, next_month.month,
                                  calendar.monthrange(next_month.year, next_month.month)[1], tzinfo=timezone.utc).date()
@@ -13330,7 +13330,7 @@ def twojoy_download_ur(request):
             end_of_month = parse_date(end_date)
             num_days_month = (end_of_month - start_of_month).days + 1
 
-    print(num_days_mounth)
+    # print(num_days_mounth)
 
     partners_object_podkl = partners_object.objects.filter(company_name_id=17, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia')))
     sgs = partners_object.objects.filter(company_name_id=17, urik=True).aggregate(Count('id'))
@@ -15678,7 +15678,7 @@ def button_handler(update, context):
             alarms = execute_stored_procedure(module_number)
 
             if alarms:
-                print(alarms)
+                # print(alarms)
                 message = f"Результаты для модуля {module_number}:\n"
                 message += f"Получено: {timezone.now().strftime('%H:%M:%S')}\n\n"
                 for row in reversed(alarms):
@@ -15690,7 +15690,7 @@ def button_handler(update, context):
                     message += f"Раздел: {razdel}, Зона/Польз: {zona_user}, Событие: {event_str}, Дата: {date_event}, Качество: {gprs_quality}\n\n"
                     last_event_sn[task_id] = alarms[0][1]
                 # Сохраняем последний SN из полученных данных
-                print(f"SN из последнего события + {last_event_sn[task_id]}")
+                # print(f"SN из последнего события + {last_event_sn[task_id]}")
             else:
                 message = "События не найдены."
 
@@ -16414,5 +16414,67 @@ def export_partners_to_excel(request):
     return response
 
 
+def kanban_view(request):
+    statuses = KanbanStatus.objects.order_by('order')
+    leads = Lead.objects.all()
+    form = LeadForm()
+
+    return render(request, 'dogovornoy/kanban.html', {
+        'statuses': statuses,
+        'leads': leads,
+        'form': form,
+    })
 
 
+@csrf_exempt
+def update_lead_status(request, lead_id):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        status_id = data.get('status_id')
+        print(status_id)
+        Lead.objects.filter(id=lead_id).update(status_id=status_id)
+        return JsonResponse({'success': True})
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
+def add_lead(request):
+    if request.method == 'POST':
+        form = LeadForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('kanban')  # Возвращаем пользователя на страницу канбан-доски
+    return redirect('kanban')  # Если форма невалидна, также перенаправляем на канбан-доску
+
+
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+
+
+@api_view(['POST'])
+def create_lead(request):
+    data = request.data
+
+    # Проверка обязательных полей
+    if not data.get('name'):
+        return Response({'error': 'Поле "name" обязательно'}, status=status.HTTP_400_BAD_REQUEST)
+    if not data.get('phone') and not data.get('email'):
+        return Response({'error': 'Должно быть указано хотя бы одно из полей: "phone" или "email"'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        default_status = KanbanStatus.objects.get(id=1)  # Замените `1` на id статуса, который должен быть по умолчанию
+    except KanbanStatus.DoesNotExist:
+        return Response({'error': 'Статус по умолчанию не найден'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    # Создание лида
+    try:
+        lead = Lead.objects.create(
+            name=data.get('name'),
+            phone=data.get('phone'),
+            source='website',  # Здесь "website" жёстко зашито, но можно сделать динамическим, если нужно
+            status=default_status,
+        )
+        return Response({'success': True, 'id': lead.id}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'error': f'Ошибка при создании лида: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

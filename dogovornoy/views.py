@@ -1244,12 +1244,14 @@ def login_view(request):
     return render(request, 'accounts/login.html', {'form': form})
 
 
+from dateutil.relativedelta import relativedelta
 
 @login_required
 def reports(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc) - relativedelta(months=1)).date()
+
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1363,8 +1365,9 @@ def reports(request):
 @login_required
 def export_reports_to_excel(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1500,8 +1503,9 @@ def export_reports_to_excel(request):
 @login_required
 def reports_agentskie(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
-    end_of_month = timezone.datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc)
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -1509,7 +1513,6 @@ def reports_agentskie(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
 
     companies = rekvizity.objects.all()
     urik_companies = rekvizity.objects.filter(kts__urik=True, kts__date_otklulchenia=None)
@@ -1558,9 +1561,11 @@ def reports_agentskie(request):
 @login_required
 def reports_partners(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days
+    num_days_mounth += 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 

@@ -62,7 +62,6 @@ local_settings.py
 
 # Django файлы
 db.sqlite3
-media/
 staticfiles/
 instance/
 celerybeat-schedule

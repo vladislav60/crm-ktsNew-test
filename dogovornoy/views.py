@@ -843,10 +843,10 @@ class KartochkaKlienta(DetailView):
         kts_instance = self.get_object()
 
         now = timezone.now()
-        num_days_mounth = calendar.monthrange(now.year, now.month)[1]
-        start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-        end_of_month = datetime(now.year, now.month, num_days_mounth, tzinfo=timezone.utc).date()
-        # Используем функцию calculate_active_days для расчета num_days
+        start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+        end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                                 tzinfo=timezone.utc) - relativedelta(months=1)).date()
+        num_days_mounth = (end_of_month - start_of_month).days + 1
         num_days = calculate_active_days(kts_instance, start_of_month, end_of_month)
         # print(num_days)
 
@@ -1005,9 +1005,10 @@ def generate_invoice(request, pk):
     now = timezone.now()
     formatted_date = format_date_russian(now)
     formatted_date_month = format_date_russian_invoice(now)
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, num_days_mounth, tzinfo=timezone.utc).date()
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     kbe = 17 if "ТОО" in kts_instance.company_name.polnoe_name else 19
     company = kts_instance.company_name
 
@@ -1108,9 +1109,10 @@ class KartochkaPartner(DetailView):
 
         now = timezone.now()
         partner_object = self.get_object()
-        num_days_mounth = calendar.monthrange(now.year, now.month)[1]
-        start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-        end_of_month = datetime(now.year, now.month, num_days_mounth, tzinfo=timezone.utc).date()
+        start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+        end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                                 tzinfo=timezone.utc) - relativedelta(months=1)).date()
+        num_days_mounth = (end_of_month - start_of_month).days + 1
 
         # Используем функцию calculate_active_days для расчета num_days
         num_days = calculate_active_days(partner_object, start_of_month, end_of_month)
@@ -1564,8 +1566,7 @@ def reports_partners(request):
     start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
     end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
                              tzinfo=timezone.utc) - relativedelta(months=1)).date()
-    num_days_mounth = (end_of_month - start_of_month).days
-    num_days_mounth += 1
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -1746,9 +1747,10 @@ def reports_partners(request):
 @login_required
 def reports_partners_download_urik(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -1976,9 +1978,10 @@ def reports_partners_download_urik(request):
 @login_required
 def sgs_plus_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -2209,9 +2212,9 @@ def sgs_plus_download_fiz(request):
 @login_required
 def reports_partners_akm(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_month = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -2219,7 +2222,9 @@ def reports_partners_akm(request):
         if start_date and end_date:
             start_of_month = parse_date(start_date)
             end_of_month = parse_date(end_date)
-            num_days_month = (end_of_month - start_of_month).days + 1
+
+
+    num_days_month = (end_of_month - start_of_month).days + 1
 
     partners_object_podkl = partners_object.objects.filter(
         company_name_id=2
@@ -2416,9 +2421,10 @@ def reports_partners_akm(request):
 @login_required
 def akm_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -2643,9 +2649,10 @@ def akm_download_fiz(request):
 @login_required
 def akm_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=2, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -2874,10 +2881,10 @@ def akm_download_ur(request):
 @login_required
 def reports_partners_rmg(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -3042,9 +3049,10 @@ def reports_partners_rmg(request):
 @login_required
 def rmg_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -3278,9 +3286,10 @@ def rmg_download_fiz(request):
 @login_required
 def rmg_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -3523,9 +3532,10 @@ def rmg_download_ur(request):
 @login_required
 def reports_partners_kazkuzet(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -3723,9 +3733,10 @@ def reports_partners_kazkuzet(request):
 @login_required
 def kazkuzet_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=3, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -3970,9 +3981,10 @@ def kazkuzet_download_fiz(request):
 @login_required
 def kazkuzet_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=3, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -4218,9 +4230,10 @@ def kazkuzet_download_ur(request):
 @login_required
 def reports_partners_sgs(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -4402,9 +4415,10 @@ def reports_partners_sgs(request):
 @login_required
 def sgs_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=5, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -4651,9 +4665,10 @@ def sgs_download_fiz(request):
 @login_required
 def sgs_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=5, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -4904,10 +4919,10 @@ def sgs_download_ur(request):
 @login_required
 def reports_partners_ipkim(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -5090,10 +5105,10 @@ def reports_partners_ipkim(request):
 @login_required
 def ipkim_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=6, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -5324,10 +5339,10 @@ def ipkim_download_fiz(request):
 @login_required
 def ipkim_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=6, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -5557,10 +5572,10 @@ def ipkim_download_ur(request):
 @login_required
 def reports_partners_kuzets(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -5747,10 +5762,10 @@ def reports_partners_kuzets(request):
 @login_required
 def kuzets_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=7, urik=False).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -5994,10 +6009,10 @@ def kuzets_download_fiz(request):
 @login_required
 def kuzets_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=7, urik=True).exclude(Q(date_otkluchenia__lt=start_of_month) & Q(date_podkluchenia__lt=F('date_otkluchenia'))).aggregate(Count('id'))
@@ -6245,10 +6260,10 @@ def kuzets_download_ur(request):
 @login_required
 def reports_partners_samohvalov(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -6434,10 +6449,10 @@ def reports_partners_samohvalov(request):
 @login_required
 def samohvalov_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     current_month = get_current_month_russian()
     current_year = get_current_year()
@@ -6675,10 +6690,10 @@ def samohvalov_download_fiz(request):
 @login_required
 def samohvalov_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -6923,10 +6938,10 @@ def samohvalov_download_ur(request):
 @login_required
 def reports_partners_sobsecutity(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -7110,10 +7125,10 @@ def reports_partners_sobsecutity(request):
 @login_required
 def sobsecutity_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -7344,10 +7359,10 @@ def sobsecutity_download_fiz(request):
 @login_required
 def sobsecutity_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -7577,10 +7592,10 @@ def sobsecutity_download_ur(request):
 @login_required
 def reports_partners_egida(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -7767,10 +7782,10 @@ def reports_partners_egida(request):
 @login_required
 def egida_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -8003,10 +8018,10 @@ def egida_download_fiz(request):
 @login_required
 def egida_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -8245,10 +8260,10 @@ def egida_download_ur(request):
 @login_required
 def reports_partners_eyewatch(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -8435,10 +8450,10 @@ def reports_partners_eyewatch(request):
 @login_required
 def eyewatch_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -8675,10 +8690,10 @@ def eyewatch_download_fiz(request):
 @login_required
 def eyewatch_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -8917,10 +8932,11 @@ def eyewatch_download_ur(request):
 @login_required
 def reports_partners_iviscom(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
+
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -9107,10 +9123,10 @@ def reports_partners_iviscom(request):
 @login_required
 def iviscom_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -9351,10 +9367,10 @@ def iviscom_download_fiz(request):
 @login_required
 def iviscom_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -9594,10 +9610,10 @@ def iviscom_download_ur(request):
 @login_required
 def reports_partners_eurasian(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -9784,10 +9800,10 @@ def reports_partners_eurasian(request):
 @login_required
 def eurasian_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -10028,10 +10044,10 @@ def eurasian_download_fiz(request):
 @login_required
 def eurasian_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -10271,10 +10287,10 @@ def eurasian_download_ur(request):
 @login_required
 def reports_partners_bmkz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -10461,10 +10477,10 @@ def reports_partners_bmkz(request):
 @login_required
 def bmkz_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     current_year = get_current_year()
     partners_kolvo_object = partners_object.objects.filter(company_name_id=1, urik=True).exclude(
@@ -10703,10 +10719,10 @@ def bmkz_download_fiz(request):
 @login_required
 def bmkz_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -10946,10 +10962,10 @@ def bmkz_download_ur(request):
 @login_required
 def reports_partners_monolit(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -11136,10 +11152,10 @@ def reports_partners_monolit(request):
 @login_required
 def monolit_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -11380,10 +11396,10 @@ def monolit_download_fiz(request):
 @login_required
 def monolit_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -11710,19 +11726,17 @@ def calculate_stats_for_company(company, start_of_month, end_of_month):
 
 @login_required
 def reports_kolvo(request):
-    now_date = now()
-    start_of_month = datetime(now_date.year, now_date.month - 1, 1, tzinfo=now_date.tzinfo)
-    end_of_month = datetime(
-        now_date.year, now_date.month - 1, calendar.monthrange(now_date.year, now_date.month - 1)[1], tzinfo=now_date.tzinfo
-    )
+    now = timezone.now()
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
 
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
-        if start_date and end_date:
-            start_of_month = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=now_date.tzinfo)
-            end_of_month = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=now_date.tzinfo)
+        start_of_month = start_date.date()
+        end_of_month = end_date.date()
 
     companies = rekvizity.objects.all()
 
@@ -11735,7 +11749,6 @@ def reports_kolvo(request):
         }
         for company in companies
     ]
-    print(reports[1])
 
     return render(request, 'dogovornoy/reports_kolvo.html', {'reports': reports})
 
@@ -11904,15 +11917,15 @@ def calculate_monthly_sum(kts_instance, start_of_month, end_of_month, num_days_m
 @login_required
 def partner_reports_kolvo(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1], tzinfo=timezone.utc).date()
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_month = (end_of_month - start_of_month).days + 1
 
     next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
     next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()
     next_end_of_month = datetime(next_month.year, next_month.month,
                                  calendar.monthrange(next_month.year, next_month.month)[1], tzinfo=timezone.utc).date()
-
-    num_days_month = calendar.monthrange(now.year, now.month - 1)[1]
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -12055,8 +12068,10 @@ def partner_reports_kolvo(request):
 @login_required
 def kts_reports_kolvo(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1], tzinfo=timezone.utc).date()
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
     next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()
@@ -12215,10 +12230,10 @@ def kts_reports_kolvo(request):
 @login_required
 def reports_partners_techmart(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -12405,10 +12420,10 @@ def reports_partners_techmart(request):
 @login_required
 def techmart_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -12644,10 +12659,10 @@ def techmart_download_fiz(request):
 @login_required
 def techmart_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -12890,10 +12905,10 @@ def techmart_download_ur(request):
 @login_required
 def reports_partners_twojoy(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -13082,10 +13097,10 @@ def reports_partners_twojoy(request):
 @login_required
 def twojoy_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -13322,10 +13337,10 @@ def twojoy_download_fiz(request):
 @login_required
 def twojoy_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -13567,10 +13582,10 @@ def twojoy_download_ur(request):
 @login_required
 def reports_partners_medin(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -13758,10 +13773,10 @@ def reports_partners_medin(request):
 @login_required
 def medin_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -13995,10 +14010,10 @@ def medin_download_fiz(request):
 @login_required
 def medin_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -14234,10 +14249,10 @@ def medin_download_ur(request):
 @login_required
 def reports_partners_zhakitov(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
     current_month = get_current_month_russian()
     num_days = num_days_mounth
 
@@ -14423,10 +14438,10 @@ def reports_partners_zhakitov(request):
 @login_required
 def zhakitov_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -14663,10 +14678,10 @@ def zhakitov_download_fiz(request):
 @login_required
 def zhakitov_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -14903,10 +14918,10 @@ def zhakitov_download_ur(request):
 @login_required
 def reports_partners_alash(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -15063,10 +15078,10 @@ def reports_partners_alash(request):
 
 def alash_download_fiz(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')
@@ -15279,10 +15294,10 @@ def alash_download_fiz(request):
 @login_required
 def alash_download_ur(request):
     now = timezone.now()
-    start_of_month = datetime(now.year, now.month - 1, 1, tzinfo=timezone.utc).date()
-    end_of_month = datetime(now.year, now.month - 1, calendar.monthrange(now.year, now.month - 1)[1],
-                            tzinfo=timezone.utc).date()
-    num_days_mounth = calendar.monthrange(now.year, now.month - 1)[1]  # Default to full month days
+    start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1],
+                             tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    num_days_mounth = (end_of_month - start_of_month).days + 1
 
     if request.method == 'POST':
         start_date = request.POST.get('start_date')

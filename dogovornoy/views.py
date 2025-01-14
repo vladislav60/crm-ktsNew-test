@@ -15734,7 +15734,7 @@ def button_handler(update, context):
                 message += f"Обновлено: {timezone.now().strftime('%H:%M:%S')}\n\n"
                 for row in reversed(new_alarms):
                     razdel = row[3] if row[3] else '-'
-                    zona_user = row[4] if row[3] else '-'
+                    zona_user = row[4] if row[4] else '-'
                     event_str = row[6]
                     date_event = row[8].strftime('%d-%m-%Y %H:%M:%S') if row[8] else 'Нет данных'
                     gprs_quality = row[15]

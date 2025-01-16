@@ -59,6 +59,9 @@ from django.db.models import CharField, F, ExpressionWrapper, Value
 from django.db.models import F, Value, Case, When
 # from .utils import *
 from config import *
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 
 menu = ["О сайте", "Добавить статью", "Обратная связь", "Войти"]
 
@@ -16465,12 +16468,6 @@ def add_lead(request):
     return redirect('kanban')  # Если форма невалидна, также перенаправляем на канбан-доску
 
 
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-
-
 @api_view(['POST'])
 def create_lead(request):
     data = request.data
@@ -16500,7 +16497,7 @@ def create_lead(request):
 
 
 
-@csrf_exempt
+@api_view(['POST'])
 def wazzup_webhook(request):
     if request.method == 'POST':
         try:
@@ -16508,6 +16505,7 @@ def wazzup_webhook(request):
 
             # Если это тестовый запрос, возвращаем успешный ответ
             if data.get('test') == True:
+                print("test")
                 return JsonResponse({'status': 'Webhook test successful'}, status=200)
 
             # Обработка реальных данных

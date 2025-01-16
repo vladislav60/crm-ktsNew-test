@@ -185,7 +185,7 @@ urlpatterns = [
     path('kanban/update_status/<int:lead_id>/', update_lead_status, name='update_lead_status'),
     path('kanban/add-lead/', add_lead, name='add_lead'),
     path('api/create_lead/', views.create_lead, name='create_lead'),
-    path('wazzup_webhook/', views.wazzup_webhook, name='wazzup_webhook'),
+    path('api/wazzup_webhook/', views.wazzup_webhook, name='wazzup_webhook'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

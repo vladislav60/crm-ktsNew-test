@@ -317,7 +317,8 @@ class Lead(models.Model):
     source = models.CharField(max_length=100, verbose_name="Источник", choices=[
         ('instagram', 'Instagram'),
         ('website', 'Сайт'),
-        ('call', 'Звонок в офис')
+        ('call', 'Звонок в офис'),
+        ('wuzzup', 'WhatsApp Wuzzup'),
     ])
     status = models.ForeignKey(KanbanStatus, on_delete=models.SET_NULL, null=True, verbose_name="Статус")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")

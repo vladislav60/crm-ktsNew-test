@@ -80,6 +80,7 @@
     </style>
 </head>
 <body>
+<div class="kanban-background">
     <div class="kanban-board">
         {% for status in statuses %}
             <div class="kanban-column" data-status-id="{{ status.order }}">
@@ -115,6 +116,7 @@
             <button type="submit" style="background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer;">Добавить</button>
         </form>
     </div>
+</div>
 
 <script>
     document.querySelectorAll('.kanban-column').forEach(column => {
@@ -144,6 +146,15 @@
             const offcanvas = document.getElementById('add-lead-form');
             offcanvas.classList.toggle('show');
         }
+
+
+    if (window.location.pathname.includes('/kanban')) {
+        document.getElementById('main').style.backgroundImage = "url('/static/dogovornoy/images/background_crm.jpg')";
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById('footer').style.display = "none";
+    });
 </script>
 
 {% endblock %}

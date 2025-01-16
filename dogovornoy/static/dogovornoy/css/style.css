@@ -18,6 +18,12 @@ body {
   color: #444444;
 }
 
+.main {
+  background-position: center;
+  background-size: cover;
+  min-height: 95vh;
+}
+
 a {
   color: #4154f1;
   text-decoration: none;

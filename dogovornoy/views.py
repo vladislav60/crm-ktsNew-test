@@ -58,6 +58,7 @@ from .models import *
 from django.db.models import CharField, F, ExpressionWrapper, Value
 from django.db.models import F, Value, Case, When
 # from .utils import *
+from config import *
 
 menu = ["О сайте", "Добавить статью", "Обратная связь", "Войти"]
 
@@ -1081,12 +1082,10 @@ def generate_invoice(request, pk):
     file_url = f"https://kateryushin.pro/{settings.MEDIA_URL}invoices/{file_name}"  # Публичный URL
 
     # Отправка через WhatsApp
-    access_token = "f895ca7a98494aa6b1dd7a4cab83f026"
-    channel_id = "da3aa85a-4133-44a5-8e4c-1c259e0fb885"
     phone_number = kts_instance.telephone
     message = f"Здравствуйте, {kts_instance.company_name.polnoe_name}! Ваш счет на оплату готов. Общая сумма: {kts_instance.abon_plata} тенге."
-    send_whatsapp_message(phone_number, file_url, access_token, message, channel_id)
-    send_whatsapp_pdf(phone_number, file_url, access_token, message, channel_id)
+    send_whatsapp_message(phone_number, file_url, ACCESS_TOKEN, message, CHANNEL_ID)
+    send_whatsapp_pdf(phone_number, file_url, ACCESS_TOKEN, message, CHANNEL_ID)
 
     # Возврат HTTP-ответа
     with open(file_path, 'rb') as pdf_file:
@@ -16498,3 +16497,37 @@ def create_lead(request):
         return Response({'success': True, 'id': lead.id}, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': f'Ошибка при создании лида: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+@csrf_exempt
+def wazzup_webhook(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            # Если это тестовый запрос, возвращаем успешный ответ
+            if data.get('test') == True:
+                return JsonResponse({'status': 'Webhook test successful'}, status=200)
+
+            # Обработка реальных данных
+            try:
+                default_status = KanbanStatus.objects.get(id=1)  # ID статуса по умолчанию
+            except KanbanStatus.DoesNotExist:
+                return JsonResponse({'error': 'Статус по умолчанию не найден'}, status=500)
+
+            lead = Lead(
+                name=data.get('name', 'Неизвестный клиент'),
+                phone=data.get('phone'),
+                email=data.get('email'),
+                source='wuzzup',
+                status=default_status,
+            )
+            lead.save()
+
+            return JsonResponse({'status': 'success', 'lead_id': lead.id}, status=201)
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    return JsonResponse({'error': 'Invalid method'}, status=405)

@@ -16497,15 +16497,20 @@ def create_lead(request):
 
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @api_view(['POST'])
 def wazzup_webhook(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            print("Полученные данные:", data)
+            logger.info(f"Полученные данные от Wazzup: {data}")
 
             # Если это тестовый запрос, возвращаем успешный ответ
             if data.get('test') == True:
-                print("test")
                 return JsonResponse({'status': 'Webhook test successful'}, status=200)
 
             # Обработка реальных данных
@@ -16526,6 +16531,7 @@ def wazzup_webhook(request):
             return JsonResponse({'status': 'success', 'lead_id': lead.id}, status=201)
 
         except json.JSONDecodeError:
+            logger.error("Ошибка парсинга JSON")
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
     return JsonResponse({'error': 'Invalid method'}, status=405)

@@ -753,7 +753,7 @@ class CopyClientViewPartner(View):
         return redirect('update_client_partner', partner_klient_id=new_client.pk)
 
 
-@login_required
+
 def calculate_active_days(partner_object, start_of_month=None, end_of_month=None):
     now = timezone.now()
     if not start_of_month or not end_of_month:
@@ -795,7 +795,7 @@ def calculate_active_days(partner_object, start_of_month=None, end_of_month=None
     return (effective_end - effective_start).days + 1
 
 
-@login_required
+
 def calculate_service_active_days(service_instance, start_of_month=None, end_of_month=None):
     now = timezone.now()
 
@@ -901,7 +901,7 @@ class KartochkaKlienta(DetailView):
             context['form'] = form
             return self.render_to_response(context)
 
-@login_required
+
 def format_date_russian(date):
     months = {
         1: "января", 2: "февраля", 3: "марта", 4: "апреля", 5: "мая", 6: "июня",
@@ -909,7 +909,7 @@ def format_date_russian(date):
     }
     return f"{date.day} {months[date.month]} {date.year}"
 
-@login_required
+
 def format_date_russian_invoice(date):
     months = {
         1: "январе", 2: "феврале", 3: "марте", 4: "апреле", 5: "мае", 6: "июне",
@@ -917,7 +917,7 @@ def format_date_russian_invoice(date):
     }
     return f"{months[date.month]} {date.year}"
 
-@login_required
+
 def save_pdf_to_invoices(html_string, invoice_number):
     # Путь к папке invoices в MEDIA_ROOT
     invoices_dir = os.path.join(settings.MEDIA_ROOT, 'invoices')
@@ -934,7 +934,7 @@ def save_pdf_to_invoices(html_string, invoice_number):
     return file_path, file_name
 
 
-@login_required
+
 def send_whatsapp_pdf(phone_number, pdf_path, access_token, message, channel_id):
     # Отправляем документ через WhatsApp API
     url = f"https://api.wazzup24.com/v3/message"
@@ -968,7 +968,7 @@ def send_whatsapp_pdf(phone_number, pdf_path, access_token, message, channel_id)
         return False
 
 
-@login_required
+
 def send_whatsapp_message(phone_number, pdf_path, access_token, message, channel_id):
     # Отправляем документ через WhatsApp API
     url = f"https://api.wazzup24.com/v3/message"
@@ -1001,7 +1001,7 @@ def send_whatsapp_message(phone_number, pdf_path, access_token, message, channel
         print(f"Ошибка: {response.status_code} - {response.json()}")
         return False
 
-@login_required
+
 def generate_invoice(request, pk):
     # Получаем клиента
     kts_instance = kts.objects.get(pk=pk)
@@ -11758,7 +11758,7 @@ def reports_kolvo(request):
     return render(request, 'dogovornoy/reports_kolvo.html', {'reports': reports})
 
 
-@login_required
+
 def calculate_hours_security(start_of_month, end_of_month):
     """
     Подсчет часов охраны для подключенных клиентов (только юридические лица).
@@ -11808,7 +11808,7 @@ def kolvo_hours_security(request):
 
 
 # Вычисляет итоговую сумму по каждому клиенту партнера
-@login_required
+
 def calculate_monthly_sum(kts_instance, start_of_month, end_of_month, num_days_month):
     if kts_instance.date_otkluchenia:
         if isinstance(start_of_month, datetime):
@@ -15545,6 +15545,7 @@ class AcceptTaskView(View):
         task.accept_task()
         return redirect(reverse('task_list'))
 
+
 @method_decorator(login_required, name='dispatch')
 class CompleteTaskView(View):
     def post(self, request, pk):
@@ -15585,7 +15586,6 @@ class CreateTechnicalTaskView(View):
         return redirect('technical_task_list')
 
 
-@login_required
 def get_card_from_third_db(card_id):
     try:
         card = Cards.objects.using('third_db').get(cardid=card_id)
@@ -15594,7 +15594,6 @@ def get_card_from_third_db(card_id):
         return None
 
 
-@login_required
 def get_zones_from_third_db(card_id):
     try:
         zones = Zones.objects.using('third_db').filter(cardid=card_id).select_related('sectionid')
@@ -15603,7 +15602,7 @@ def get_zones_from_third_db(card_id):
         return None
 
 
-@login_required
+
 def get_card_from_asuekc(card_id):
     try:
         card_asuekc = GuardedObjects.objects.using('asu_ekc').get(pk=card_id)
@@ -15621,7 +15620,6 @@ import threading
 
 pending_results_with_time = {}  # {user_id: (task_id, timestamp)}
 
-@login_required
 def remove_from_pending(user_id, delay=300):
     def remove():
         if user_id in pending_results_with_time:
@@ -15631,7 +15629,7 @@ def remove_from_pending(user_id, delay=300):
     timer = threading.Timer(delay, remove)
     timer.start()
 
-@login_required
+
 def message_handler(update, context):
     user_id = update.message.from_user.id
     text = update.message.text
@@ -15660,7 +15658,7 @@ def message_handler(update, context):
     else:
         update.message.reply_text("Я не ожидал от вас результата. Попробуйте снова.")
 
-@login_required
+
 def button_handler(update, context):
     global last_event_sn
     global pending_results
@@ -15839,7 +15837,7 @@ def button_handler(update, context):
 
 
 # Функция для отправки сообщения с кнопками
-@login_required
+
 def send_telegram_message(technician, task):
     card = get_card_from_third_db(task.client_object_id)
     bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
@@ -15892,7 +15890,7 @@ def telegram_webhook(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
 
-@login_required
+
 def module_button_handler(update, context):
     query = update.callback_query
     task_id = query.data.split('_')[-1]  # Получаем task_id из callback_data
@@ -15928,7 +15926,7 @@ def module_button_handler(update, context):
         query.edit_message_text(text="Произошла ошибка при получении данных.")
 
 
-@login_required
+
 def execute_stored_procedure(module_number):
     try:
         # Открываем соединение с базой данных 'third_db'
@@ -15961,7 +15959,7 @@ def execute_stored_procedure(module_number):
 
 
 # Функция для выполнения хранимой процедуры с последним ID события
-@login_required
+
 def execute_stored_procedure_with_last_id(module_number, last_event_id):
     try:
         with connections['third_db'].cursor() as cursor:
@@ -16000,7 +15998,7 @@ def TechniciansAPIView(request):
     return JsonResponse(data, safe=False)
 
 
-@login_required
+
 def TaskReasonsAPIView(request):
     reasons = TaskReason.objects.all()
     data = [{'id': reason.id, 'reason': reason.reason} for reason in reasons]
@@ -16213,7 +16211,7 @@ class DisconnectedObjectsView(ListView):
         return context
 
 
-@login_required
+
 def export_disconnected_objects(request):
     # Получаем текущий месяц
     now_time = timezone.now()
@@ -16271,7 +16269,7 @@ def export_disconnected_objects(request):
 
 
 
-@login_required
+
 def export_disconnected_objects_partners(request):
     # Получаем текущий месяц
     now_time = timezone.now()
@@ -16372,7 +16370,7 @@ def skladgsm_return(request, pk):
     return render(request, 'skladgsm_return.html', {'form': form, 'item': item})
 
 
-@login_required
+
 def export_kts_to_exel(request):
     workbook = openpyxl.Workbook()
     sheet = workbook.active
@@ -16418,7 +16416,7 @@ def export_kts_to_exel(request):
     return response
 
 
-@login_required
+
 def export_partners_to_excel(request):
     # Создаем новый Excel-файл
     workbook = openpyxl.Workbook()
@@ -16486,7 +16484,7 @@ def update_lead_status(request, lead_id):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-@login_required
+
 def add_lead(request):
     if request.method == 'POST':
         form = LeadForm(request.POST)

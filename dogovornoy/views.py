@@ -16561,3 +16561,49 @@ def wazzup_webhook(request):
             return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
     return JsonResponse({'error': 'Invalid method'}, status=405)
+
+
+
+# Получить список сделок
+def get_deals():
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+    response = requests.get(DEALS_URL, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Ошибка получения сделок: {response.status_code}, {response.text}")
+        return []
+
+
+# Получить данные о контакте
+def get_contact(contact_id):
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+    response = requests.get(CONTACT_URL_TEMPLATE.format(contact_id), headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Ошибка получения контакта {contact_id}: {response.status_code}, {response.text}")
+        return {}
+
+
+# Основная функция
+def process_deals():
+    deals = get_deals()
+    for deal in deals:
+        print(f"Сделка: {deal['name']} (ID: {deal['id']})")
+        for contact_id in deal['contacts']:
+            contact = get_contact(contact_id)
+            if contact:
+                print(f"  Контакт: {contact.get('name')} | Телефон: {contact.get('phone')}")
+
+
+
+def save_lead_from_deal(deal, contact):
+    lead = Lead.objects.create(
+        name=contact.get('name', 'Неизвестный'),
+        phone=json.dumps(contact),  # Сохраняем полный JSON объекта contact как строку
+        email=json.dumps(deal),     # Сохраняем полный JSON объекта deal как строку
+        source='wuzzup',
+        status=KanbanStatus.objects.get(id=1)  # ID статуса по умолчанию
+    )
+    print(f"Лид создан: {lead.name}, Телефон: {lead.phone}")

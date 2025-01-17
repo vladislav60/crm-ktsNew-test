@@ -16511,7 +16511,7 @@ def wazzup_webhook(request):
 
             # Если это тестовый запрос, возвращаем успешный ответ
             if data.get('test') == True:
-                return JsonResponse({'status': 'Webhook test successful'}, status=200)
+                return JsonResponse({'status': 'Webhook test successful status 200 Ok'}, status=200)
 
             # Обработка реальных данных
             try:

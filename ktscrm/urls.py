@@ -29,6 +29,7 @@ urlpatterns = [
     path('', include('dogovornoy.urls')),
     path('ekc/', include('ekc.urls')),
     path('pult/', include('pult.urls')),
+    path('api/panicbutton/', include('panicbutton.urls')),
 ]
 
 #11 Эмуляция рабочего сервера для фото

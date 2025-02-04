@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'whitenoise.runserver_nostatic',
     'rest_framework',
+    'rest_framework.authtoken',
+    'panicbutton',
 ]
 
 MIDDLEWARE = [
@@ -85,7 +87,7 @@ WSGI_APPLICATION = 'ktscrm.wsgi.application'
 
 # Импорт конфиденциальных данных
 try:
-    from config import SECRET_KEY, TELEGRAM_BOT_TOKEN, DATABASES
+    from config import *
 except ImportError:
     raise Exception("Не удалось найти config.py. Проверьте, что файл существует и содержит нужные настройки.")
 
@@ -173,3 +175,22 @@ LOGGING = {
         },
     },
 }
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
+
+INSTALLED_APPS += [
+    'corsheaders',
+]
+
+MIDDLEWARE.insert(1, 'corsheaders.middleware.CorsMiddleware')
+
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "https://kateryushin.pro",
+]
+
+CORS_ALLOW_CREDENTIALS = True

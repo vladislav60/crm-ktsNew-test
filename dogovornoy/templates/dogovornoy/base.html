@@ -588,6 +588,24 @@
             </ul>
         </li><!-- End Главная Nav -->
 
+
+        {% if user_profile.department == 'Админ'  or user_profile.department == 'Оператор' %}
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#todolist-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">
+                <i class="bi bi-card-checklist"></i><span>Тревожные кнопки</span>
+                <i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="todolist-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+                <li>
+                    <a href="{% url 'map' %}">
+                        <i class="bi bi-circle"></i><span>Карта тревог</span>
+                    </a>
+                </li>
+            </ul>
+        </li><!-- End Главная Nav -->
+        {% endif %}
+
+
         {% if user_profile.department == 'Бухгалтерия' or user_profile.department == 'Админ'  or user_profile.department == 'Директор' %}
         <li class="nav-item">
                 <a class="nav-link collapsed" data-bs-target="#buhgalteria-nav" data-bs-toggle="collapse" href="#" aria-expanded="false">

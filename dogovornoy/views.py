@@ -1252,7 +1252,9 @@ from dateutil.relativedelta import relativedelta
 def reports(request):
     now = timezone.now()
     start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
-    end_of_month = (datetime(now.year, now.month, calendar.monthrange(now.year, now.month)[1], tzinfo=timezone.utc) - relativedelta(months=1)).date()
+    last_month = now - relativedelta(months=1)
+    end_of_month = datetime(last_month.year, last_month.month,
+                            calendar.monthrange(last_month.year, last_month.month)[1], tzinfo=timezone.utc).date()
 
 
     if request.method == 'POST':
@@ -12078,6 +12080,7 @@ def kts_reports_kolvo(request):
     last_month = now - relativedelta(months=1)
     end_of_month = datetime(last_month.year, last_month.month, calendar.monthrange(last_month.year, last_month.month)[1], tzinfo=timezone.utc).date()
     num_days_mounth = (end_of_month - start_of_month).days + 1
+
 
     next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
     next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()

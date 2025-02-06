@@ -2152,7 +2152,7 @@ def sgs_plus_download_fiz(request):
     # Исправляем доступ к данным
     if reports:
         first_report = reports[0]  # Берем первый отчет для заполнения заголовка
-        ws[f'A{7}'] = f'АКТ сверки по юридическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
+        ws[f'A{7}'] = f'АКТ сверки по физическим лицам за {first_report["current_month"]} {first_report["current_year"]} г.'
 
     # Start filling in the data from row 2 (assuming row 1 is the header)
     row_num = 10

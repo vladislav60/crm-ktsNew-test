@@ -11637,7 +11637,7 @@ def monolit_download_ur(request):
 
     return response
 
-@login_required
+
 def calculate_stats_for_company(company, start_of_month, end_of_month):
     # Фильтрация всех объектов компании
     kts_podkl = kts.objects.filter(company_name_id=company.id).exclude(
@@ -12080,7 +12080,6 @@ def kts_reports_kolvo(request):
     last_month = now - relativedelta(months=1)
     end_of_month = datetime(last_month.year, last_month.month, calendar.monthrange(last_month.year, last_month.month)[1], tzinfo=timezone.utc).date()
     num_days_mounth = (end_of_month - start_of_month).days + 1
-
 
     next_month = now + timedelta(days=calendar.monthrange(now.year, now.month)[1])
     next_start_of_month = datetime(next_month.year, next_month.month, 1, tzinfo=timezone.utc).date()

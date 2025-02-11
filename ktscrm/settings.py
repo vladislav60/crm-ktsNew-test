@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'panicbutton',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -194,3 +195,16 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+ASGI_APPLICATION = "ktscrm.asgi.application"
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        #"BACKEND": "channels.layers.InMemoryChannelLayer",  # Временно, если нет Redis
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+             "hosts": [("127.0.0.1", 6379)],  # Если Redis работает
+         },
+    },
+}

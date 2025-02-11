@@ -45,7 +45,7 @@
         }
 
 
-        const socket = new WebSocket("ws://127.0.0.1:8000/ws/alarms/");
+        const socket = new WebSocket("wss://kateryushin.pro/ws/alarms/");
 
         socket.onopen = function() {
             console.log("🔗 Соединение установлено!");

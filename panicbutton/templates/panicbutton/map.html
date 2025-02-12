@@ -57,24 +57,28 @@ createApp({
         }
 
         function setupWebSocket() {
-            const socket = new WebSocket("wss://127.0.0.1:8000/ws/alarms/");
+            // const socket = new WebSocket("wss://127.0.0.1:8000/ws/alarms/");
+            //
+            // socket.onmessage = function(event) {
+            //     const data = JSON.parse(event.data);
+            //     console.log("🚨 Новая тревога:", data);
+            //
+            //     addMarker(data);  // Добавляем новый маркер без перезагрузки страницы
+            //
+            //     playSiren();  // Воспроизводим звук тревоги
+            // };
+            //
+            // socket.onerror = function(error) {
+            //     console.error("❌ Ошибка WebSocket:", error);
+            // };
+            //
+            // socket.onclose = function(event) {
+            //     console.warn("🔴 Соединение закрыто:", event);
+            // };
 
-            socket.onmessage = function(event) {
-                const data = JSON.parse(event.data);
-                console.log("🚨 Новая тревога:", data);
-
-                addMarker(data);  // Добавляем новый маркер без перезагрузки страницы
-
-                playSiren();  // Воспроизводим звук тревоги
-            };
-
-            socket.onerror = function(error) {
-                console.error("❌ Ошибка WebSocket:", error);
-            };
-
-            socket.onclose = function(event) {
-                console.warn("🔴 Соединение закрыто:", event);
-            };
+            const socket = new WebSocket("wss://kateryushin.pro/ws/");
+            socket.onerror = function(event) { console.error("Ошибка WS:", event); };
+            socket.onclose = function(event) { console.warn("WS закрыто:", event); };
         }
 
         function playSiren() {

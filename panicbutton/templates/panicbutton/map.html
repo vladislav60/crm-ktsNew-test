@@ -48,15 +48,16 @@ createApp({
         }
 
         function addMarker(alarm) {
-            if (markers.value[alarm.id]) return; // Проверяем, чтобы не дублировать маркер
+            if (markers.value[alarm.id]) return;
 
-            const marker = new google.maps.marker.AdvancedMarkerElement({
+            const marker = new google.maps.Marker({
                 position: { lat: parseFloat(alarm.latitude), lng: parseFloat(alarm.longitude) },
                 map: map.value,
                 title: `Тревога от ${alarm.client_name}`,
+                animation: google.maps.Animation.DROP
             });
 
-            markers.value[alarm.id] = marker; // Сохраняем маркер в список
+            markers.value[alarm.id] = marker;
         }
 
         function setupWebSocket() {

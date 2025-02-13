@@ -24,8 +24,10 @@ createApp({
         const map = ref(null);
         const markers = ref({});  // Храним маркеры по ID тревоги
 
-        function initMap() {
-            map.value = new google.maps.Map(document.getElementById("map"), {
+        window.initMap = function () {
+            console.log("✅ Google Maps API загружен!");
+
+            window.map = new google.maps.Map(document.getElementById("map"), {
                 center: { lat: 43.238255, lng: 76.94987 },
                 zoom: 12
             });

@@ -11,7 +11,7 @@
 </head>
 <body>
     <div id="app">
-        <h1>Карта тревог тест6</h1>
+        <h1>Карта тревог тест4</h1>
         <div id="map" style="width: 100%; height: 500px;"></div>
     </div>
 
@@ -57,11 +57,24 @@ createApp({
         }
 
         function setupWebSocket() {
+            const socket = new WebSocket("wss://kateryushin.pro/ws/alarms/");
 
+            socket.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                console.log("🚨 Новая тревога:", data);
 
-            const socket = new WebSocket("wss://kateryushin.pro/ws/");
-            socket.onerror = function(event) { console.error("Ошибка WS:", event); };
-            socket.onclose = function(event) { console.warn("WS закрыто:", event); };
+                addMarker(data);  // Добавляем новый маркер без перезагрузки страницы
+
+                playSiren();  // Воспроизводим звук тревоги
+            };
+
+            socket.onerror = function(error) {
+                console.error("❌ Ошибка WebSocket:", error);
+            };
+
+            socket.onclose = function(event) {
+                console.warn("🔴 Соединение закрыто:", event);
+            };
         }
 
         function playSiren() {

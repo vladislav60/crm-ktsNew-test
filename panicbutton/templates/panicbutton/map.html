@@ -13,7 +13,7 @@
 </head>
 <body>
     <div id="app">
-        <h1>Карта тревог тест19</h1>
+        <h1>Карта тревог тест12</h1>
         <div id="map" style="width: 100%; height: 500px;"></div>
     </div>
 
@@ -66,7 +66,7 @@
     }
 
     // === WebSocket ===
-    const socket = new WebSocket("wss://kateryushin.pro/ws/");
+    const socket = new WebSocket("wss://kateryushin.pro/ws/alarms/");
 
     socket.onopen = function() {
         console.log("🔗 Соединение WebSocket установлено!");

@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block content %}
-    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap" defer></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=marker&callback=initMap"></script>
     <style>
         #map {
             height: 100vh;
@@ -15,59 +15,72 @@
     <div id="map"></div>
 
     <script>
+        let map;
+        let markers = {};
+
         function initMap() {
-            const map = new google.maps.Map(document.getElementById("map"), {
+            console.log("Google Maps API загружен!");
+
+            map = new google.maps.Map(document.getElementById("map"), {
                 center: { lat: 43.2567, lng: 76.9286 }, // Алматы
                 zoom: 12,
             });
 
+            loadAlarms();  // Загружаем тревоги из API
+        }
+
+        function loadAlarms() {
             const apiToken = "{{ user_api_token }}";
-            // Загружаем тревоги через API
+
             fetch('/api/panicbutton/get_alarms/', {
                 headers: { "Authorization": `Token ${apiToken}` }
             })
             .then(response => response.json())
             .then(data => {
-            if (!Array.isArray(data)) {
-                console.error("Ошибка: получены не массивные данные", data);
-                return;
-            }
+                if (!Array.isArray(data)) {
+                    console.error("Ошибка: получены не массивные данные", data);
+                    return;
+                }
 
-            data.forEach(alarm => {
-                new google.maps.Marker({
-                    position: { lat: alarm.latitude, lng: alarm.longitude },
-                    map,
-                    title: `Тревога: ${alarm.client_name}`,
-                });
-            });
-        })
+                data.forEach(alarm => addMarker(alarm));
+            })
             .catch(error => console.error("Ошибка загрузки тревог:", error));
         }
 
+        function addMarker(alarm) {
+            if (markers[alarm.id]) return; // Проверяем, чтобы не дублировать маркер
 
-        const socket = new WebSocket("wss://127.0.0.1:8000/ws/alarms/");
+            const marker = new google.maps.Marker({
+                position: { lat: parseFloat(alarm.latitude), lng: parseFloat(alarm.longitude) },
+                map: map,
+                title: `Тревога от ${alarm.client_name}`,
+                animation: google.maps.Animation.DROP  // Анимация появления
+            });
+
+            markers[alarm.id] = marker; // Сохраняем маркер в список
+        }
+
+        // === WebSocket ===
+        const socket = new WebSocket("wss://kateryushin.pro/ws/");
 
         socket.onopen = function() {
-            console.log("🔗 Соединение установлено!");
+            console.log("🔗 Соединение WebSocket установлено!");
         };
 
         let alarmAudio = new Audio('/static/sounds/alarm.mp3');
 
-        function enableSound() {
-            alarmAudio.play();
-            console.log("🔊 Аудио разрешено пользователем");
-        }
-
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
+
+            console.log("🚨 Новая тревога:", data);
+
+            // Воспроизведение звука тревоги
             alarmAudio.play().catch(error => {
                 console.warn("🚨 Браузер заблокировал автозапуск аудио. Разрешите его вручную.");
             });
-            console.log("Включаем звук");
-            console.log("🚨 Новая тревога:", data);
 
             // Добавляем тревогу на карту
-            addMarker(data.latitude, data.longitude, `Тревога от ${data.client_name}`);
+            addMarker(data);
         };
 
         socket.onerror = function(error) {
@@ -75,29 +88,9 @@
         };
 
         socket.onclose = function(event) {
-            console.warn("🔴 Соединение закрыто:", event);
+            console.warn("🔴 Соединение WebSocket закрыто:", event);
         };
 
     </script>
 </body>
 {% endblock %}
-
-
-            // const socket = new WebSocket("wss://127.0.0.1:8000/ws/alarms/");
-            //
-            // socket.onmessage = function(event) {
-            //     const data = JSON.parse(event.data);
-            //     console.log("🚨 Новая тревога:", data);
-            //
-            //     addMarker(data);  // Добавляем новый маркер без перезагрузки страницы
-            //
-            //     playSiren();  // Воспроизводим звук тревоги
-            // };
-            //
-            // socket.onerror = function(error) {
-            //     console.error("❌ Ошибка WebSocket:", error);
-            // };
-            //
-            // socket.onclose = function(event) {
-            //     console.warn("🔴 Соединение закрыто:", event);
-            // };

@@ -50,7 +50,7 @@
         function addMarker(alarm) {
             if (markers[alarm.id]) return; // Проверяем, чтобы не дублировать маркер
 
-            const marker = new google.maps.Marker({
+            const marker = new google.maps.AdvancedMarkerElement({
                 position: { lat: parseFloat(alarm.latitude), lng: parseFloat(alarm.longitude) },
                 map: map,
                 title: `Тревога от ${alarm.client_name}`,

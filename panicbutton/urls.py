@@ -15,4 +15,5 @@ urlpatterns = [
     path('clients/', get_clients, name='get_clients'),
     path("update_alarm_status/<int:alarm_id>/", update_alarm_status, name="update_alarm_status"),
     path('client/<int:client_id>/', get_client, name='get_client'),
+    path('login/', login_with_api_key, name='login_with_api_key'),
 ]

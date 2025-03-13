@@ -270,3 +270,30 @@ def update_alarm_status(request, alarm_id):
     except Alarm.DoesNotExist:
         return JsonResponse({"error": "Alarm not found"}, status=404)
 
+
+
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+@api_view(['POST'])
+def login_with_api_key(request):
+    """
+    Эндпоинт аутентификации по API ключу.
+    Принимает JSON с полем "api_key".
+    Если ключ действительный, возвращает статус 200 и сообщение об успехе.
+    """
+    api_key = request.data.get("api_key")
+    if not api_key:
+        return Response({"error": "API ключ не предоставлен"}, status=status.HTTP_400_BAD_REQUEST)
+
+    from .models import APIKey  # Импорт модели APIKey
+    key_instance = APIKey.objects.filter(key=api_key).first()
+
+    if key_instance and key_instance.is_valid():
+        return Response({"message": "Аутентификация успешна"}, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "Неверный или недействительный API ключ"}, status=status.HTTP_401_UNAUTHORIZED)
+

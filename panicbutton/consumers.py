@@ -1,5 +1,7 @@
+
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+
 
 class AlarmConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -21,3 +23,6 @@ class AlarmConsumer(AsyncWebsocketConsumer):
 
     async def send_alarm(self, event):
         await self.send(text_data=json.dumps(event["message"]))
+
+
+#test

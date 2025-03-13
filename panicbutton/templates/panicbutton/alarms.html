@@ -1,0 +1,288 @@
+{% extends 'dogovornoy/base.html' %}
+{% load static %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список тревог</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>  <!-- Подключаем Vue -->
+</head>
+<body>
+
+<style>
+    .status-btn {
+        width: 150px;
+        height: 60px;
+        padding: 5px 10px;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+    }
+.status-btn[data-status="new"] { background-color: red; }
+.status-btn[data-status="pending"] { background-color: orange; }
+.status-btn[data-status="in_progress"] { background-color: green; }
+.table {
+	max-width: 90%;
+	margin-bottom: 20px;
+	border: 1px solid #dddddd;
+	border-collapse: collapse;
+}
+.table th {
+	font-weight: bold;
+	padding: 5px;
+	background: #efefef;
+	border: 1px solid #dddddd;
+}
+.table td {
+	border: 1px solid #dddddd;
+	padding: 5px;
+}
+.divster {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 70px;
+}
+</style>
+
+    <h1>Список тревог</h1>
+
+    <div id="app">
+        <div class="divster">
+        <table border="1" class="table">
+            <thead>
+                <tr>
+                    <th>Клиент</th>
+                    <th>Имя клиента</th>
+                    <th>Тип обьекта</th>
+                    <th>Адрес</th>
+                    <th>Описание обьекта</th>
+                    <th>Маршрут следования</th>
+                    <th>Телефон</th>
+                    <th>Этаж</th>
+                    <th>Этажей</th>
+                    <th>Код домофона</th>
+                    <th>Экипаж</th>
+                    <th>Последняя тревога</th>
+                    <th>Время</th>
+                    <th>Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="(alarm, index) in alarms" :key="index">
+                    <td>[[ getClientData(alarm.client_id, 'user__username') ]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'name_client') ]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'object_type')]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'address') ]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'description') ]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'route_info')]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'phone_number') ]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'floor') ]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'floor_total') ]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'intercom_code') ]]</td>
+                    <td>[[ getClientData(alarm.client_id, 'ekipaz_panic') ]]</td>
+                    <td>[[ formatDate(alarm.client_id, 'last_alarm_at') ]]</td>
+                    <td>[[ formatDate(alarm.created_at) ]]</td>
+                    <td>
+                        <button @click="updateAlarmStatus(alarm.id)" class="status-btn" :data-status="alarm.status">
+                            [[ statusLabels[alarm.status] || "Неизвестно" ]]
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+            </div>
+    </div>
+
+
+<script>
+    const { createApp, ref, onMounted, nextTick, watch } = Vue;
+
+    const testMessage = ref("✅ Vue успешно подключен!");
+
+    createApp({
+        delimiters: ['[[', ']]'],
+        setup() {
+            const alarms = ref([]);
+            const apiToken = "{{ user_api_token }}";
+
+            const clientNames = ref({});
+            const clientData = ref({});
+
+            const statusLabels = {
+                "new": "Ожидает обработки",
+                "pending": "В работе",
+                "in_progress": "Завершено"
+            };
+
+            function getClientName(client_id) {
+                return clientNames.value[client_id] || "Неизвестно";  // Если нет ID, показываем "Неизвестно"
+            }
+
+            function getClientData(client_id, field) {
+                if (!clientData.value[client_id]) {
+                    return "Неизвестно";
+                }
+                return clientData.value[client_id][field] || "Не указано";
+            }
+
+            function loadClients() {
+                fetch('/api/panicbutton/clients/', {
+                    headers: { "Authorization": `Token ${apiToken}`, }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // Заполняем объект clientNames
+                    clientData.value = data.reduce((acc, client) => {
+                        acc[client.user_id] = client;  // Сопоставляем client.user_id -> объект клиента
+                        return acc;
+                    }, {});
+
+                    console.log("📋 Загружены клиенты:", clientData.value);
+                })
+                .catch(error => console.error("❌ Ошибка загрузки клиентов:", error));
+            }
+
+            function updateAlarmStatus(alarmId) {
+                const alarmIndex = alarms.value.findIndex(a => a.id === alarmId);
+                if (alarmIndex === -1) return;
+
+                const alarm = alarms.value[alarmIndex];
+
+                // Последовательность статусов
+                const statusFlow = ["new", "pending", "in_progress", "resolved"];
+                const currentIndex = statusFlow.indexOf(alarm.status);
+
+                if (currentIndex === -1 || currentIndex === statusFlow.length - 1) return;
+
+                const newStatus = statusFlow[currentIndex + 1];
+
+                console.log(`🔄 Меняем статус тревоги ID ${alarmId} → ${statusLabels[newStatus]}`);
+
+                fetch(`/api/panicbutton/update_alarm_status/${alarmId}/`, {
+                    method: "POST",
+                    headers: {
+                       "Authorization": `Token ${apiToken}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log("✅ Статус обновлен:", data);
+
+                    if (newStatus === "resolved") {
+                        alarms.value.splice(alarmIndex, 1);  // Удаляем только если "Завершено"
+                        console.log(`🚀 Тревога ID ${alarmId} завершена и удалена!`);
+                    } else {
+                        alarms.value[alarmIndex].status = newStatus;  // Просто обновляем статус
+                    }
+                })
+                .catch(error => console.error("❌ Ошибка обновления статуса:", error));
+            }
+
+
+            function loadAlarms() {
+                console.log("📡 Запрос тревог...");
+                fetch('/api/panicbutton/get_alarms/', {
+                    headers: { "Authorization": `Token ${apiToken}` }
+                })
+
+                .then(response => response.json())
+                .then(data => {
+                    console.log("📥 Загружены тревоги:", data);
+                    alarms.value = data;
+                })
+                .catch(error => console.error("❌ Ошибка загрузки тревог:", error));
+            }
+
+            function formatDate(dateString) {
+                if (!dateString) return "Неизвестно";
+                return new Date(dateString).toLocaleString("ru-RU", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit"
+                });
+            }
+
+            // === WebSocket ===
+            const socket = new WebSocket("wss://kateryushin.pro/ws/alarms/");
+            // const socket = new WebSocket("ws://127.0.0.1:8000/ws/alarms/");
+            socket.onopen = function() {
+                console.log("🔗 WebSocket подключен!");
+            };
+
+            let alarmAudio = new Audio('/static/sounds/alarm.mp3');
+
+            socket.onmessage = async function(event) {
+                try {
+                    console.log("📩 Получено сообщение из WebSocket:", event.data);
+                    const newAlarm = JSON.parse(event.data);
+                    console.log("🚨 Новая тревога:", newAlarm);
+
+                    // Check if the alarm already exists
+                    const exists = alarms.value.some(alarm => alarm.id === newAlarm.id);
+                    if (!exists) {
+                        // Play the alarm sound
+                        alarmAudio.play().catch(error => {
+                            console.warn("🚨 Автозапуск звука заблокирован.");
+                        });
+
+                        // Optionally check if clientData for this alarm's client is missing
+                        if (clientData.value[newAlarm.client_id]) {
+                            fetch(`/api/panicbutton/client/${newAlarm.client_id}/`, {
+                                headers: { "Authorization": `Token ${apiToken}` }
+                            })
+                            .then(response => response.json())
+                            .then(client => {
+                                // Add or update the client data for this client ID
+                                clientData.value[newAlarm.client_id] = client;
+                                console.log("📋 Обновлены данные клиента:", client);
+                            })
+                            .catch(error => console.error("❌ Ошибка загрузки данных клиента:", error));
+                        }
+
+
+                        // Update the alarms list
+                        alarms.value.unshift(newAlarm);
+
+                        // Force Vue to update
+                        await nextTick();
+                        console.log("🔄 Таблица обновлена:", alarms.value);
+                    }
+                } catch (error) {
+                    console.error("Ошибка обработки WebSocket:", error);
+                }
+            };
+
+            socket.onerror = function(error) {
+                console.error("❌ Ошибка WebSocket:", error);
+            };
+
+            socket.onclose = function(event) {
+                console.warn("🔴 WebSocket отключен:", event);
+            };
+
+            watch(alarms, (newValue) => {
+                console.log("🔄 Массив alarms обновлён:", newValue);
+            });
+
+            onMounted(() => {
+                loadAlarms();
+                loadClients();
+            });
+
+            return { alarms, formatDate, testMessage, getClientName, getClientData, updateAlarmStatus, statusLabels };
+        }
+    }).mount("#app");
+</script>
+
+</body>
+{% endblock %}

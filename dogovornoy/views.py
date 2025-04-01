@@ -12904,12 +12904,6 @@ def techmart_download_ur(request):
     return response
 
 
-
-
-
-
-
-
 @login_required
 def reports_partners_twojoy(request):
     now = timezone.now()
@@ -13099,8 +13093,6 @@ def reports_partners_twojoy(request):
     }
 
     return render(request, 'dogovornoy/reports_partners_twojoy.html', context)
-
-
 
 @login_required
 def twojoy_download_fiz(request):
@@ -13340,7 +13332,6 @@ def twojoy_download_fiz(request):
     response['Content-Disposition'] = f'attachment; filename=TOO "2joy" Fiziki {now.date()}.xlsx'
 
     return response
-
 
 @login_required
 def twojoy_download_ur(request):
@@ -13582,11 +13573,6 @@ def twojoy_download_ur(request):
 
     return response
 
-
-
-
-
-
 @login_required
 def reports_partners_medin(request):
     now = timezone.now()
@@ -13775,7 +13761,6 @@ def reports_partners_medin(request):
     }
 
     return render(request, 'dogovornoy/reports_partners_medin.html', context)
-
 
 
 @login_required
@@ -14014,7 +13999,6 @@ def medin_download_fiz(request):
     return response
 
 
-
 @login_required
 def medin_download_ur(request):
     now = timezone.now()
@@ -14251,9 +14235,6 @@ def medin_download_ur(request):
     return response
 
 
-
-
-
 @login_required
 def reports_partners_zhakitov(request):
     now = timezone.now()
@@ -14440,7 +14421,6 @@ def reports_partners_zhakitov(request):
     }
 
     return render(request, 'dogovornoy/reports_partners_zhakitov.html', context)
-
 
 
 @login_required
@@ -15299,7 +15279,6 @@ def alash_download_fiz(request):
     return response
 
 
-@login_required
 def alash_download_ur(request):
     now = timezone.now()
     start_of_month = (datetime(now.year, now.month, 1, tzinfo=timezone.utc) - relativedelta(months=1)).date()
@@ -15513,7 +15492,6 @@ def alash_download_ur(request):
     response['Content-Disposition'] = f'attachment; filename=TOO "Alash Group Kuzet" Urik {now.date()}.xlsx'
 
     return response
-
 
 def reports_partners_kazvision(request):
     now = timezone.now()
@@ -17893,6 +17871,11 @@ class ArchiveTechnicalTaskListView(ListView):
         # Фильтр по диапазону дат
         start_date = form.cleaned_data.get('start_date')
         end_date = form.cleaned_data.get('end_date')
+
+        if not start_date and not end_date and not self.request.GET.get('start_date') and not self.request.GET.get('end_date'):
+            end_date = date.today()
+            start_date = end_date - timedelta(days=3)
+
         if start_date and end_date:
             queryset = queryset.filter(sent_time__range=[start_date, end_date])
 

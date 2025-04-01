@@ -17872,11 +17872,19 @@ class ArchiveTechnicalTaskListView(ListView):
         start_date = form.cleaned_data.get('start_date')
         end_date = form.cleaned_data.get('end_date')
 
-        if not start_date and not end_date and not self.request.GET.get('start_date') and not self.request.GET.get('end_date'):
-            end_date = date.today()
-            start_date = end_date - timedelta(days=3)
+        has_user_filters = any([
+            self.request.GET.get('start_date'),
+            self.request.GET.get('end_date'),
+            self.request.GET.get('client_object_id'),
+            self.request.GET.get('technician')
+        ])
 
         if start_date and end_date:
+            queryset = queryset.filter(sent_time__range=[start_date, end_date])
+
+        if not has_user_filters:
+            queryset = queryset.filter()[:200]
+        elif start_date and end_date:
             queryset = queryset.filter(sent_time__range=[start_date, end_date])
 
         queryset = queryset.annotate(

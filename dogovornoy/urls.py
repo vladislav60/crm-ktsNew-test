@@ -130,6 +130,18 @@ urlpatterns = [
     path('reports_partners_egida/', reports_partners_egida, name='reports_partners_egida'),
     path('egida_download_fiz/', egida_download_fiz, name='egida_download_fiz'),
     path('egida_download_ur/', egida_download_ur, name='egida_download_ur'),
+    # Ссылка страницу отчета ТОО "kazvision"
+    path('reports_partners_kazvision/', reports_partners_kazvision, name='reports_partners_kazvision'),
+    path('kazvision_download_fiz/', kazvision_download_fiz, name='kazvision_download_fiz'),
+    path('kazvision_download_ur/', kazvision_download_ur, name='kazvision_download_ur'),
+    # Ссылка страницу отчета ТОО "kuzetmonitoring"
+    path('reports_partners_kuzetmonitoring/', reports_partners_kuzetmonitoring, name='reports_partners_kuzetmonitoring'),
+    path('kuzetmonitoring_download_fiz/', kuzetmonitoring_download_fiz, name='kuzetmonitoring_download_fiz'),
+    path('kuzetmonitoring_download_ur/', kuzetmonitoring_download_ur, name='kuzetmonitoring_download_ur'),
+    # Ссылка страницу отчета ТОО "securityplus"
+    path('reports_partners_securityplus/', reports_partners_securityplus, name='reports_partners_securityplus'),
+    path('securityplus_download_fiz/', securityplus_download_fiz, name='securityplus_download_fiz'),
+    path('securityplus_download_ur/', securityplus_download_ur, name='securityplus_download_ur'),
     # Ссылка на страницу Отчеты кол-во объектов
     path('reports_kolvo/', reports_kolvo, name='reports_kolvo'),
     path('partner_reports_kolvo/', partner_reports_kolvo, name='partner_reports_kolvo'),

@@ -18,6 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 CSRF_TRUSTED_ORIGINS = ['http://192.168.1.19:8008',
                         'https://kateryushin.pro/',
                         'https://www.kateryushin.pro/',
+                        "http://10.0.2.2:8000",
                         ]
 
 

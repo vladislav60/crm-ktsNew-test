@@ -5,11 +5,14 @@ from channels.auth import AuthMiddlewareStack
 
 @database_sync_to_async
 def get_user(token_key):
-    from panicbutton.models import APIKey  # перенесите сюда
-    from django.contrib.auth.models import AnonymousUser  # перенесите сюда
+    from panicbutton.models import APIKey
+    from django.contrib.auth.models import AnonymousUser
     try:
         api_key = APIKey.objects.get(key=token_key)
-        return api_key.user
+        if api_key.is_valid():  # Дополнительно проверяем срок действия ключа
+            return api_key.user
+        else:
+            return AnonymousUser()
     except APIKey.DoesNotExist:
         return AnonymousUser()
 

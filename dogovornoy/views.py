@@ -17882,10 +17882,6 @@ class ArchiveTechnicalTaskListView(ListView):
         if start_date and end_date:
             queryset = queryset.filter(sent_time__range=[start_date, end_date])
 
-        if not has_user_filters:
-            queryset = queryset.filter()[:200]
-        elif start_date and end_date:
-            queryset = queryset.filter(sent_time__range=[start_date, end_date])
 
         queryset = queryset.annotate(
              sort_priority = Case(
@@ -17893,6 +17889,11 @@ class ArchiveTechnicalTaskListView(ListView):
                  default=Value(1),
              )
         ).order_by('sort_priority', '-arrival_time', '-sent_time')
+
+        if not has_user_filters:
+            queryset = queryset.filter()[:100]
+        elif start_date and end_date:
+            queryset = queryset.filter(sent_time__range=[start_date, end_date])
 
             # Дополняем задачи информацией из `Cards`
         tasks_with_card_info = []

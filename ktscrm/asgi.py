@@ -1,17 +1,16 @@
-
 import os
 import django
 from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
-from channels.auth import AuthMiddlewareStack
-from panicbutton.routing import *  # Импортируем WebSocket маршруты
+from panicbutton.routing import websocket_urlpatterns
+from panicbutton.middleware import TokenAuthMiddlewareStack
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ktscrm.settings')
 django.setup()
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
-    "websocket": AuthMiddlewareStack(
+    "websocket": TokenAuthMiddlewareStack(
         URLRouter(websocket_urlpatterns)
     ),
 })

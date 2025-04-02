@@ -23,6 +23,3 @@ class AlarmConsumer(AsyncWebsocketConsumer):
 
     async def send_alarm(self, event):
         await self.send(text_data=json.dumps(event["message"]))
-
-
-#test

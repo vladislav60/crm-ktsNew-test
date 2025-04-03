@@ -6,11 +6,11 @@ from channels.auth import AuthMiddlewareStack
 # panicbutton/middleware.py
 from urllib.parse import parse_qs
 from channels.db import database_sync_to_async
-from django.contrib.auth.models import AnonymousUser
-from panicbutton.models import APIKey
 
 @database_sync_to_async
 def get_user(token_key):
+    from panicbutton.models import APIKey  # ✅ импорт внутри функции
+    from django.contrib.auth.models import AnonymousUser
     try:
         api_key = APIKey.objects.get(key=token_key)
         if api_key.is_valid():  # твоя проверка срока действия

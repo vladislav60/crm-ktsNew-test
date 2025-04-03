@@ -41,4 +41,4 @@ class TokenAuthMiddlewareInstance:
 
 
 def TokenAuthMiddlewareStack(inner):
-    return TokenAuthMiddleware(AuthMiddlewareStack(inner))
+    return TokenAuthMiddleware(inner)

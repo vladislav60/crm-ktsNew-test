@@ -31,9 +31,18 @@ class TokenAuthMiddlewareInstance:
     async def __call__(self, receive, send):
         query_string = parse_qs(self.scope["query_string"].decode())
         token_key = query_string.get('token', [None])[0]
-        self.scope['user'] = await get_user(token_key)
+
+        if token_key:
+            self.scope['user'] = await get_user(token_key)
+        else:
+            # если нет токена — пробуем получить пользователя через стандартную auth middleware
+            from channels.auth import AuthMiddlewareInstance
+            auth_instance = AuthMiddlewareInstance(self.scope)
+            self.scope = auth_instance.scope
+
         inner = self.inner(self.scope)
         return await inner(receive, send)
+
 
 def TokenAuthMiddlewareStack(inner):
     return TokenAuthMiddleware(AuthMiddlewareStack(inner))

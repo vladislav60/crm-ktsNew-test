@@ -61,7 +61,8 @@ createApp({
 
         function setupWebSocket() {
             // const socket = new WebSocket("wss://kateryushin.pro/ws/alarms/");
-            const socket = new WebSocket("ws://127.0.0.1:8000/ws/alarms/");
+            // const socket = new WebSocket("ws://127.0.0.1:8000/ws/alarms/");
+            const socket = new WebSocket("wss://kateryushin.pro/ws/alarms/?token=AqAnLUCbC9WIGqtMtOZivwfs0YsQPSwRa0KCmE78gWY");
 
             socket.onmessage = function(event) {
                 try {

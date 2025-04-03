@@ -3,16 +3,19 @@ from urllib.parse import parse_qs
 from channels.db import database_sync_to_async
 from channels.auth import AuthMiddlewareStack
 
+# panicbutton/middleware.py
+from urllib.parse import parse_qs
+from channels.db import database_sync_to_async
+from django.contrib.auth.models import AnonymousUser
+from panicbutton.models import APIKey
+
 @database_sync_to_async
 def get_user(token_key):
-    from panicbutton.models import APIKey
-    from django.contrib.auth.models import AnonymousUser
     try:
         api_key = APIKey.objects.get(key=token_key)
-        if api_key.is_valid():  # Дополнительно проверяем срок действия ключа
+        if api_key.is_valid():  # твоя проверка срока действия
             return api_key.user
-        else:
-            return AnonymousUser()
+        return AnonymousUser()
     except APIKey.DoesNotExist:
         return AnonymousUser()
 
@@ -29,17 +32,10 @@ class TokenAuthMiddlewareInstance:
         self.inner = inner
 
     async def __call__(self, receive, send):
-        query_string = parse_qs(self.scope["query_string"].decode())
+        query_string = parse_qs(self.scope.get("query_string", b"").decode())
         token_key = query_string.get('token', [None])[0]
 
-        if token_key:
-            self.scope['user'] = await get_user(token_key)
-        else:
-            # если нет токена — пробуем получить пользователя через стандартную auth middleware
-            from channels.auth import AuthMiddlewareInstance
-            auth_instance = AuthMiddlewareInstance(self.scope)
-            self.scope = auth_instance.scope
-
+        self.scope['user'] = await get_user(token_key)
         inner = self.inner(self.scope)
         return await inner(receive, send)
 

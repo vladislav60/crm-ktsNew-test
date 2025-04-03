@@ -1,15 +1,14 @@
 # panicbutton/middleware.py
 from urllib.parse import parse_qs
-from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
-
+from channels.db import database_sync_to_async
 
 @database_sync_to_async
 def get_user_by_token(token_key):
-    from panicbutton.models import APIKey  # импортируем внутри функции
+    from panicbutton.models import APIKey
     try:
         api_key = APIKey.objects.get(key=token_key)
-        if api_key.is_valid():  # твоя проверка срока действия токена
+        if api_key.is_valid():
             return api_key.user
         return AnonymousUser()
     except APIKey.DoesNotExist:
@@ -17,33 +16,23 @@ def get_user_by_token(token_key):
 
 
 class TokenAuthMiddleware:
-    """ASGI middleware for token-only authentication."""
+    """
+    ASGI middleware that authenticates WebSocket connections using ?token=...
+    """
 
-    def __init__(self, inner):
-        self.inner = inner
+    def __init__(self, app):
+        self.app = app  # ASGI app
 
-    def __call__(self, scope):
-        return TokenAuthMiddlewareInstance(scope, self.inner)
+    async def __call__(self, scope, receive, send):
+        # Только WebSocket
+        if scope["type"] == "websocket":
+            query_string = parse_qs(scope.get("query_string", b"").decode())
+            token_key = query_string.get("token", [None])[0]
 
+            user = await get_user_by_token(token_key)
+            scope["user"] = user
 
-class TokenAuthMiddlewareInstance:
-    def __init__(self, scope, inner):
-        self.scope = scope
-        self.inner = inner
-
-    async def __call__(self, receive, send):
-        query_string = self.scope.get("query_string", b"").decode()
-        query_params = parse_qs(query_string)
-        token_key = query_params.get("token", [None])[0]
-
-        if token_key:
-            self.scope["user"] = await get_user_by_token(token_key)
-        else:
-            self.scope["user"] = AnonymousUser()
-
-        # запускаем следующий обработчик
-        inner = self.inner(self.scope)
-        return await inner(receive, send)
+        return await self.app(scope, receive, send)
 
 
 def TokenAuthMiddlewareStack(inner):
